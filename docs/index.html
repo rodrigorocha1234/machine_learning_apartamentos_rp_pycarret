@@ -535,7 +535,7 @@
         <span class="badge success">Polars & Pandas</span>
         <span class="badge primary">MLflow Serving</span>
         <span class="badge warning">Grafana Nativo (Sem Matplotlib)</span>
-        <span class="badge success">59 Testes Automatizados (100% Passed)</span>
+        <span class="badge success">60 Testes Automatizados (100% Passed)</span>
       </div>
     </header>
 
@@ -615,9 +615,9 @@
 
     <!-- 3. Quality Gates -->
     <section id="quality-gates">
-      <h2 class="section-title"><span class="number">3</span> Quality Gates: Suíte de 59 Testes Automatizados</h2>
+      <h2 class="section-title"><span class="number">3</span> Quality Gates: Suíte de 60 Testes Automatizados</h2>
       <p>
-        Em cumprimento à regra de governança de nunca declarar qualidade sem evidência real, o projeto conta com <strong>59 testes automatizados com pytest</strong> cobrindo todos os contratos e algoritmos:
+        Em cumprimento à regra de governança de nunca declarar qualidade sem evidência real, o projeto conta com <strong>60 testes automatizados com pytest</strong> cobrindo todos os contratos e algoritmos:
       </p>
 
       <div class="table-container">
@@ -633,8 +633,8 @@
           <tbody>
             <tr>
               <td><code>test_diagnostico_curva.py</code></td>
-              <td>6</td>
-              <td>Curvas de aprendizado viés x variância, classificação de regime, K-Fold real, parâmetro por modelo e Grafana fillBelowTo.</td>
+              <td>7</td>
+              <td>Curvas de viés x variância, regime operacional, K-Fold real, leitura dinâmica de YAML e Grafana fillBelowTo.</td>
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
@@ -1573,6 +1573,7 @@
           </li>
           <li><strong><code>validacao</code>:</strong> Holdout (ex: <code>0.2</code>), CV externa (repeated k-fold) e CV interna (k-fold).</li>
           <li><strong><code>estatistica</code>:</strong> Nível de significância (<code>alpha: 0.05</code>) e desempate para o teste de Friedman.</li>
+          <li><strong><code>diagnostico_curva</code>:</strong> Mapeamento dinâmico de hiperparâmetros de complexidade (<code>parametros_complexidade</code>) para cada um dos 10 algoritmos e campeão.</li>
           <li><strong><code>votacao</code>:</strong> Ativação do ensemble e escolha de uma das 7 técnicas de combinação.</li>
           <li><strong><code>regras_negocio</code>:</strong> Regras de pós-processamento aplicadas em tempo real pelo <code>ModeloServico</code>.</li>
           <li><strong><code>mlflow</code>:</strong> Tracking URI, nome do experimento e registro de modelo.</li>

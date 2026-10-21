@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
@@ -137,8 +138,6 @@ def test_diagnostico_curva_parametro_complexidade_por_modelo() -> None:
     )
     assert rel_estimador_ridge.parametro_complexidade == "alpha"
     assert len(rel_estimador_ridge.pontos) == 3
-
-from pathlib import Path
 
 def test_diagnostico_curva_leitura_arquivo_yaml(tmp_path: Path) -> None:
     # 1. Valida leitura direta do arquivo padrão configuracoes/projeto.yaml
