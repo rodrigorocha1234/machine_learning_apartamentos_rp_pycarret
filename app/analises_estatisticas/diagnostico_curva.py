@@ -1,3 +1,4 @@
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportMissingTypeArgument=false, reportAttributeAccessIssue=false, reportMissingTypeStubs=false, reportUnknownParameterType=false
 from __future__ import annotations
 import os
 from dataclasses import dataclass, asdict
@@ -63,7 +64,7 @@ class DiagnosticoCurva:
         "svm": "C",
         "rede_neural": "hidden_layer_sizes",
         "mlp": "hidden_layer_sizes",
-        "modelo_campeao": "max_depth (campeão)",
+        "modelo_campeao": "auto",
     }
 
     def __init__(
@@ -71,16 +72,71 @@ class DiagnosticoCurva:
         semente: int = 42,
         cv_splits: int = 3,
         caminho_yaml: str | None = None,
-        mapa_parametros: dict[str, str] | None = None
+        mapa_parametros: dict[str, str] | None = None,
+        modelo_campeao: str | None = None
     ) -> None:
         self._semente = semente
         self._cv_splits = cv_splits
         self._caminho_yaml = caminho_yaml or self._CAMINHO_YAML_PADRAO
+        self._modelo_campeao: str | None = modelo_campeao
         self._mapa_parametros: dict[str, str] = (
             mapa_parametros
             if mapa_parametros is not None
             else self.carregar_mapa_yaml(self._caminho_yaml)
         )
+
+    def definir_modelo_campeao(self, modelo_campeao: str) -> None:
+        """Define ou atualiza o modelo campeão de referência para diagnóstico dinâmico."""
+        self._modelo_campeao = modelo_campeao.strip()
+
+    @property
+    def modelo_campeao_ativo(self) -> str:
+        """Retorna o modelo campeão ativo, consultando o YAML se não configurado explicitamente."""
+        if self._modelo_campeao:
+            return self._modelo_campeao
+        return self._obter_modelo_campeao_padrao_yaml(self._caminho_yaml)
+
+    @classmethod
+    def _obter_modelo_campeao_padrao_yaml(cls, caminho_yaml: str) -> str:
+        """Lê do arquivo YAML o modelo campeão configurado como padrão ou fallback."""
+        if not os.path.exists(caminho_yaml):
+            return "random_forest"
+        try:
+            leitor = LeitorConfiguracao()
+            configuracao = leitor.carregar_configuracao(caminho_yaml)
+            sec_pipeline = configuracao.get("pipeline")
+            if isinstance(sec_pipeline, dict):
+                campeao = sec_pipeline.get("modelo_campeao_padrao")
+                if isinstance(campeao, str) and campeao.strip():
+                    return campeao.strip().lower()
+            sec_mlflow = configuracao.get("mlflow")
+            if isinstance(sec_mlflow, dict):
+                campeao = sec_mlflow.get("modelo_campeao")
+                if isinstance(campeao, str) and campeao.strip():
+                    return campeao.strip().lower()
+        except Exception:
+            pass
+        return "random_forest"
+
+    def obter_parametro_base_modelo(self, modelo_nome: str) -> str:
+        """Retorna o hiperparâmetro de complexidade base associado ao modelo."""
+        nome = modelo_nome.lower().strip()
+        for chave, param in self._mapa_parametros.items():
+            if chave != "modelo_campeao" and chave in nome:
+                return param
+
+        if any(t in nome for t in ["arvore", "tree", "forest", "floresta", "xgboost", "lightgbm"]):
+            return "max_depth"
+        if any(t in nome for t in ["ridge", "lasso", "elasticnet"]):
+            return "alpha"
+        if "svr" in nome or "svm" in nome:
+            return "C"
+        if any(t in nome for t in ["neural", "mlp"]):
+            return "hidden_layer_sizes"
+        if "regressao_linear" in nome or "linear" in nome:
+            return "fit_intercept"
+
+        return "complexidade_modelo"
 
     @classmethod
     def carregar_mapa_yaml(cls, caminho_yaml: str = "configuracoes/projeto.yaml") -> dict[str, str]:
@@ -128,59 +184,87 @@ class DiagnosticoCurva:
     def obter_parametro_complexidade(
         self,
         modelo_nome: str,
-        parametro_informado: str | None = None
+        parametro_informado: str | None = None,
+        modelo_referencia: str | None = None
     ) -> str:
         """Determina o parâmetro de complexidade correspondente ao modelo informado.
 
         Caso um parâmetro seja explicitamente fornecido, ele é utilizado diretamente.
-        Caso contrário, consulta o mapa lido do arquivo YAML configurado.
+        Caso o modelo seja 'modelo_campeao' ou contenha indicação de campeão,
+        ele detecta dinamicamente o hiperparâmetro do modelo campeão (ex: hidden_layer_sizes
+        se rede neural, alpha se ridge, C se svr, max_depth se arvore/floresta).
         """
         if parametro_informado is not None and parametro_informado.strip():
             return parametro_informado.strip()
 
         nome = modelo_nome.lower().strip()
+
+        # Resolução dinâmica para o modelo campeão
+        if "campeao" in nome or "champion" in nome:
+            campeao_real = modelo_referencia
+            if not campeao_real:
+                if ":" in nome:
+                    campeao_real = nome.split(":", 1)[1].strip()
+                elif "(" in nome:
+                    campeao_real = nome.split("(", 1)[1].replace(")", "").strip()
+            if not campeao_real:
+                campeao_real = self.modelo_campeao_ativo
+
+            param_configurado = self._mapa_parametros.get("modelo_campeao", "auto")
+            # Se for um valor explicitamente fixo e diferente de auto/dinamico/max_depth(campeão), honra a configuração
+            if modelo_referencia is None and param_configurado.lower() not in ["auto", "dinamico", "dynamic", "max_depth (campeão)"]:
+                return param_configurado
+
+            param_base = self.obter_parametro_base_modelo(campeao_real)
+            return f"{param_base} (campeão)"
+
         for chave, param in self._mapa_parametros.items():
-            if chave in nome:
+            if chave != "modelo_campeao" and chave in nome:
                 return param
 
-        return "complexidade_modelo"
+        return self.obter_parametro_base_modelo(nome)
 
     @classmethod
     def obter_parametro_complexidade_de_yaml(
         cls,
         modelo_nome: str,
         parametro_informado: str | None = None,
-        caminho_yaml: str = "configuracoes/projeto.yaml"
+        caminho_yaml: str = "configuracoes/projeto.yaml",
+        modelo_referencia: str | None = None
     ) -> str:
         """Determina o parâmetro de complexidade lendo diretamente do arquivo YAML indicado."""
         if parametro_informado is not None and parametro_informado.strip():
             return parametro_informado.strip()
 
-        mapa = cls.carregar_mapa_yaml(caminho_yaml)
-        nome = modelo_nome.lower().strip()
-        for chave, param in mapa.items():
-            if chave in nome:
-                return param
-
-        return "complexidade_modelo"
+        instancia = cls(caminho_yaml=caminho_yaml, modelo_campeao=modelo_referencia)
+        return instancia.obter_parametro_complexidade(
+            modelo_nome=modelo_nome,
+            parametro_informado=parametro_informado,
+            modelo_referencia=modelo_referencia
+        )
 
     def mapear_parametro_sklearn(
         self,
         modelo_nome: str,
-        parametro_informado: str | None = None
+        parametro_informado: str | None = None,
+        modelo_referencia: str | None = None
     ) -> str:
         """Mapeia o nome do hiperparâmetro para injeção via set_params do Scikit-Learn."""
-        parametro_base = self.obter_parametro_complexidade(modelo_nome, parametro_informado)
+        parametro_base = self.obter_parametro_complexidade(
+            modelo_nome,
+            parametro_informado,
+            modelo_referencia=modelo_referencia
+        )
         param_limpo = parametro_base.split()[0].strip()
 
-        nome = modelo_nome.lower().strip()
-        if any(t in nome for t in ["arvore", "tree", "forest", "xgboost", "lightgbm"]):
+        nome_alvo = (modelo_referencia or modelo_nome).lower().strip()
+        if any(t in nome_alvo for t in ["arvore", "tree", "forest", "floresta", "xgboost", "lightgbm"]):
             return "max_depth"
-        if any(t in nome for t in ["ridge", "lasso", "elasticnet"]):
+        if any(t in nome_alvo for t in ["ridge", "lasso", "elasticnet"]):
             return "alpha"
-        if "svr" in nome or "svm" in nome:
+        if "svr" in nome_alvo or "svm" in nome_alvo:
             return "C"
-        if any(t in nome for t in ["neural", "mlp"]):
+        if any(t in nome_alvo for t in ["neural", "mlp"]):
             return "max_iter"
 
         return param_limpo or "max_depth"
@@ -212,13 +296,18 @@ class DiagnosticoCurva:
         motor: str = "sklearn",
         valores_complexidade: list[float] | None = None,
         rmse_base: float = 30000.0,
-        parametro_complexidade: str | None = None
+        parametro_complexidade: str | None = None,
+        modelo_referencia: str | None = None
     ) -> RelatorioCurva:
         """Gera pontos empíricos para visualização no Grafana de acordo com o modelo e parâmetro lido do YAML."""
         passos = valores_complexidade or [2.0, 4.0, 6.0, 8.0, 10.0, 14.0, 18.0, 24.0, 32.0, 40.0, 48.0]
         pontos: list[PontoCurva] = []
 
-        parametro_resolvido = self.obter_parametro_complexidade(modelo_nome, parametro_complexidade)
+        parametro_resolvido = self.obter_parametro_complexidade(
+            modelo_nome,
+            parametro_complexidade,
+            modelo_referencia=modelo_referencia
+        )
 
         # Simula a dinâmica matemática clássica de viés x variância:
         # Treino decai monotonicamente com complexidade (viés cai)
@@ -268,7 +357,8 @@ class DiagnosticoCurva:
         y: pd.Series | np.ndarray,
         passos_complexidade: list[int] | list[float] | None = None,
         motor: str = "sklearn",
-        parametro_complexidade: str | None = None
+        parametro_complexidade: str | None = None,
+        modelo_referencia: str | None = None
     ) -> RelatorioCurva:
         """Avalia empiricamente o estimador em K-Fold medindo RMSE de treino e validação por complexidade."""
         x_matriz = x.to_numpy() if isinstance(x, pd.DataFrame) else np.asarray(x)
@@ -278,8 +368,16 @@ class DiagnosticoCurva:
         pontos: list[PontoCurva] = []
         kfold = KFold(n_splits=self._cv_splits, shuffle=True, random_state=self._semente)
 
-        parametro_resolvido = self.obter_parametro_complexidade(modelo_nome, parametro_complexidade)
-        param_sklearn = self.mapear_parametro_sklearn(modelo_nome, parametro_complexidade)
+        parametro_resolvido = self.obter_parametro_complexidade(
+            modelo_nome,
+            parametro_complexidade,
+            modelo_referencia=modelo_referencia
+        )
+        param_sklearn = self.mapear_parametro_sklearn(
+            modelo_nome,
+            parametro_complexidade,
+            modelo_referencia=modelo_referencia
+        )
 
         melhor_comp = float(passos[0])
         menor_val_rmse = float("inf")

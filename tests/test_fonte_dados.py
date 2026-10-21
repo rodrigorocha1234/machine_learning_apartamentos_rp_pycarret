@@ -107,3 +107,69 @@ def test_fabrica_fontes_criacao_polimorfica() -> None:
     # 4. Tipo desconhecido
     with pytest.raises(ErroFabricaFontes):
         FabricaFontes.criar_fonte({"tipo": "tipo_desconhecido"})
+
+
+def test_fonte_excel_retorno_pandas_e_polars() -> None:
+    import polars as pl
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+        caminho_tmp = tmp.name
+    try:
+        df = pd.DataFrame({"Valor_da_Venda": [300000.0, 450000.0], "Metragem": [55.0, 70.0]})
+        df.to_excel(caminho_tmp, index=False)
+
+        # 1. Carregamento com motor Pandas explícito
+        fonte_pd = FonteExcel(caminho=caminho_tmp, motor="pandas")
+        dados_pd = fonte_pd.carregar_dados()
+        assert isinstance(dados_pd, pd.DataFrame)
+        assert len(dados_pd) == 2
+        assert "Valor_da_Venda" in dados_pd.columns
+
+        # 2. Carregamento com motor Polars explícito
+        fonte_pl = FonteExcel(caminho=caminho_tmp, motor="polars")
+        dados_pl = fonte_pl.carregar_dados()
+        assert isinstance(dados_pl, pl.DataFrame)
+        assert len(dados_pl) == 2
+        assert "Valor_da_Venda" in dados_pl.columns
+
+        # 3. Sobrescrita no próprio método carregar_dados(motor="polars")
+        fonte_padrao = FonteExcel(caminho=caminho_tmp)
+        dados_sobrescrito = fonte_padrao.carregar_dados(motor="polars")
+        assert isinstance(dados_sobrescrito, pl.DataFrame)
+    finally:
+        if os.path.exists(caminho_tmp):
+            os.remove(caminho_tmp)
+
+
+def test_fonte_excel_leitura_configuracao_yaml() -> None:
+    import polars as pl
+    import yaml
+
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp_xlsx:
+        caminho_xlsx = tmp_xlsx.name
+    with tempfile.NamedTemporaryFile(suffix=".yaml", mode="w", encoding="utf-8", delete=False) as tmp_yaml:
+        yaml.dump({"tabular": {"motor": "polars"}}, tmp_yaml)
+        caminho_yaml = tmp_yaml.name
+
+    try:
+        df = pd.DataFrame({"Valor_da_Venda": [800000.0], "Metragem": [120.0]})
+        df.to_excel(caminho_xlsx, index=False)
+
+        # Fonte sem motor explícito deve ler tabular.motor do arquivo YAML
+        fonte = FonteExcel(caminho=caminho_xlsx, caminho_configuracao=caminho_yaml)
+        dados_pl = fonte.carregar_dados()
+        assert isinstance(dados_pl, pl.DataFrame)
+        assert len(dados_pl) == 1
+
+        # Atualiza YAML para motor pandas
+        with open(caminho_yaml, "w", encoding="utf-8") as f:
+            yaml.dump({"tabular": {"motor": "pandas"}}, f)
+
+        dados_pd = fonte.carregar_dados()
+        assert isinstance(dados_pd, pd.DataFrame)
+        assert len(dados_pd) == 1
+    finally:
+        if os.path.exists(caminho_xlsx):
+            os.remove(caminho_xlsx)
+        if os.path.exists(caminho_yaml):
+            os.remove(caminho_yaml)
+

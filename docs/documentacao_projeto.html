@@ -496,8 +496,9 @@
     <nav class="nav-menu">
       <div class="nav-header">Visão Geral</div>
       <a href="#arquitetura" class="nav-item">Arquitetura & Design</a>
+      <a href="#padroes-gof" class="nav-item">Padrões de Projeto GoF</a>
       <a href="#estatistica" class="nav-item">Testes Estatísticos</a>
-      <a href="#quality-gates" class="nav-item">Quality Gates (59 Testes)</a>
+      <a href="#quality-gates" class="nav-item">Quality Gates (81 Testes)</a>
 
       <div class="nav-header">Engenharia de Dados</div>
       <a href="#expressoes" class="nav-item">Expressões Pandas & Polars</a>
@@ -537,7 +538,7 @@
         <span class="badge primary">MLflow Serving</span>
         <span class="badge primary">GoF Observer Pattern</span>
         <span class="badge warning">Grafana Nativo (Sem Matplotlib)</span>
-        <span class="badge success">73 Testes Automatizados (100% Passed)</span>
+        <span class="badge success">81 Testes Automatizados (100% Passed)</span>
       </div>
     </header>
 
@@ -578,9 +579,350 @@
       </div>
     </section>
 
-    <!-- 2. Testes Estatísticos -->
+    <!-- 2. Padrões de Projeto GoF -->
+    <section id="padroes-gof">
+      <h2 class="section-title"><span class="number">2</span> Catálogo Completo dos Padrões de Projeto GoF (Gang of Four)</h2>
+      <p>
+        Para garantir manutenibilidade corporativa, desacoplamento rigoroso e testabilidade em nível de produto, a arquitetura do sistema adota de forma intencional os padrões consagrados do <strong>Gang of Four (GoF)</strong>. As decisões de design eliminam o anti-padrão de scripts monolíticos de ciência de dados ("notebook-driven") e estruturam todo o fluxo preditivo em contratos estritos (<code>typing.Protocol</code>), polimorfismo limpo e inversão de controle.
+      </p>
+
+      <!-- Tabela Sinóptica Consolidada dos Padrões GoF -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Padrão GoF</th>
+              <th>Família</th>
+              <th>Componentes no Repositório</th>
+              <th>Contrato / Interface</th>
+              <th>Papel Arquitetural & Regra Atendida</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Factory Method / Factory</strong></td>
+              <td><span class="badge primary">Criacional</span></td>
+              <td>
+                <code>FabricaFontes</code><br>
+                <code>FabricaMotores</code><br>
+                <code>FabricaVotacao</code>
+              </td>
+              <td>
+                <code>FonteDados</code><br>
+                <code>MotorTabela</code><br>
+                <code>ModeloPreditor</code>
+              </td>
+              <td>Instanciação polimórfica sob demanda controlada 100% via YAML, sem acoplar o cliente às classes concretas.</td>
+            </tr>
+            <tr>
+              <td><strong>Adapter (Wrapper)</strong></td>
+              <td><span class="badge secondary">Estrutural</span></td>
+              <td>
+                <code>MotorSklearn</code> & <code>MotorPycaret</code><br>
+                <code>FonteExcel</code>, <code>FonteSql</code>, <code>FonteApi</code><br>
+                <code>ModeloServico</code>
+              </td>
+              <td>
+                <code>MotorTreino</code><br>
+                <code>FonteDados</code><br>
+                <code>mlflow.pyfunc.PythonModel</code>
+              </td>
+              <td>Unifica APIs discrepantes sob o mesmo protocolo (ex: isola Scikit-Learn e PyCaret) e adapta o modelo final + regras AST para o MLflow Serving.</td>
+            </tr>
+            <tr>
+              <td><strong>Composite</strong></td>
+              <td><span class="badge secondary">Estrutural</span></td>
+              <td><code>RegressorVotacao</code></td>
+              <td><code>ModeloPreditor</code></td>
+              <td>Trata uma coleção de múltiplos estimadores preditivos heterogêneos de forma uniforme como se fosse um único regressor.</td>
+            </tr>
+            <tr>
+              <td><strong>Facade</strong></td>
+              <td><span class="badge secondary">Estrutural</span></td>
+              <td><code>MainPipeline</code></td>
+              <td>Orquestração End-to-End</td>
+              <td>Fachada de alto nível que simplifica e orquestra a complexidade de 10 subsistemas integrados (ingestão, staging, EDA, CV, Friedman, ensemble, regras e deploy).</td>
+            </tr>
+            <tr>
+              <td><strong>Strategy</strong></td>
+              <td><span class="badge warning">Comportamental</span></td>
+              <td>
+                <code>MotorPandas</code> vs <code>MotorPolars</code><br>
+                <code>MotorSklearn</code> vs <code>MotorPycaret</code><br>
+                Particionadores de CV (5 tipos)<br>
+                Técnicas de Votação (7 tipos)
+              </td>
+              <td>
+                <code>MotorTabela</code><br>
+                <code>MotorTreino</code><br>
+                Algoritmos Matemáticos
+              </td>
+              <td>Encapsula famílias de algoritmos intercambiáveis em tempo de execução via configuração para manipulação tabular, treino e consenso preditivo.</td>
+            </tr>
+            <tr>
+              <td><strong>Observer</strong></td>
+              <td><span class="badge warning">Comportamental</span></td>
+              <td>
+                <code>PublicadorServico</code> (Subject)<br>
+                <code>ObservadorAuditoria</code> (JSONL)<br>
+                <code>ObservadorMetricas</code> (Prometheus)
+              </td>
+              <td><code>ObservadorMLflow</code></td>
+              <td>Publicador/Assinante desacoplado que notifica observadores sobre eventos de publicação de modelos no MLflow (sucesso, falha, latência, métricas).</td>
+            </tr>
+            <tr>
+              <td><strong>Interpreter</strong></td>
+              <td><span class="badge warning">Comportamental</span></td>
+              <td><code>AvaliadorRegras</code></td>
+              <td>Gramática AST Segura</td>
+              <td>Interpreta a árvore sintática abstrata (AST) de filtros e regras matemáticas em tempo de execução, garantindo isolamento total sem <code>eval()</code> ou <code>exec()</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>Repository</strong></td>
+              <td><span class="badge success">Persistência</span></td>
+              <td><code>RepositorioSqlite</code></td>
+              <td><code>RepositorioDados</code></td>
+              <td>Isola o acesso e operações no banco SQLite intermediário (staging) da camada de domínio analítico e dos motores de ML.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 2.1 Padrões Criacionais -->
+      <div style="margin-top: 2rem;">
+        <h3 style="color: #fff; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+          <span class="badge primary">2.1</span> Padrões Criacionais: Fábricas e Instanciação Desacoplada
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.925rem;">
+          Os padrões criacionais abstraem o processo de instanciação de objetos, garantindo que o sistema seja independente de como seus componentes são criados, compostos e representados. No projeto, a configuração do arquivo <code>configuracoes/projeto.yaml</code> dita quais classes são instanciadas sem que haja dependência direta entre módulos.
+        </p>
+
+        <div class="grid-3">
+          <div class="card">
+            <h3>🏭 FabricaFontes</h3>
+            <p>
+              Localização: <code>app/fontes_dados/fabrica_fontes.py</code><br>
+              Inspeciona a chave <code>fonte_dados.tipo</code> e instancia dinamicamente o adaptador correspondente (<code>FonteExcel</code>, <code>FonteSql</code> ou <code>FonteApi</code>).
+            </p>
+            <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+              <li><strong>Entrada:</strong> Dicionário de configuração YAML</li>
+              <li><strong>Saída:</strong> Instância compatível com <code>FonteDados</code></li>
+              <li><strong>Vantagem:</strong> Alternar de planilha Excel para API REST sem alterar o código de ingestão.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>⚙️ FabricaMotores</h3>
+            <p>
+              Localização: <code>app/motores_tabela/fabrica_motores.py</code><br>
+              Instancia a engine tabular configurada em <code>motor_tabela.tipo</code>, retornando polimorficamente <code>MotorPandas</code> ou <code>MotorPolars</code>.
+            </p>
+            <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+              <li><strong>Entrada:</strong> String identificadora ("pandas" ou "polars")</li>
+              <li><strong>Saída:</strong> Instância compatível com <code>MotorTabela</code></li>
+              <li><strong>Vantagem:</strong> Transição transparente entre processamento em memória e lazy execution em Rust.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>🗳️ FabricaVotacao</h3>
+            <p>
+              Localização: <code>app/modelos_votacao/fabrica_votacao.py</code><br>
+              Instancia o regressor de ensemble configurado em <code>modelagem.ensemble.tecnica_votacao</code>, integrando os estimadores treinados sob a estratégia escolhida.
+            </p>
+            <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+              <li><strong>Suporte:</strong> 7 técnicas de consenso matemático</li>
+              <li><strong>Saída:</strong> Instância compatível com <code>ModeloPreditor</code></li>
+              <li><strong>Vantagem:</strong> Criação sob demanda de comitês de decisão heterogêneos.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Exemplo de Código: Factory Method em FabricaFontes</span>
+            <span>Python 3.12+</span>
+          </div>
+          <pre><code><span class="hl-kw">class</span> <span class="hl-fun">FabricaFontes</span>:
+    <span class="hl-str">"""Fábrica de instâncias de fontes de dados conforme especificação YAML."""</span>
+
+    <span class="hl-kw">@staticmethod</span>
+    <span class="hl-kw">def</span> <span class="hl-fun">criar_fonte</span>(configuracao: dict[str, Any]) -> <span class="hl-fun">FonteDados</span>:
+        tipo = configuracao.get(<span class="hl-str">"tipo"</span>, <span class="hl-str">"excel"</span>).lower()
+        <span class="hl-kw">match</span> tipo:
+            <span class="hl-kw">case</span> <span class="hl-str">"excel"</span>:
+                <span class="hl-kw">return</span> <span class="hl-fun">FonteExcel</span>(caminho_arquivo=configuracao[<span class="hl-str">"caminho"</span>])
+            <span class="hl-kw">case</span> <span class="hl-str">"sql"</span>:
+                <span class="hl-kw">return</span> <span class="hl-fun">FonteSql</span>(url_conexao=configuracao[<span class="hl-str">"url_conexao"</span>], consulta=configuracao[<span class="hl-str">"query"</span>])
+            <span class="hl-kw">case</span> <span class="hl-str">"api"</span>:
+                <span class="hl-kw">return</span> <span class="hl-fun">FonteApi</span>(endpoint=configuracao[<span class="hl-str">"url"</span>], cabecalhos=configuracao.get(<span class="hl-str">"headers"</span>, {}))
+            <span class="hl-kw">case</span> _:
+                <span class="hl-kw">raise</span> <span class="hl-fun">ErroConfiguracaoInvalida</span>(f<span class="hl-str">"Tipo de fonte desconhecido: {tipo}"</span>)</code></pre>
+        </div>
+      </div>
+
+      <!-- 2.2 Padrões Estruturais -->
+      <div style="margin-top: 2.5rem;">
+        <h3 style="color: #fff; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+          <span class="badge secondary">2.2</span> Padrões Estruturais: Adaptadores, Fachadas e Composites
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.925rem;">
+          Os padrões estruturais tratam de como classes e objetos são compostos para formar estruturas maiores e coesas, preservando a flexibilidade e o baixo acoplamento entre bibliotecas externas e contratos de domínio.
+        </p>
+
+        <div class="grid-3">
+          <div class="card">
+            <h3>🔌 Adapter: Motores de Treino</h3>
+            <p>
+              Localização: <code>app/motores_treino/motor_sklearn.py</code> e <code>motor_pycaret.py</code><br>
+              Scikit-Learn e PyCaret possuem paradigmas e APIs totalmente antagônicas. O PyCaret utiliza uma máquina de estados procedural (<code>RegressionExperiment</code>, <code>setup</code>, <code>create_model</code>, <code>pull</code>), enquanto o Scikit-Learn utiliza pipelines composicionais e estimadores puros.
+            </p>
+            <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+              O padrão <strong>Adapter</strong> unifica ambos sob a interface <code>MotorTreino</code> (métodos <code>treinar_e_avaliar_cv</code>, <code>ajustar_hiperparametros</code> e <code>finalizar_modelo</code>). O orquestrador não sabe qual biblioteca está executando o treinamento.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>📦 Adapter: ModeloServico PyFunc</h3>
+            <p>
+              Localização: <code>app/orquestracao_ml/modelo_servico.py</code><br>
+              O MLflow Serving exige que modelos customizados herdem de <code>mlflow.pyfunc.PythonModel</code> e implementem o método <code>predict(context, model_input)</code>.
+            </p>
+            <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+              A classe <code>ModeloServico</code> atua como <strong>Adapter</strong> empacotando o regressor treinado juntamente com o interpretador de regras de negócio AST. A chamada de predição calcula o preço estatístico e aplica todas as regras pós-processadas de forma unificada.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>🌳 Composite: RegressorVotacao</h3>
+            <p>
+              Localização: <code>app/modelos_votacao/regressor_votacao.py</code><br>
+              Implementa o contrato <code>ModeloPreditor</code> encapsulando internamente uma lista de outros objetos <code>ModeloPreditor</code> (Random Forest, XGBoost, LightGBM, etc.).
+            </p>
+            <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+              Quando o cliente invoca <code>predizer(X)</code>, o <strong>Composite</strong> despacha a predição para todos os componentes individuais e agrega as predições aplicando a técnica de votação configurada, agindo como se fosse um único modelo homogêneo.
+            </p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.25rem;">
+          <h3>🏛️ Facade: MainPipeline</h3>
+          <p>
+            Localização: <code>app/orquestracao_ml/main_pipeline.py</code><br>
+            O fluxo completo de Machine Learning envolve coordenar mais de 10 subsistemas especializados: Ingestão de Dados, Staging SQLite, Análise Exploratória (EDA), Particionamento de Folds, Validação Cruzada Pareada dos 10 Modelos, Teste Não-Paramétrico de Friedman, Pós-teste de Nemenyi com Diferença Crítica (CD), Seleção do Campeão ou Ensemble, Tuning Fino de Hiperparâmetros, Diagnóstico de Viés/Variância, Importância de Features, Compilação de Regras AST e Publicação no MLflow Model Registry com notificação a observadores.
+          </p>
+          <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
+            O padrão <strong>Facade</strong> expõe uma interface de nível executivo com métodos claros (<code>executar_pipeline_completo()</code> e <code>executar_apenas_campeao()</code>), blindando a aplicação cliente, a CLI e os scripts de inicialização de lidarem diretamente com as dezenas de dependências internas.
+          </p>
+        </div>
+      </div>
+
+      <!-- 2.3 Padrões Comportamentais -->
+      <div style="margin-top: 2.5rem;">
+        <h3 style="color: #fff; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+          <span class="badge warning">2.3</span> Padrões Comportamentais: Estratégias, Observadores e Interpretador AST
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.925rem;">
+          Os padrões comportamentais concentram-se nos algoritmos, na atribuição de responsabilidades e na dinâmica de comunicação e fluxo de eventos entre os objetos do sistema.
+        </p>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>🎯 Strategy (Estratégia Intercambiável)</h3>
+            <p>
+              O padrão <strong>Strategy</strong> define uma família de algoritmos, encapsula cada um deles em classes isoladas e torna-os mutuamente intercambiáveis em tempo de execução via <code>projeto.yaml</code>:
+            </p>
+            <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; margin-top: 0.5rem;">
+              <li><strong>Motores Tabulares:</strong> <code>MotorPandas</code> e <code>MotorPolars</code> implementam estratégias de engenharia de atributos e filtragem distintas sob o protocolo <code>MotorTabela</code>.</li>
+              <li><strong>Motores de Treinamento:</strong> <code>MotorSklearn</code> e <code>MotorPycaret</code> como estratégias concorrentes de validação e otimização.</li>
+              <li><strong>Estratégias de Validação Cruzada:</strong> 5 estratégias de particionamento (<code>kfold</code>, <code>repeated_kfold</code>, <code>stratified_kfold</code>, <code>group_kfold</code>, <code>timeseries_split</code>).</li>
+              <li><strong>Estratégias de Votação (Ensemble):</strong> 7 estratégias de combinação matemática (Média Simples, Ponderada por R², Mediana, Rank Average, Trimmed Mean, Stacking e Voting Nativo).</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>👁️ Observer (Publicador / Assinante)</h3>
+            <p>
+              Implementado no ciclo de publicação do MLflow para desacoplar a entrega do modelo dos efeitos colaterais de governança e monitoramento:
+            </p>
+            <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; margin-top: 0.5rem;">
+              <li><strong>Subject:</strong> <code>PublicadorServico</code> gerencia inscritos com <code>adicionar_observador()</code> e dispara <code>notificar_publicacao()</code> após cada deploy.</li>
+              <li><strong>Protocol:</strong> <code>ObservadorMLflow</code> define o método <code>ao_publicar(evento: EventoPublicacaoMLflow)</code>.</li>
+              <li><strong>ObservadorAuditoria:</strong> Grava eventos estruturados em formato append-only JSONL imutável para compliance corporativo.</li>
+              <li><strong>ObservadorMetricas:</strong> Atualiza métricas e histogramas de latência para telemetria com Prometheus e Grafana.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top: 1rem;">
+          <div class="card">
+            <h3>🛡️ Interpreter (Interpretador de AST Restrita)</h3>
+            <p>
+              Localização: <code>app/regras_negocio/avaliador_regras.py</code><br>
+              A governança do projeto proíbe terminantemente chamadas a <code>eval()</code> ou <code>exec()</code> arbitrários. O padrão <strong>Interpreter</strong> implementa um avaliador seguro que analisa a gramática de expressões sintáticas a partir da árvore abstrata do Python (<code>ast.AST</code>).
+            </p>
+            <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+              Somente nós permitidos por uma lista positiva (allowlist) — como <code>ast.BinOp</code>, <code>ast.UnaryOp</code>, <code>ast.Compare</code>, <code>ast.Constant</code> e <code>ast.Name</code> — são executados. Tentativas de import, abertura de arquivos ou chamadas de sistema resultam em exceção imediata antes de qualquer processamento.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>💾 Repository (Isolamento de Persistência SQLite)</h3>
+            <p>
+              Localização: <code>app/repositorios_dados/repositorio_sqlite.py</code><br>
+              Embora o SQLite atue exclusivamente como área de staging intermediária, seu acesso é mediado pelo padrão <strong>Repository</strong> através do contrato <code>RepositorioDados</code>.
+            </p>
+            <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+              A camada analítica interage com métodos orientados a coleção (<code>salvar_tabela</code>, <code>obter_tabela</code>, <code>contar_registros</code>, <code>executar_consulta</code>), permitindo substituir o SQLite por DuckDB, PostgreSQL ou Parquet sem alterar a lógica de negócio.
+            </p>
+          </div>
+        </div>
+
+        <!-- Snippet Observer -->
+        <div class="code-block" style="margin-top: 1.5rem;">
+          <div class="code-header">
+            <span>Implementação do Padrão GoF Observer no Ciclo de Vida do MLflow</span>
+            <span>app/contratos_dados/observador_mlflow.py & app/orquestracao_ml/publicador_servico.py</span>
+          </div>
+          <pre><code><span class="hl-kw">from</span> typing <span class="hl-kw">import</span> Protocol
+<span class="hl-kw">from</span> dataclasses <span class="hl-kw">import</span> dataclass
+<span class="hl-kw">from</span> datetime <span class="hl-kw">import</span> datetime
+
+<span class="hl-kw">@dataclass</span>(frozen=<span class="hl-kw">True</span>)
+<span class="hl-kw">class</span> <span class="hl-fun">EventoPublicacaoMLflow</span>:
+    <span class="hl-str">"""Evento imutável emitido pelo Subject após tentativa de publicação."""</span>
+    sucesso: bool
+    nome_experimento: str
+    nome_modelo_registrado: str
+    run_id: str | None
+    versao_modelo: str | None
+    metadados: dict[str, str | float | int | bool]
+    tempo_execucao_segundos: float
+    data_hora: datetime
+    mensagem_erro: str | None = <span class="hl-kw">None</span>
+
+<span class="hl-kw">class</span> <span class="hl-fun">ObservadorMLflow</span>(Protocol):
+    <span class="hl-str">"""Contrato Protocol para observadores de eventos de deploy do MLflow."""</span>
+    <span class="hl-kw">def</span> <span class="hl-fun">ao_publicar</span>(self, evento: EventoPublicacaoMLflow) -> <span class="hl-kw">None</span>: ...
+
+<span class="hl-kw">class</span> <span class="hl-fun">PublicadorServico</span>:
+    <span class="hl-str">"""Subject concreto que gerencia a lista de observadores e dispara notificações."""</span>
+    <span class="hl-kw">def</span> <span class="hl-fun">__init__</span>(self, uri_rastreamento: str | None = <span class="hl-kw">None</span>) -> <span class="hl-kw">None</span>:
+        self._observadores: list[<span class="hl-fun">ObservadorMLflow</span>] = []
+
+    <span class="hl-kw">def</span> <span class="hl-fun">adicionar_observador</span>(self, observador: <span class="hl-fun">ObservadorMLflow</span>) -> <span class="hl-kw">None</span>:
+        self._observadores.append(observador)
+
+    <span class="hl-kw">def</span> <span class="hl-fun">notificar_publicacao</span>(self, evento: EventoPublicacaoMLflow) -> <span class="hl-kw">None</span>:
+        <span class="hl-kw">for</span> obs <span class="hl-kw">in</span> self._observadores:
+            obs.ao_publicar(evento)</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Testes Estatísticos -->
     <section id="estatistica">
-      <h2 class="section-title"><span class="number">2</span> Camada Estatística Independente: Testes de Friedman e Nemenyi</h2>
+      <h2 class="section-title"><span class="number">3</span> Camada Estatística Independente: Testes de Friedman e Nemenyi</h2>
       <p>
         A escolha do modelo campeão <strong>não é baseada apenas na média simples de um único fold</strong>. Adotamos o protocolo estatístico formal de <em>Janez Demšar (2006)</em>, que assegura que o modelo vencedor é significativamente superior aos demais em uma bateria pareada de validação cruzada.
       </p>
@@ -617,11 +959,11 @@
       </div>
     </section>
 
-    <!-- 3. Quality Gates -->
+    <!-- 4. Quality Gates -->
     <section id="quality-gates">
-      <h2 class="section-title"><span class="number">3</span> Quality Gates: Suíte de 60 Testes Automatizados</h2>
+      <h2 class="section-title"><span class="number">4</span> Quality Gates: Suíte de 81 Testes Automatizados</h2>
       <p>
-        Em cumprimento à regra de governança de nunca declarar qualidade sem evidência real, o projeto conta com <strong>60 testes automatizados com pytest</strong> cobrindo todos os contratos e algoritmos:
+        Em cumprimento à regra de governança de nunca declarar qualidade sem evidência real, o projeto conta com <strong>81 testes automatizados com pytest</strong> cobrindo todos os contratos e algoritmos:
       </p>
 
       <div class="table-container">
@@ -636,9 +978,15 @@
           </thead>
           <tbody>
             <tr>
+              <td><code>test_comparador_transformacao.py</code></td>
+              <td>5</td>
+              <td>Avaliação pareada Sem Log vs Com Log, dados sintéticos log-normais, Prometheus e validação estrutural do Grafana JSON.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
               <td><code>test_diagnostico_curva.py</code></td>
-              <td>7</td>
-              <td>Curvas de viés x variância, regime operacional, K-Fold real, leitura dinâmica de YAML e Grafana fillBelowTo.</td>
+              <td>8</td>
+              <td>Curvas de viés x variância, hiperparâmetro dinâmico do modelo campeão (ex: rede neural, ridge, floresta), K-Fold real e YAML.</td>
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
@@ -649,8 +997,14 @@
             </tr>
             <tr>
               <td><code>test_motor_sklearn.py</code></td>
-              <td>3</td>
-              <td>Protocolo, 10 regressores configuráveis, Tuning (grid, random, halving) e erro de método inválido.</td>
+              <td>5</td>
+              <td>Protocolo, 10 regressores configuráveis, Tuning (grid, random, halving), transformação do alvo e transformação log de features contínuas.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_motor_pycaret.py</code></td>
+              <td>5</td>
+              <td>Integração nativa com PyCaret RegressionExperiment, fold strategies, setup, transformação do alvo e transformação de features.</td>
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
@@ -660,15 +1014,9 @@
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
-              <td><code>test_motor_pycaret.py</code></td>
-              <td>3</td>
-              <td>Integração nativa com PyCaret RegressionExperiment, fold strategies e pré-processamento.</td>
-              <td><span class="badge success">100% Passed</span></td>
-            </tr>
-            <tr>
               <td><code>test_teste_friedman.py</code></td>
               <td>2</td>
-              <td>Cálculo matemático de qui-quadrado, rank pareado e pós-teste de Nemenyi.</td>
+              <td>Cálculo matemático de qui-quadrado, rank pareado e pós-teste de Nemenyi com CD.</td>
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
@@ -691,8 +1039,8 @@
             </tr>
             <tr>
               <td><code>test_fonte_dados.py</code></td>
-              <td>4</td>
-              <td>Ingestão polimórfica (Excel, SQL, API) e fábrica de fontes de dados.</td>
+              <td>6</td>
+              <td>Ingestão polimórfica (Excel, SQL, API), fábrica de fontes de dados e leitura configurada via YAML.</td>
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
@@ -720,9 +1068,27 @@
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
-              <td><code>test_analise_eda.py</code> / <code>test_modelo_servico.py</code></td>
-              <td>4</td>
-              <td>Geração de gráficos EDA estatísticos e predição em tempo real com regras de negócio.</td>
+              <td><code>test_analise_eda.py</code></td>
+              <td>1</td>
+              <td>Geração de gráficos EDA estatísticos e perfil de dados tabular.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_modelo_servico.py</code></td>
+              <td>1</td>
+              <td>Predição em tempo real com pós-processamento de regras de negócio em AST.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_leitor_configuracao.py</code></td>
+              <td>1</td>
+              <td>Validação de integridade e carregamento do arquivo de configuração <code>projeto.yaml</code>.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_contrato_basico.py</code></td>
+              <td>1</td>
+              <td>Verificação de conformidade do protocolo inicial de EDA e integridade de tipos.</td>
               <td><span class="badge success">100% Passed</span></td>
             </tr>
           </tbody>
@@ -730,9 +1096,9 @@
       </div>
     </section>
 
-    <!-- 4. Expressões Pandas & Polars -->
+    <!-- 5. Expressões Pandas & Polars -->
     <section id="expressoes">
-      <h2 class="section-title"><span class="number">4</span> Guia de Expressões Seguras: Pandas & Polars via AST</h2>
+      <h2 class="section-title"><span class="number">5</span> Guia de Expressões Seguras: Pandas & Polars via AST</h2>
       <p>
         Para assegurar máxima flexibilidade sem violar a segurança, o sistema oferece suporte a expressões declarativas configuradas no arquivo YAML. O interpretador de AST (Abstract Syntax Tree) restrito compila e executa as expressões diretamente sobre as estruturas colunares dos motores.
       </p>
@@ -1051,11 +1417,38 @@
           </table>
         </div>
       </div>
+
+      <!-- Card Pré-Processamento Avançado: Alvo e Atributos Log -->
+      <div class="card" style="margin-top: 2rem; border-top: 4px solid var(--primary);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h3 style="margin: 0;">🔬 Pré-Processamento Avançado: Transformação do Alvo e Atributos Preditores</h3>
+          <span class="badge primary">100% Declarativo no YAML</span>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.7;">
+          O pipeline permite configurar transformações matemáticas não-lineares tanto para o alvo monetário ($y$) quanto para os atributos contínuos ($X$), configuradas sob o bloco <code>preprocessamento</code> no <code>configuracoes/projeto.yaml</code>:
+        </p>
+        <div class="grid-2" style="margin-top: 1rem;">
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+            <h4 style="color: var(--accent); margin-top: 0; font-size: 0.95rem;">🎯 1. Transformação do Alvo (y)</h4>
+            <ul style="font-size: 0.82rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+              <li><strong>Objetivo:</strong> Estabilizar variância residual (homocedasticidade) e mitigar o impacto de apartamentos milionários.</li>
+              <li><strong>Reversão Automática:</strong> No Scikit-Learn via <code>TransformedTargetRegressor(func=np.log1p, inverse_func=np.expm1)</code> e no PyCaret via <code>transform_target=True</code>. As saídas de inferência voltam 100% para a escala em reais (R$).</li>
+            </ul>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+            <h4 style="color: var(--accent); margin-top: 0; font-size: 0.95rem;">📐 2. Transformação de Atributos (X)</h4>
+            <ul style="font-size: 0.82rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+              <li><strong>Retornos Decrescentes:</strong> Aplica <code>log1p</code> em atributos contínuos selecionados (<code>Metragem</code>, <code>Valor_Condominio</code>, <code>Valor_Iptu</code>) sem alterar variáveis discretas de contagem.</li>
+              <li><strong>Modelo Log-Log & Elasticidade:</strong> Converte relações não-lineares multiplicativas em aditivas lineares, beneficiando fortemente modelos lineares (Ridge, Lasso) e redes neurais (MLP/SVR).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- 5. Segurança AST -->
+    <!-- 6. Segurança AST -->
     <section id="seguranca-ast">
-      <h2 class="section-title"><span class="number">5</span> Segurança e Validação Restrita de AST</h2>
+      <h2 class="section-title"><span class="number">6</span> Segurança e Validação Restrita de AST</h2>
       <p>
         A execução de expressões Python arbitrárias fornecidas em arquivos de configuração representa um vetor crítico de injeção de código (RCE). O projeto resolve este desafio de forma determinística:
       </p>
@@ -1083,9 +1476,9 @@
       </div>
     </section>
 
-    <!-- 6. Catálogo de Modelos -->
+    <!-- 7. Catálogo de Modelos -->
     <section id="catalogo-modelos">
-      <h2 class="section-title"><span class="number">6</span> Catálogo dos 10 Modelos de Machine Learning</h2>
+      <h2 class="section-title"><span class="number">7</span> Catálogo dos 10 Modelos de Machine Learning</h2>
       <p>
         O pipeline suporta 10 algoritmos de regressão configuráveis, disponíveis tanto na trilha Scikit-Learn quanto na trilha PyCaret:
       </p>
@@ -1183,9 +1576,9 @@
       </div>
     </section>
 
-    <!-- 7. Técnicas de Votação -->
+    <!-- 8. Técnicas de Votação -->
     <section id="tecnicas-votacao">
-      <h2 class="section-title"><span class="number">7</span> As 7 Técnicas de Votação (Ensemble)</h2>
+      <h2 class="section-title"><span class="number">8</span> As 7 Técnicas de Votação (Ensemble)</h2>
       <p>
         A <code>FabricaVotacao</code> permite combinar as previsões dos $N$ melhores modelos eleitos por Friedman:
       </p>
@@ -1240,9 +1633,9 @@
       </div>
     </section>
 
-    <!-- 8. Estratégias de Validação Cruzada (Folds) -->
+    <!-- 9. Estratégias de Validação Cruzada (Folds) -->
     <section id="estrategias-folds">
-      <h2 class="section-title"><span class="number">8</span> Estratégias de Validação Cruzada (Folds): Conceitos e Quando Utilizar</h2>
+      <h2 class="section-title"><span class="number">9</span> Estratégias de Validação Cruzada (Folds): Conceitos e Quando Utilizar</h2>
       <p>
         A validação cruzada baseada em <strong>folds (partições amostrais)</strong> é o alicerce metodológico que garante que as estimativas de performance e a seleção do modelo campeão por Friedman/Nemenyi sejam generalizáveis, imunes a viés de partição e protegidas contra vazamento de dados (data leakage).
       </p>
@@ -1351,9 +1744,9 @@
       </div>
     </section>
 
-    <!-- 9. Diagnóstico de Overfitting vs Underfitting -->
+    <!-- 10. Diagnóstico de Overfitting vs Underfitting -->
     <section id="diagnostico-curvas">
-      <h2 class="section-title"><span class="number">9</span> Diagnóstico de Overfitting vs Underfitting (Viés x Variância)</h2>
+      <h2 class="section-title"><span class="number">10</span> Diagnóstico de Overfitting vs Underfitting (Viés x Variância)</h2>
       <p>
         O módulo <code>DiagnosticoCurva</code> avalia sistematicamente a capacidade de generalização dos modelos, medindo a evolução do erro de treino (viés) e do erro de validação cruzada (variância) conforme a complexidade dos algoritmos varia.
       </p>
@@ -1435,8 +1828,8 @@
               </tr>
               <tr>
                 <td><code>modelo_campeao</code></td>
-                <td><code>max_depth (campeão)</code></td>
-                <td>Ponto ótimo de complexidade selecionado pelo pós-teste de Friedman/Nemenyi.</td>
+                <td><code>auto</code> (Dinâmico)</td>
+                <td>Detecta dinamicamente o hiperparâmetro do modelo campeão eleito ou configurado (ex: <code>hidden_layer_sizes (campeão)</code> se rede neural, <code>alpha (campeão)</code> se ridge/lasso, <code>C (campeão)</code> se svr, <code>max_depth (campeão)</code> se arvore/floresta).</td>
               </tr>
             </tbody>
           </table>
@@ -1448,9 +1841,9 @@
       </div>
     </section>
 
-    <!-- 10. Feature Importance -->
+    <!-- 11. Feature Importance -->
     <section id="feature-importance">
-      <h2 class="section-title"><span class="number">10</span> Explicabilidade & Importância de Atributos (Feature Importance)</h2>
+      <h2 class="section-title"><span class="number">11</span> Explicabilidade & Importância de Atributos (Feature Importance)</h2>
       <p>
         O módulo <code>ImportanciaAtributos</code> fornece explicabilidade matemática completa para os 10 regressores e para o modelo campeão, com suporte nativo aos motores <code>sklearn</code> e <code>pycaret</code>.
       </p>
@@ -1565,9 +1958,9 @@
       </div>
     </section>
 
-    <!-- 11. Manual do YAML -->
+    <!-- 12. Manual do YAML -->
     <section id="manual-yaml">
-      <h2 class="section-title"><span class="number">11</span> Manual Completo do Arquivo <code>configuracoes/projeto.yaml</code></h2>
+      <h2 class="section-title"><span class="number">12</span> Manual Completo do Arquivo <code>configuracoes/projeto.yaml</code></h2>
       <p>
         O arquivo YAML centraliza todas as decisões variáveis do projeto. A seguir está a descrição de cada chave:
       </p>
@@ -1597,9 +1990,9 @@
       </div>
     </section>
 
-    <!-- 12. Observabilidade -->
+    <!-- 13. Observabilidade -->
     <section id="observabilidade">
-      <h2 class="section-title"><span class="number">12</span> Observabilidade e Dashboard Grafana</h2>
+      <h2 class="section-title"><span class="number">13</span> Observabilidade e Dashboard Grafana</h2>
       <p>
         O dashboard provisionado em <code>config_ob/dashboards/dashboard_monitoramento_ml.json</code> (versão 3) conecta-se a <strong>Prometheus</strong>, <strong>PostgreSQL (MLflow)</strong> e <strong>Loki</strong>, utilizando 100% dos recursos nativos do Grafana sem Matplotlib:
       </p>
@@ -1614,6 +2007,7 @@
             <li><strong>Row 4:</strong> Drift de Previsão e Regras de Negócio Dinâmicas (AST).</li>
             <li><strong>Row 4.2:</strong> Análise Overfitting vs Underfitting (Timeseries com <code>fillBelowTo</code>, Card de Regime Operacional, Mínimo RMSE e Tabela de Variância).</li>
             <li><strong>Row 4.3:</strong> Explicabilidade & Feature Importance (Barchart horizontal nativo, Top 5 Bargauge em gradiente, Stat card e Tabela com célula gauge nativa).</li>
+            <li><strong>Row 4.4:</strong> Análise Comparativa de Treino: Sem Log vs Com Log (Barchart vertical de RMSE em R$, cards de redução % de RMSE e MAE, Gauge de ganho de R² e Tabela Analítica Completa com mini-gauge nativo).</li>
             <li><strong>Row 5:</strong> Logs Operacionais do Pipeline e Inferência (Loki range query).</li>
           </ul>
         </div>
@@ -1624,15 +2018,71 @@
             <li><strong><code>$motor</code>:</strong> Alterna dinamicamente entre <code>sklearn</code> e <code>pycaret</code>.</li>
             <li><strong><code>$modelo</code>:</strong> Permite inspecionar o <code>modelo_campeao</code> ou qualquer um dos 10 algoritmos individuais: <code>random_forest</code>, <code>arvore_decisao</code>, <code>xgboost</code>, <code>lightgbm</code>, <code>ridge</code>, <code>lasso</code>, <code>elasticnet</code>, <code>regressao_linear</code>, <code>svr</code>, <code>rede_neural</code>.</li>
             <li><strong>Recurso fillBelowTo:</strong> Traça a área sombreada entre as séries de validação e treino nativamente no canvas.</li>
-            <li><strong>Recurso cellOptions gauge:</strong> Renderiza barras coloridas nativas em cada célula da tabela de atributos.</li>
+            <li><strong>Recurso cellOptions gauge:</strong> Renderiza barras coloridas nativas em cada célula da tabela de atributos e de redução percentual.</li>
           </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1.5rem; border-left: 4px solid var(--accent);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>📈</span> Seção 4.4: Relatório Comparativo de Treino — Sem Log vs Com Log (Reversão Automática em R$)
+          </h3>
+          <span class="badge success">100% Grafana Nativo</span>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.7;">
+          A distribuição de preços de venda imobiliária em Ribeirão Preto possui forte assimetria positiva (cauda longa à direita com unidades de alto padrão acima de R$ 3 milhões). O treinamento com transformação logarítmica (<code>log1p(y)</code> / <code>log(y)</code>) normaliza a distribuição dos resíduos e reduz a heterocedasticidade. A reversão automática (<code>expm1</code> / <code>exp</code>) garante que todas as previsões e métricas voltem exatamente para a escala monetária em reais (R$).
+        </p>
+        <div class="table-container" style="margin-top: 1rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Painel no Grafana</th>
+                <th>Tipo Nativo</th>
+                <th>Métricas Avaliadas</th>
+                <th>Propósito e Diagnóstico</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Comparativo de RMSE: Sem Log vs Com Log ($modelo)</strong></td>
+                <td><code>barchart</code> (Vertical)</td>
+                <td>RMSE Sem Log (R$) vs RMSE Com Log (R$)</td>
+                <td>Confronto direto de erro quadrático na escala monetária para cada modelo selecionado em <code>$modelo</code>.</td>
+              </tr>
+              <tr>
+                <td><strong>Redução do Erro Médio (RMSE) com Log ($modelo)</strong></td>
+                <td><code>stat</code> (Gradiente)</td>
+                <td><code>ml_treino_reducao_rmse_percentual</code> (%)</td>
+                <td>Mede o ganho percentual de precisão obtido pelo modelo com a transformação (típico: 14% a 25% de redução).</td>
+              </tr>
+              <tr>
+                <td><strong>Redução do Erro Absoluto (MAE) com Log ($modelo)</strong></td>
+                <td><code>stat</code> (Área)</td>
+                <td><code>ml_treino_reducao_mae_percentual</code> (%)</td>
+                <td>Demonstra a redução do erro médio absoluto em reais em relação ao modelo linear padrão.</td>
+              </tr>
+              <tr>
+                <td><strong>R² Score na Escala Original ($modelo)</strong></td>
+                <td><code>gauge</code> (Horizontal)</td>
+                <td>R² Sem Log vs R² Com Log</td>
+                <td>Evolução da proporção de variância explicada na escala original de preços em R$.</td>
+              </tr>
+              <tr>
+                <td><strong>Relatório Comparativo para Todos os Modelos ($motor)</strong></td>
+                <td><code>table</code> (Mini-Gauge Nativo)</td>
+                <td>Modelo, RMSEs, Deltas, Redução %, Veredito</td>
+                <td>Visão panorâmica de todos os 10 algoritmos e campeão com barra gráfica dinâmica integrada à célula da tabela.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
 
-    <!-- 13. Deploy e MLflow Serving -->
+    <!-- 14. Deploy e MLflow Serving -->
     <section id="deploy-mlflow-serving">
-      <h2 class="section-title"><span class="number">13</span> Execução, Publicação e API do MLflow Serving</h2>
+      <h2 class="section-title"><span class="number">14</span> Execução, Publicação e API do MLflow Serving</h2>
       <p>
         Para atender aos requisitos de governança, automação contínua e ciclo ágil de publicação, o projeto disponibiliza o script oficial <code>executar_treinamento.sh</code> com suporte nativo ao <strong>Modo Rápido de Deploy (<code>--apenas-campeao</code>)</strong> e à inicialização e recarregamento da <strong>API do MLflow Serving (<code>--subir-api</code>)</strong>.
       </p>

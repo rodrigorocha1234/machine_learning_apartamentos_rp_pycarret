@@ -220,3 +220,85 @@ def test_dashboard_grafana_recursos_nativos_overfitting_underfitting() -> None:
         for o in overrides
     )
     assert tem_fill_below, "Painel deve usar recurso nativo custom.fillBelowTo para a área de gap de variância"
+
+def test_diagnostico_curva_parametro_dinamico_modelo_campeao(tmp_path: Path) -> None:
+    """Valida que o hiperparâmetro do modelo campeão varia dinamicamente conforme o campeão eleito."""
+    diagnostico = DiagnosticoCurva()
+
+    # 1. Quando o modelo campeão for Rede Neural / MLP
+    param_nn = diagnostico.obter_parametro_complexidade(
+        modelo_nome="modelo_campeao",
+        modelo_referencia="rede_neural"
+    )
+    assert param_nn == "hidden_layer_sizes (campeão)"
+
+    # 2. Quando o modelo campeão for Ridge ou Lasso (modelos lineares penalizados)
+    param_ridge = diagnostico.obter_parametro_complexidade(
+        modelo_nome="modelo_campeao",
+        modelo_referencia="ridge"
+    )
+    assert param_ridge == "alpha (campeão)"
+
+    param_lasso = diagnostico.obter_parametro_complexidade(
+        modelo_nome="modelo_campeao",
+        modelo_referencia="lasso"
+    )
+    assert param_lasso == "alpha (campeão)"
+
+    # 3. Quando o modelo campeão for SVR / SVM
+    param_svr = diagnostico.obter_parametro_complexidade(
+        modelo_nome="modelo_campeao",
+        modelo_referencia="svr"
+    )
+    assert param_svr == "C (campeão)"
+
+    # 4. Quando o modelo campeão for Random Forest / XGBoost / Árvore
+    param_rf = diagnostico.obter_parametro_complexidade(
+        modelo_nome="modelo_campeao",
+        modelo_referencia="random_forest"
+    )
+    assert param_rf == "max_depth (campeão)"
+
+    # 5. Validação via nome composto com dois pontos
+    param_composto = diagnostico.obter_parametro_complexidade(modelo_nome="modelo_campeao:rede_neural")
+    assert param_composto == "hidden_layer_sizes (campeão)"
+
+    # 6. Mapeamento para Scikit-Learn
+    assert diagnostico.mapear_parametro_sklearn("modelo_campeao", modelo_referencia="rede_neural") == "max_iter"
+    assert diagnostico.mapear_parametro_sklearn("modelo_campeao", modelo_referencia="ridge") == "alpha"
+    assert diagnostico.mapear_parametro_sklearn("modelo_campeao", modelo_referencia="svr") == "C"
+    assert diagnostico.mapear_parametro_sklearn("modelo_campeao", modelo_referencia="random_forest") == "max_depth"
+
+    # 7. Geração de curva simulada para modelo campeão dinâmico
+    rel_nn = diagnostico.gerar_curva_simulada(
+        modelo_nome="modelo_campeao",
+        motor="sklearn",
+        modelo_referencia="rede_neural"
+    )
+    assert rel_nn.modelo == "modelo_campeao"
+    assert rel_nn.parametro_complexidade == "hidden_layer_sizes (campeão)"
+
+    rel_ridge = diagnostico.gerar_curva_simulada(
+        modelo_nome="modelo_campeao",
+        motor="sklearn",
+        modelo_referencia="ridge"
+    )
+    assert rel_ridge.parametro_complexidade == "alpha (campeão)"
+
+    # 8. Validação de leitura dinâmica de arquivo YAML onde o campeão padrão é rede neural
+    caminho_yaml_nn = str(tmp_path / "yaml_campeao_nn.yaml")
+    with open(caminho_yaml_nn, "w", encoding="utf-8") as f:
+        f.write("""
+pipeline:
+  modelo_campeao_padrao: rede_neural
+diagnostico_curva:
+  ativo: true
+  parametros_complexidade:
+    rede_neural: hidden_layer_sizes
+    random_forest: max_depth
+    modelo_campeao: "auto"
+""")
+
+    diag_yaml_nn = DiagnosticoCurva(caminho_yaml=caminho_yaml_nn)
+    # Sem informar modelo_referencia, deve detectar automaticamente do YAML que o campeão é rede_neural
+    assert diag_yaml_nn.obter_parametro_complexidade("modelo_campeao") == "hidden_layer_sizes (campeão)"

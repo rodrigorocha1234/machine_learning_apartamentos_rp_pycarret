@@ -40,6 +40,11 @@ class MotorPycaret(MotorTreino):
         parametros_tuning: dict[str, dict[str,
                                           list[str | int | float | bool]]] | None = None,
         metodo_tuning: str = "random",
+        transformar_alvo: bool = False,
+        metodo_transformacao_alvo: str = "yeo-johnson",
+        transformar_atributos: bool = False,
+        metodo_transformacao_atributos: str = "yeo-johnson",
+        colunas_transformacao_atributos: list[str] | None = None,
     ) -> None:
         self._semente = semente
         self._folds = folds
@@ -51,9 +56,15 @@ class MotorPycaret(MotorTreino):
         self._modelos_configurados = modelos_configurados or self._DEFAULTS_MODELOS
         self._parametros_tuning = parametros_tuning or {}
         self._metodo_tuning = metodo_tuning.lower().strip()
+        self._transformar_alvo = transformar_alvo
+        self._metodo_transformacao_alvo = metodo_transformacao_alvo.lower().strip()
+        self._transformar_atributos = transformar_atributos
+        self._metodo_transformacao_atributos = metodo_transformacao_atributos.lower().strip()
+        self._colunas_transformacao_atributos = colunas_transformacao_atributos
         self._experimento = RegressionExperiment()
         self._modelo_campeao: ModeloPreditor | None = None
         self._nome_modelo_campeao: str = "ridge"
+
 
     def preparar_experimento(
         self,
@@ -111,6 +122,8 @@ class MotorPycaret(MotorTreino):
             embaralhar = self._embaralhar_folds if embaralhar_folds is None else embaralhar_folds
 
             # 4. Setup nativo oficial do PyCaret com fold_strategy, One-Hot Encoding e Normalização
+            metodo_target = "box-cox" if self._metodo_transformacao_alvo in ("box-cox", "boxcox") else "yeo-johnson"
+            metodo_features = "box-cox" if self._metodo_transformacao_atributos in ("box-cox", "boxcox") else "yeo-johnson"
             self._experimento.setup(
                 data=dados,
                 target=alvo,
@@ -123,8 +136,13 @@ class MotorPycaret(MotorTreino):
                 normalize=normalizar,
                 normalize_method=metodo_normalizacao,
                 max_encoding_ohe=100 if usar_one_hot else 25,
+                transform_target=self._transformar_alvo,
+                transform_target_method=metodo_target,
+                transformation=self._transformar_atributos,
+                transformation_method=metodo_features,
                 verbose=False
             )
+
         except Exception as erro:
             raise ErroMotorPycaret(
                 f"Falha ao inicializar setup nativo do PyCaret com fold_strategy '{metodo_folds or self._metodo_folds}': {erro}"

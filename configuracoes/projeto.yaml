@@ -47,7 +47,14 @@ imputacao:
     Metragem: {ativo: true, estrategia: mediana}
     Bairro: {ativo: true, estrategia: mais_frequente}
 preprocessamento:
+  transformar_alvo: true # se true, treina em escala transformada com reversão automática
+  metodo_transformacao_alvo: log1p # log1p (padrão) | log | yeo-johnson | box-cox
+  transformar_atributos:
+    ativo: true # se true, aplica transformação logarítmica nas features selecionadas
+    metodo: log1p # log1p | log | yeo-johnson
+    colunas: [Metragem, Area_Privativa, Valor_Condominio, Valor_Iptu]
   modelos:
+
     regressao_linear: {escalonador: standard, codificador: one_hot}
     lasso: {escalonador: standard, codificador: one_hot}
     ridge: {escalonador: standard, codificador: one_hot}
@@ -123,7 +130,7 @@ diagnostico_curva:
     svm: C
     rede_neural: hidden_layer_sizes
     mlp: hidden_layer_sizes
-    modelo_campeao: "max_depth (campeão)"
+    modelo_campeao: "auto" # Dinâmico: detecta automaticamente o hiperparâmetro do campeão (ex: hidden_layer_sizes se rede neural, alpha se ridge, C se svr, max_depth se arvore)
 votacao:
   ativo: false
   tecnica: media_simples # media_simples | voting_regressor | media_ponderada_rmse | media_ponderada_postos | mediana | media_aparada | stacking

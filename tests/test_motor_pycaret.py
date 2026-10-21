@@ -1,6 +1,8 @@
+import os
 import pandas as pd
 from app.contratos_dados.motor_treino import MotorTreino
 from app.motores_treino.motor_pycaret import MotorPycaret
+
 
 def test_motor_pycaret_satisfaz_protocolo() -> None:
     motor: MotorTreino = MotorPycaret()
@@ -66,4 +68,61 @@ def test_motor_pycaret_escolha_metodo_folds() -> None:
     tabela_perdas = motor.avaliar_modelos(dados, alvo="Valor_da_Venda")
     assert "ridge" in tabela_perdas.columns
     assert len(tabela_perdas["ridge"]) == 2
+
+
+def test_motor_pycaret_transformacao_alvo() -> None:
+    caminho_xlsx = "storage-data/imoveis_apartamentos_rp.xlsx"
+    if os.path.exists(caminho_xlsx):
+        dados = (
+            pd.read_excel(caminho_xlsx)
+            .dropna(subset=["Valor_da_Venda", "Metragem"])[["Valor_da_Venda", "Metragem"]]
+            .head(30)
+        )
+    else:
+        dados = pd.DataFrame({
+            "Valor_da_Venda": [200000.0, 300000.0, 400000.0, 500000.0, 600000.0, 700000.0],
+            "Metragem": [40.0, 60.0, 80.0, 100.0, 120.0, 140.0]
+        })
+
+    motor = MotorPycaret(
+        semente=42,
+        folds=2,
+        colunas_numericas=["Metragem"],
+        transformar_alvo=True,
+        metodo_transformacao_alvo="yeo-johnson"
+    )
+
+    modelo = motor.treinar_final(dados, alvo="Valor_da_Venda", modelo_nome="ridge")
+    x = dados.drop(columns=["Valor_da_Venda"])
+    predicoes = modelo.predict(x)
+    assert len(predicoes) == len(dados)
+    assert all(float(p) > 100000.0 for p in predicoes)
+
+
+def test_motor_pycaret_transformacao_atributos() -> None:
+    if os.path.exists("storage-data/imoveis_apartamentos_rp.xlsx"):
+        dados = pd.read_excel("storage-data/imoveis_apartamentos_rp.xlsx").head(30)
+    else:
+        dados = pd.DataFrame({
+            "Valor_da_Venda": [200000.0, 300000.0, 400000.0, 500000.0, 600000.0, 700000.0],
+            "Metragem": [40.0, 60.0, 80.0, 100.0, 120.0, 140.0]
+        })
+
+    motor = MotorPycaret(
+        semente=42,
+        folds=2,
+        colunas_numericas=["Metragem"],
+        transformar_alvo=False,
+        transformar_atributos=True,
+        metodo_transformacao_atributos="yeo-johnson"
+    )
+
+    modelo = motor.treinar_final(dados, alvo="Valor_da_Venda", modelo_nome="ridge")
+    x = dados.drop(columns=["Valor_da_Venda"])
+    predicoes = modelo.predict(x)
+    assert len(predicoes) == len(dados)
+    assert all(float(p) > 50000.0 for p in predicoes)
+
+
+
 

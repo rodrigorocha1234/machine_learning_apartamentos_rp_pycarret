@@ -127,3 +127,71 @@ def test_motor_sklearn_escolha_metodo_tuning() -> None:
             modelo_nome="ridge",
             metodo_tuning="metodo_inexistente"
         )
+
+
+def test_motor_sklearn_transformacao_alvo_log() -> None:
+    dados = pd.DataFrame({
+        "Valor_da_Venda": [250000.0, 350000.0, 450000.0, 600000.0, 750000.0, 900000.0],
+        "Metragem": [50.0, 70.0, 90.0, 110.0, 130.0, 160.0]
+    })
+
+    motor = MotorSklearn(
+        semente=42,
+        folds=2,
+        colunas_numericas=["Metragem"],
+        transformar_alvo=True,
+        metodo_transformacao_alvo="log1p"
+    )
+
+    # 1. Treina modelo com alvo transformado
+    modelo = motor.treinar_final(dados, alvo="Valor_da_Venda", modelo_nome="ridge")
+    x = dados.drop(columns=["Valor_da_Venda"])
+    predicoes = modelo.predict(x)
+
+    # 2. Confirma reversão automática para escala em R$
+    assert len(predicoes) == len(dados)
+    assert all(p > 100000.0 for p in predicoes)
+
+    # 3. Testa tuning com TransformedTargetRegressor
+    tuning = motor.ajustar_parametros(
+        dados,
+        alvo="Valor_da_Venda",
+        iteracoes=2,
+        modelo_nome="ridge",
+        metodo_tuning="random"
+    )
+    assert tuning["modelo"] == "ridge"
+    assert "melhores_parametros" in tuning
+
+
+def test_motor_sklearn_transformacao_atributos_log() -> None:
+    dados = pd.DataFrame({
+        "Valor_da_Venda": [200000.0, 300000.0, 420000.0, 580000.0, 720000.0, 890000.0],
+        "Metragem": [45.0, 65.0, 85.0, 105.0, 125.0, 155.0],
+        "Quartos": [1, 2, 2, 3, 3, 4],
+    })
+
+    motor = MotorSklearn(
+        semente=42,
+        folds=2,
+        colunas_numericas=["Metragem", "Quartos"],
+        transformar_alvo=True,
+        metodo_transformacao_alvo="log1p",
+        transformar_atributos=True,
+        metodo_transformacao_atributos="log1p",
+        colunas_transformacao_atributos=["Metragem"],
+    )
+
+    # 1. Validação cruzada (Log-Log)
+    perdas = motor.avaliar_modelos(dados, alvo="Valor_da_Venda")
+    assert isinstance(perdas, pd.DataFrame)
+    assert not perdas.empty
+
+    # 2. Treino final
+    modelo = motor.treinar_final(dados, alvo="Valor_da_Venda", modelo_nome="ridge")
+    x = dados.drop(columns=["Valor_da_Venda"])
+    predicoes = modelo.predict(x)
+    assert len(predicoes) == len(dados)
+    assert all(p > 100000.0 for p in predicoes)
+
+

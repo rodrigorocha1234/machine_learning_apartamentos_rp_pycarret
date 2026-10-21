@@ -75,7 +75,11 @@ class MainPipeline:
         config_tabular = config.get("tabular", {})
         identificador_motor = str(config_tabular.get("motor", "pandas")).lower()
         motor_tabela: MotorTabela = FabricaMotores.criar_motor(identificador_motor)
-        dados_processados = dados_brutos.copy()
+        dados_processados = (
+            dados_brutos.to_pandas() if hasattr(dados_brutos, "to_pandas") else dados_brutos.copy()
+        )
+
+
 
         def extrair_expressao_motor(item: dict[str, ValorConfiguracao], motor: str) -> str:
             campo_especifico = f"expressao_{motor}"
@@ -145,7 +149,9 @@ class MainPipeline:
         tabela_staging = str(config_staging.get("tabela", "imoveis_preparados"))
 
         repositorio: RepositorioDados = RepositorioSqlite(caminho=caminho_staging, tabela=tabela_staging)
-        repositorio.gravar_dados(dados_processados)
+        dados_staging = dados_processados.to_pandas() if hasattr(dados_processados, "to_pandas") else dados_processados
+        repositorio.gravar_dados(dados_staging)
+
 
         # 5. EDA a partir do staging SQLite
         dados_staging = repositorio.ler_dados()
@@ -177,7 +183,20 @@ class MainPipeline:
             c["nome"] for c in config.get("selecao", {}).get("colunas", [])
             if c.get("papel") == "categorica" and c.get("ativo", False)
         ]
-        config_prep = config.get("preprocessamento", {}).get("modelos", {})
+        config_preprocessamento = config.get("preprocessamento", {})
+        config_prep = config_preprocessamento.get("modelos", {})
+        transformar_alvo = bool(config_preprocessamento.get("transformar_alvo", False))
+        metodo_transformacao_alvo = str(config_preprocessamento.get("metodo_transformacao_alvo", "log1p"))
+
+        config_transf_attr = config_preprocessamento.get("transformar_atributos", {})
+        transformar_atributos = bool(config_transf_attr.get("ativo", False))
+        metodo_transformacao_atributos = str(config_transf_attr.get("metodo", "log1p"))
+        colunas_transf_attr_raw = config_transf_attr.get("colunas", ["Metragem"])
+        colunas_transf_attr = (
+            [str(c) for c in colunas_transf_attr_raw]
+            if isinstance(colunas_transf_attr_raw, list)
+            else None
+        )
 
         config_cv = config_val.get("cv_interna", {})
         metodo_folds = str(config_cv.get("metodo", "kfold"))
@@ -203,6 +222,11 @@ class MainPipeline:
                 modelos_configurados=modelos_configurados,
                 parametros_tuning=parametros_tuning,
                 metodo_tuning=metodo_tuning,
+                transformar_alvo=transformar_alvo,
+                metodo_transformacao_alvo=metodo_transformacao_alvo,
+                transformar_atributos=transformar_atributos,
+                metodo_transformacao_atributos=metodo_transformacao_atributos,
+                colunas_transformacao_atributos=colunas_transf_attr,
             )
         else:
             motor_treino = MotorSklearn(
@@ -216,7 +240,13 @@ class MainPipeline:
                 modelos_configurados=modelos_configurados,
                 parametros_tuning=parametros_tuning,
                 metodo_tuning=metodo_tuning,
+                transformar_alvo=transformar_alvo,
+                metodo_transformacao_alvo=metodo_transformacao_alvo,
+                transformar_atributos=transformar_atributos,
+                metodo_transformacao_atributos=metodo_transformacao_atributos,
+                colunas_transformacao_atributos=colunas_transf_attr,
             )
+
 
         config_mlflow = config.get("mlflow", {})
         tracking_uri = str(config_mlflow.get("tracking_uri", os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")))
@@ -352,16 +382,23 @@ class MainPipeline:
                 publicador.adicionar_observador(ObservadorAuditoria())
                 publicador.adicionar_observador(ObservadorMetricas())
                 tags = {
-
                     "modelo_campeao": modelo_campeao_nome,
                     "modo_execucao": modo_efetivo,
-                    "framework": motor_nome
+                    "framework": motor_nome,
+                    "transformar_alvo": str(transformar_alvo),
+                    "metodo_transformacao_alvo": metodo_transformacao_alvo,
+                    "transformar_atributos": str(transformar_atributos),
+                    "metodo_transformacao_atributos": metodo_transformacao_atributos,
                 }
                 parametros_log: dict[str, str | int | float] = {
                     "modelo_campeao": modelo_campeao_nome,
                     "modo_execucao": modo_efetivo,
                     "linhas_staging": len(dados_staging),
-                    "colunas_staging": len(dados_staging.columns)
+                    "colunas_staging": len(dados_staging.columns),
+                    "transformar_alvo": str(transformar_alvo),
+                    "metodo_transformacao_alvo": metodo_transformacao_alvo,
+                    "transformar_atributos": str(transformar_atributos),
+                    "metodo_transformacao_atributos": metodo_transformacao_atributos,
                 }
                 info_publicacao = publicador.publicar_modelo_servico(
                     modelo_servico=servico_mlflow,
@@ -384,8 +421,18 @@ class MainPipeline:
             "tuning": resultado_tuning,
             "estatistica": resultado_estatistico_dict,
             "servico_mlflow_pronto": servico_mlflow is not None,
-            "publicacao_mlflow": info_publicacao
+            "publicacao_mlflow": info_publicacao,
+            "transformacao_alvo": {
+                "ativo": transformar_alvo,
+                "metodo": metodo_transformacao_alvo,
+            },
+            "transformacao_atributos": {
+                "ativo": transformar_atributos,
+                "metodo": metodo_transformacao_atributos,
+                "colunas": colunas_transf_attr,
+            }
         }
+
 
 if __name__ == "__main__":
     import argparse

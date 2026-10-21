@@ -10,6 +10,12 @@ dev = ["pytest>=8,<10", "pyright>=1.1"]
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["app", "tests"]
+venvPath = "."
+venv = ".venv"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

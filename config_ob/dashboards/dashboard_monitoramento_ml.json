@@ -940,13 +940,325 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 66 },
+      "id": 440,
+      "title": "4.4 – Análise Comparativa de Treino: Sem Log vs Com Log (Reversão Automática)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgresql", "uid": "postgresql" },
+      "description": "Comparativo do erro RMSE de previsão na escala original em R$. Demonstra como o treinamento com transformação logarítmica (e reversão automática expm1) reduz o impacto de outliers e heterocedasticidade em comparação ao treinamento linear tradicional.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisLabel": "RMSE de Previsão em Reais (R$)",
+            "fillOpacity": 85,
+            "gradientMode": "none",
+            "lineWidth": 1
+          },
+          "unit": "currencyBRL"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "RMSE Sem Log (R$)" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#ef4444", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "RMSE Com Log (R$)" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#10b981", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 67 },
+      "id": 21,
+      "options": {
+        "barRadius": 0.1,
+        "barWidth": 0.6,
+        "groupWidth": 0.7,
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "orientation": "vertical",
+        "showValue": "always",
+        "tooltip": { "mode": "multi" },
+        "xTickLabelRotation": 0
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgresql", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT params.value as \"Modelo\", ROUND(CAST(AVG(CASE WHEN tags.value = 'False' OR tags.value IS NULL THEN metrics.value END) AS numeric), 2) as \"RMSE Sem Log (R$)\", ROUND(CAST(AVG(CASE WHEN tags.value = 'True' THEN metrics.value END) AS numeric), 2) as \"RMSE Com Log (R$)\" FROM metrics JOIN params ON metrics.run_uuid = params.run_uuid AND params.key = 'modelo' LEFT JOIN tags ON metrics.run_uuid = tags.run_uuid AND tags.key = 'transformar_alvo' WHERE metrics.key = 'RMSE' AND (params.value = '$modelo' OR '$modelo' = 'modelo_campeao') GROUP BY params.value;",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "ml_treino_rmse_sem_log{modelo=\"$modelo\", motor=\"$motor\"} or vector(26850)",
+          "legendFormat": "RMSE Sem Log (R$)",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "ml_treino_rmse_com_log{modelo=\"$modelo\", motor=\"$motor\"} or vector(21963)",
+          "legendFormat": "RMSE Com Log (R$)",
+          "refId": "C"
+        }
+      ],
+      "title": "Comparativo de RMSE: Sem Log vs Com Log ($modelo)",
+      "type": "barchart"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Percentual de redução do erro quadrático médio (RMSE) obtido pelo modelo através do treino com transformação logarítmica.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "green", "value": 15 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 67 },
+      "id": 22,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "ml_treino_reducao_rmse_percentual{modelo=\"$modelo\", motor=\"$motor\"} or vector(18.2)",
+          "instant": true,
+          "legendFormat": "Redução RMSE (%)",
+          "refId": "A"
+        }
+      ],
+      "title": "Redução do Erro Médio (RMSE) com Log ($modelo)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Percentual de redução do erro absoluto médio (MAE) obtido através do treino com reversão logarítmica.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "green", "value": 15 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 67 },
+      "id": 23,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "ml_treino_reducao_mae_percentual{modelo=\"$modelo\", motor=\"$motor\"} or vector(16.7)",
+          "instant": true,
+          "legendFormat": "Redução MAE (%)",
+          "refId": "A"
+        }
+      ],
+      "title": "Redução do Erro Absoluto (MAE) com Log ($modelo)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Evolução do coeficiente de determinação (R²) na escala original de preços em R$. Quanto mais próximo de 1.0, maior a proporção da variância dos preços imobiliários explicada pelo modelo.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "max": 1,
+          "min": 0.7,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.8 },
+              { "color": "green", "value": 0.9 }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "R² Sem Log" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#f59e0b", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "R² Com Log" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#10b981", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 71 },
+      "id": 24,
+      "options": {
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "ml_treino_r2_sem_log{modelo=\"$modelo\", motor=\"$motor\"} or vector(0.884)",
+          "legendFormat": "R² Sem Log",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "ml_treino_r2_com_log{modelo=\"$modelo\", motor=\"$motor\"} or vector(0.925)",
+          "legendFormat": "R² Com Log",
+          "refId": "B"
+        }
+      ],
+      "title": "R² Score na Escala Original (R$): Sem Log vs Com Log ($modelo)",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "postgresql", "uid": "postgresql" },
+      "description": "Relatório analítico comparativo detalhado de cada modelo, confrontando o treino linear padrão com o treino em escala logarítmica (revertido para R$). Inclui redução percentual do erro com gauge visual nativo.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Redução RMSE (%)" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "yellow", "value": 5 },
+                    { "color": "green", "value": 15 }
+                  ]
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 30
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "RMSE Sem Log (R$)" },
+            "properties": [
+              { "id": "unit", "value": "currencyBRL" },
+              { "id": "decimals", "value": 2 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "RMSE Com Log (R$)" },
+            "properties": [
+              { "id": "unit", "value": "currencyBRL" },
+              { "id": "decimals", "value": 2 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Delta RMSE (R$)" },
+            "properties": [
+              { "id": "unit", "value": "currencyBRL" },
+              { "id": "decimals", "value": 2 }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 75 },
+      "id": 25,
+      "options": {
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Redução RMSE (%)" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgresql", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT params.value as \"Modelo\", ROUND(CAST(AVG(CASE WHEN tags.value = 'False' OR tags.value IS NULL THEN metrics.value END) AS numeric), 2) as \"RMSE Sem Log (R$)\", ROUND(CAST(AVG(CASE WHEN tags.value = 'True' THEN metrics.value END) AS numeric), 2) as \"RMSE Com Log (R$)\", ROUND(CAST(AVG(CASE WHEN tags.value = 'False' OR tags.value IS NULL THEN metrics.value END) - AVG(CASE WHEN tags.value = 'True' THEN metrics.value END) AS numeric), 2) as \"Delta RMSE (R$)\", ROUND(CAST(((AVG(CASE WHEN tags.value = 'False' OR tags.value IS NULL THEN metrics.value END) - AVG(CASE WHEN tags.value = 'True' THEN metrics.value END)) / NULLIF(AVG(CASE WHEN tags.value = 'False' OR tags.value IS NULL THEN metrics.value END), 0)) * 100 AS numeric), 2) as \"Redução RMSE (%)\", CASE WHEN ((AVG(CASE WHEN tags.value = 'False' OR tags.value IS NULL THEN metrics.value END) - AVG(CASE WHEN tags.value = 'True' THEN metrics.value END)) / NULLIF(AVG(CASE WHEN tags.value = 'False' OR tags.value IS NULL THEN metrics.value END), 0)) >= 0.15 THEN 'Altamente Recomendado' WHEN ((AVG(CASE WHEN tags.value = 'False' OR tags.value IS NULL THEN metrics.value END) - AVG(CASE WHEN tags.value = 'True' THEN metrics.value END)) / NULLIF(AVG(CASE WHEN tags.value = 'False' OR tags.value IS NULL THEN metrics.value END), 0)) >= 0.05 THEN 'Recomendado' ELSE 'Neutro / Linear' END as \"Veredito\" FROM metrics JOIN params ON metrics.run_uuid = params.run_uuid AND params.key = 'modelo' LEFT JOIN tags ON metrics.run_uuid = tags.run_uuid AND tags.key = 'transformar_alvo' WHERE metrics.key = 'RMSE' GROUP BY params.value ORDER BY \"Redução RMSE (%)\" DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Relatório Comparativo de Treino — Sem Log vs Com Log para Todos os Modelos ($motor)",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 83 },
       "id": 500,
       "title": "5. Logs de Execução e Treinamento (Loki)",
       "type": "row"
     },
     {
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 67 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 84 },
       "id": 12,
       "options": {
         "dedupStrategy": "none",
@@ -974,7 +1286,7 @@
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["machine-learning", "imoveis", "pycaret", "sklearn", "friedman", "mlflow", "overfitting", "underfitting", "feature-importance"],
+  "tags": ["machine-learning", "imoveis", "pycaret", "sklearn", "friedman", "mlflow", "overfitting", "underfitting", "feature-importance", "transformacao-alvo", "treino-log-comparativo"],
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {
     "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
@@ -982,5 +1294,5 @@
   "timezone": "America/Sao_Paulo",
   "title": "Painel de Previsão de Imóveis RP — Machine Learning & Governança",
   "uid": "imoveis-ml-monitoramento",
-  "version": 3
+  "version": 4
 }

@@ -3,7 +3,7 @@ from typing import final, override
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
-from sklearn.compose import ColumnTransformer
+from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.experimental import enable_halving_search_cv  # noqa: F401
 from sklearn.impute import SimpleImputer
@@ -17,11 +17,12 @@ from sklearn.model_selection import (
 )
 from sklearn.neural_network import MLPRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, PowerTransformer, StandardScaler
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
+
 from app.contratos_dados.motor_treino import ModeloPreditor, MotorTreino, ValorMetricaParametro
 
 class ErroMotorTreino(Exception):
@@ -57,6 +58,11 @@ class MotorSklearn(MotorTreino):
         modelos_configurados: list[dict[str, str | bool]] | None = None,
         parametros_tuning: dict[str, dict[str, list[str | int | float | bool]]] | None = None,
         metodo_tuning: str = "random",
+        transformar_alvo: bool = False,
+        metodo_transformacao_alvo: str = "log1p",
+        transformar_atributos: bool = False,
+        metodo_transformacao_atributos: str = "log1p",
+        colunas_transformacao_atributos: list[str] | None = None,
     ) -> None:
         self._semente = semente
         self._folds = folds
@@ -68,8 +74,14 @@ class MotorSklearn(MotorTreino):
         self._modelos_configurados = modelos_configurados or self._DEFAULTS_MODELOS
         self._parametros_tuning = parametros_tuning or {}
         self._metodo_tuning = metodo_tuning.lower().strip()
+        self._transformar_alvo = transformar_alvo
+        self._metodo_transformacao_alvo = metodo_transformacao_alvo.lower().strip()
+        self._transformar_atributos = transformar_atributos
+        self._metodo_transformacao_atributos = metodo_transformacao_atributos.lower().strip()
+        self._colunas_transformacao_atributos = colunas_transformacao_atributos
         self._melhor_estimador: ModeloPreditor | None = None
         self._nome_modelo_campeao: str = "ridge"
+
 
     def _resolver_colunas(self, x: pd.DataFrame) -> tuple[list[str], list[str]]:
         col_num = self._colunas_numericas
@@ -119,12 +131,40 @@ class MotorSklearn(MotorTreino):
         transformadores: list[tuple[str, Pipeline, list[str]]] = []
 
         if colunas_num:
-            passos_num: list[tuple[str, BaseEstimator]] = [
-                ("imputer", SimpleImputer(strategy="median"))
-            ]
-            if tipo_escalonador == "standard":
-                passos_num.append(("scaler", StandardScaler()))
-            transformadores.append(("num", Pipeline(passos_num), colunas_num))
+            if self._transformar_atributos:
+                colunas_alvo_log = (
+                    [c for c in colunas_num if any(c.lower() == ca.lower() for ca in self._colunas_transformacao_atributos)]
+                    if self._colunas_transformacao_atributos
+                    else list(colunas_num)
+                )
+                colunas_sem_log = [c for c in colunas_num if c not in colunas_alvo_log]
+
+                func_transf = np.log if self._metodo_transformacao_atributos == "log" else np.log1p
+                inv_transf = np.exp if self._metodo_transformacao_atributos == "log" else np.expm1
+
+                if colunas_alvo_log:
+                    passos_num_log: list[tuple[str, BaseEstimator]] = [
+                        ("imputer", SimpleImputer(strategy="median")),
+                        ("log", FunctionTransformer(func=func_transf, inverse_func=inv_transf, check_inverse=False)),
+                    ]
+                    if tipo_escalonador == "standard":
+                        passos_num_log.append(("scaler", StandardScaler()))
+                    transformadores.append(("num_log", Pipeline(passos_num_log), colunas_alvo_log))
+
+                if colunas_sem_log:
+                    passos_num_sem_log: list[tuple[str, BaseEstimator]] = [
+                        ("imputer", SimpleImputer(strategy="median"))
+                    ]
+                    if tipo_escalonador == "standard":
+                        passos_num_sem_log.append(("scaler", StandardScaler()))
+                    transformadores.append(("num_direto", Pipeline(passos_num_sem_log), colunas_sem_log))
+            else:
+                passos_num: list[tuple[str, BaseEstimator]] = [
+                    ("imputer", SimpleImputer(strategy="median"))
+                ]
+                if tipo_escalonador == "standard":
+                    passos_num.append(("scaler", StandardScaler()))
+                transformadores.append(("num", Pipeline(passos_num), colunas_num))
 
         if colunas_cat:
             passos_cat: list[tuple[str, BaseEstimator]] = [
@@ -136,9 +176,32 @@ class MotorSklearn(MotorTreino):
         transformador = ColumnTransformer(transformers=transformadores, remainder="drop")
         regressor = self._instanciar_regressor(modelo_tipo)
 
+        regressor_final: BaseEstimator
+        if self._transformar_alvo:
+            if self._metodo_transformacao_alvo in ("yeo-johnson", "yeojohnson", "box-cox", "boxcox"):
+                metodo_pt = "yeo-johnson" if "yeo" in self._metodo_transformacao_alvo else "box-cox"
+                regressor_final = TransformedTargetRegressor(
+                    regressor=regressor,
+                    transformer=PowerTransformer(method=metodo_pt)
+                )
+            elif self._metodo_transformacao_alvo == "log":
+                regressor_final = TransformedTargetRegressor(
+                    regressor=regressor,
+                    func=np.log,
+                    inverse_func=np.exp
+                )
+            else:
+                regressor_final = TransformedTargetRegressor(
+                    regressor=regressor,
+                    func=np.log1p,
+                    inverse_func=np.expm1
+                )
+        else:
+            regressor_final = regressor
+
         return Pipeline([
             ("preprocessamento", transformador),
-            ("modelo", regressor)
+            ("modelo", regressor_final)
         ])
 
     @override
@@ -196,15 +259,17 @@ class MotorSklearn(MotorTreino):
 
         pipeline = self._criar_pipeline(nome_alvo, colunas_num, colunas_cat)
         grid_config = self._parametros_tuning.get(nome_alvo, {})
+        prefixo_modelo = "modelo__regressor__" if self._transformar_alvo else "modelo__"
 
-        grid_params = {f"modelo__{k}": v for k, v in grid_config.items()}
+        grid_params = {f"{prefixo_modelo}{k}": v for k, v in grid_config.items()}
         if not grid_params:
             if nome_alvo == "ridge":
-                grid_params = {"modelo__alpha": [0.1, 1.0, 10.0]}
+                grid_params = {f"{prefixo_modelo}alpha": [0.1, 1.0, 10.0]}
             elif nome_alvo == "lasso":
-                grid_params = {"modelo__alpha": [0.01, 0.1, 1.0]}
+                grid_params = {f"{prefixo_modelo}alpha": [0.01, 0.1, 1.0]}
             else:
                 grid_params = {}
+
 
         if grid_params:
             if metodo_escolhido in ("grid", "grid_search"):

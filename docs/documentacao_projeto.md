@@ -30,11 +30,65 @@ graph TD
 
 ---
 
-## 2. Camada Estatística Independente: Testes de Friedman e Nemenyi
+## 2. Catálogo Completo dos Padrões de Projeto GoF (Gang of Four)
+
+Para afastar o anti-padrão de scripts monolíticos e códigos experimentais desestruturados em Machine Learning, a engenharia do projeto foi desenhada a partir de padrões consagrados do **Gang of Four (GoF)**. O sistema utiliza composição sobre herança, polimorfismo estrutural através de contratos estritos (`typing.Protocol`), inversão de dependência e desacoplamento físico total entre bibliotecas.
+
+### 2.1. Matriz de Padrões GoF Implementados
+
+| Padrão GoF | Família | Componentes / Classes | Arquivo no Repositório | Contrato / Protocolo | Papel Arquitetural e Regra Atendida |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Factory Method / Factory** | **Criacional** | [`FabricaFontes`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/fontes_dados/fabrica_fontes.py)<br>[`FabricaMotores`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/motores_tabela/fabrica_motores.py)<br>[`FabricaVotacao`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/modelos_votacao/fabrica_votacao.py) | `app/fontes_dados/`<br>`app/motores_tabela/`<br>`app/modelos_votacao/` | `FonteDados`<br>`MotorTabela`<br>`ModeloPreditor` | Instanciação dinâmica baseada 100% no arquivo `projeto.yaml`, sem expor construtores concretos ao cliente. |
+| **Adapter (Wrapper)** | **Estrutural** | [`MotorSklearn`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/motores_treino/motor_sklearn.py)<br>[`MotorPycaret`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/motores_treino/motor_pycaret.py)<br>[`FonteExcel`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/fontes_dados/fonte_excel.py)<br>[`ModeloServico`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/orquestracao_ml/modelo_servico.py) | `app/motores_treino/`<br>`app/fontes_dados/`<br>`app/orquestracao_ml/` | `MotorTreino`<br>`FonteDados`<br>`mlflow.pyfunc.PythonModel` | Unifica APIs externas divergentes (Scikit-Learn x PyCaret; pandas/openpyxl; MLflow Serving) sob interfaces padronizadas de domínio. |
+| **Composite** | **Estrutural** | [`RegressorVotacao`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/modelos_votacao/regressor_votacao.py) | `app/modelos_votacao/` | `ModeloPreditor` | Trata comitês heterogêneos de regressores (Random Forest, XGBoost, etc.) como se fossem um único objeto `ModeloPreditor`. |
+| **Facade** | **Estrutural** | [`MainPipeline`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/orquestracao_ml/main_pipeline.py) | `app/orquestracao_ml/` | Pipeline de Execução | Ponto único de alto nível que simplifica e orquestra a complexidade de 10 subsistemas integrados (ingestão, staging, EDA, CV pareada, Friedman, regras e deploy). |
+| **Strategy** | **Comportamental** | [`MotorPandas`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/motores_tabela/motor_pandas.py) vs [`MotorPolars`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/motores_tabela/motor_polars.py)<br>Motores de Treino<br>Particionadores de CV (5 tipos)<br>Técnicas de Votação (7 tipos) | `app/motores_tabela/`<br>`app/motores_treino/`<br>`app/modelos_votacao/` | `MotorTabela`<br>`MotorTreino`<br>Contratos Matemáticos | Famílias de algoritmos intercambiáveis em tempo de execução via configuração (vetorização, split de validação cruzada e comitês de ensemble). |
+| **Observer** | **Comportamental** | [`PublicadorServico`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/orquestracao_ml/publicador_servico.py) (Subject)<br>[`ObservadorAuditoria`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/orquestracao_ml/observador_auditoria.py)<br>[`ObservadorMetricas`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/orquestracao_ml/observador_metricas.py) | `app/orquestracao_ml/` | [`ObservadorMLflow`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/contratos_dados/observador_mlflow.py) | Emissão reativa e desacoplada de eventos de publicação e deploy no MLflow para auditoria imutável (JSONL) e métricas (Prometheus). |
+| **Interpreter** | **Comportamental** | [`AvaliadorRegras`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/regras_negocio/avaliador_regras.py) | `app/regras_negocio/` | AST Visitor Seguro | Avalia expressões matemáticas de filtros e regras de negócio diretamente na árvore sintática abstrata (AST), sem invocar `eval()` ou `exec()`. |
+| **Repository** | **Persistência** | [`RepositorioSqlite`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/repositorios_dados/repositorio_sqlite.py) | `app/repositorios_dados/` | `RepositorioDados` | Isola as operações de persistência intermediária em banco de dados relacional (SQLite staging) das regras analíticas. |
+
+---
+
+### 2.2. Detalhamento dos Padrões por Família
+
+#### 1. Padrões Criacionais (Creational)
+- **`FabricaFontes`**: Abstrai a criação de fontes heterogêneas (`FonteExcel`, `FonteSql`, `FonteApi`). Permite migrar a ingestão de uma planilha de apartamentos para uma API imobiliária REST alterando apenas a chave `tipo_fonte` do `projeto.yaml`.
+- **`FabricaMotores`**: Instancia dinamicamente o motor de processamento tabular (`MotorPandas` ou `MotorPolars`), garantindo que o resto da aplicação interaja exclusivamente com a interface semântica `MotorTabela`.
+- **`FabricaVotacao`**: Constrói instâncias dos 7 comitês de votação (Média Simples, Ponderada por R², Mediana, Rank Average, Trimmed Mean, Stacking Linear ou Voting Nativo).
+
+#### 2. Padrões Estruturais (Structural)
+- **`Adapter (Wrapper)` nos Motores de Treino**:
+  - O PyCaret baseia-se em uma máquina de estados procedural (`RegressionExperiment`, `setup`, `create_model`, `pull`).
+  - O Scikit-Learn opera com transformadores colunares, pipelines orientados a objetos e estimadores encapsulados.
+  - Os adaptadores `MotorSklearn` e `MotorPycaret` implementam o contrato `MotorTreino`, permitindo alternar de framework no arquivo YAML sem alterar o orquestrador do pipeline.
+- **`Adapter` no `ModeloServico` para MLflow**:
+  - Adapta o estimador final treinado e o avaliador de regras de negócio AST para a classe padrão `mlflow.pyfunc.PythonModel`. A inferência no endpoint `/invocations` executa o modelo estatístico e em seguida calcula dinamicamente todas as colunas de pós-processamento configuradas no YAML.
+- **`Composite` no `RegressorVotacao`**:
+  - Agrupa uma coleção heterogênea de objetos `ModeloPreditor` (ex: Random Forest, XGBoost e LightGBM). Ao chamar `predizer(dados)`, o composite distribui as inferências aos componentes e agrega os resultados conforme a estratégia selecionada.
+- **`Facade` no `MainPipeline`**:
+  - Fachada unificada que oculta a interação com 10 subsistemas de dados, modelagem e infraestrutura (Ingestão -> Staging -> EDA -> Split -> Motores -> Friedman/Nemenyi -> Ensemble -> Diagnóstico -> Regras -> MLflow).
+
+#### 3. Padrões Comportamentais (Behavioral)
+- **`Strategy`**:
+  - Motores Tabulares: Estratégias vetorizadas intercambiáveis (`MotorPandas` vs `MotorPolars`).
+  - Validação Cruzada: Estratégias de particionamento amostral (`KFold`, `RepeatedKFold`, `StratifiedKFold`, `GroupKFold`, `TimeSeriesSplit`).
+  - Combinação Preditiva: 7 estratégias matemáticas de consenso para cálculo do valor do imóvel.
+- **`Observer`**:
+  - O `PublicadorServico` (Subject) notifica observadores que implementam `ObservadorMLflow` após cada operação de publicação.
+  - `ObservadorAuditoria`: Persiste um registro imutável em JSONL (`auditoria_publicacoes.jsonl`) com timestamp, run_id, autor, status e métricas.
+  - `ObservadorMetricas`: Atualiza contadores e histogramas para observabilidade e telemetria (compatível com Prometheus e Grafana).
+- **`Interpreter`**:
+  - O `AvaliadorRegras` implementa um interpretador recursivo de nós AST autorizados (`ast.BinOp`, `ast.UnaryOp`, `ast.Compare`, etc.). Garante conformidade estrita com a regra de segurança do projeto, impedindo injeção de código arbitrário.
+- **`Repository`**:
+  - O `RepositorioSqlite` desacopla a persistência em banco relacional SQLite intermediário da lógica analítica e de machine learning.
+
+---
+
+## 3. Camada Estatística Independente: Testes de Friedman e Nemenyi
 
 Para evitar viés empírico e escolhas arbitrárias na seleção de modelos preditivos, o projeto adota o protocolo estatístico recomendado por Janez Demšar (*Statistical Comparisons of Classifiers over Multiple Data Sets*, JMLR 2006).
 
-### 2.1. O Teste Não-Paramétrico de Friedman
+### 3.1. O Teste Não-Paramétrico de Friedman
 O teste de Friedman é um teste estatístico não-paramétrico pareado (análogo à ANOVA de medidas repetidas), utilizado para comparar $k$ algoritmos de machine learning sobre $N$ blocos de validação (folds da validação cruzada pareada):
 
 1. **Hipótese Nula ($H_0$)**: Todos os algoritmos apresentam desempenhos equivalentes e suas ordens de postos médios decorrem do acaso.
@@ -45,7 +99,7 @@ O teste de Friedman é um teste estatístico não-paramétrico pareado (análogo
    $$\chi_F^2 = \frac{12N}{k(k+1)} \left[ \sum_{j=1}^k R_j^2 - \frac{k(k+1)^2}{4} \right]$$
    Sob a hipótese nula, $\chi_F^2$ segue uma distribuição qui-quadrado com $k - 1$ graus de liberdade.
 
-### 2.2. Pós-Teste de Nemenyi e Diferença Crítica (CD)
+### 3.2. Pós-Teste de Nemenyi e Diferença Crítica (CD)
 Quando o teste de Friedman rejeita a hipótese nula ao nível de significância $\alpha = 0.05$, aplica-se o pós-teste de Nemenyi para identificar quais pares de modelos diferem de forma estatisticamente significante.
 
 Dois modelos são considerados estatisticamente diferentes se a distância entre seus postos médios for superior à **Diferença Crítica (Critical Difference - CD)**:
@@ -55,7 +109,34 @@ O modelo que obtiver o **menor posto médio** (menor perda média) é eleito o *
 
 ---
 
-## 3. Estratégias de Votação e Combinação (Ensemble)
+## 3. Pré-Processamento Avançado: Transformação do Alvo e dos Atributos Preditores
+
+O sistema suporta transformação matemática configurável de forma 100% declarativa no [configuracoes/projeto.yaml](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/configuracoes/projeto.yaml), tanto para o alvo monetário ($y$) quanto para as variáveis explicativas contínuas ($X$):
+
+```yaml
+preprocessamento:
+  transformar_alvo: true              # Treina em escala transformada com reversão automática
+  metodo_transformacao_alvo: log1p   # log1p (padrão) | log | yeo-johnson | box-cox
+  transformar_atributos:
+    ativo: true                       # Aplica transformação logarítmica nas features selecionadas
+    metodo: log1p                    # log1p | log | yeo-johnson
+    colunas: [Metragem, Area_Privativa, Valor_Condominio, Valor_Iptu]
+```
+
+### 3.1. Transformação do Alvo com Reversão Automática
+- **Objetivo**: Estabilizar a variância dos resíduos (homocedasticidade) e mitigar o viés gerado por imóveis de alto padrão (cauda longa).
+- **Trilha Scikit-Learn**: Encapsulamento com `TransformedTargetRegressor(func=np.log1p, inverse_func=np.expm1)`, garantindo que todas as predições e métricas de validação cruzada voltem automaticamente para a escala original em reais ($R\$$).
+- **Trilha PyCaret**: Invocação nativa de `transform_target=True` e `transform_target_method="yeo-johnson"`.
+
+### 3.2. Transformação Logarítmica dos Atributos Preditores (Features)
+- **Linearização e Retornos Decrescentes**: Atributos contínuos como `Metragem` possuem retornos marginais decrescentes. Ao aplicar $\log(1 + x)$ nas features contínuas selecionadas, a relação multiplicativa de área e preço converte-se em linear aditiva.
+- **Interpretação Econômica (Modelo Log-Log)**: Quando tanto o alvo quanto a metragem estão em log, os coeficientes dos modelos lineares representam a **elasticidade direta**: cada acréscimo de 1% na metragem corresponde a uma variação de $\beta\%$ no preço.
+- **Implementação no Scikit-Learn**: Inclusão de `FunctionTransformer(np.log1p)` no `ColumnTransformer` especificamente nas colunas numéricas configuradas, preservando contagens discretas (`Quartos`, `Suites`, `Vagas`) sem distorção.
+- **Implementação no PyCaret**: Configuração nativa via `transformation=True` e `transformation_method="yeo-johnson"`.
+
+---
+
+## 4. Estratégias de Votação e Combinação (Ensemble)
 
 A `FabricaVotacao` oferece 7 técnicas desacopladas de combinação de regressores:
 1. `media_simples`: Média aritmética simples das predições de todos os estimadores componentes.
@@ -68,11 +149,11 @@ A `FabricaVotacao` oferece 7 técnicas desacopladas de combinação de regressor
 
 ---
 
-## 4. Exemplos Completos de Expressões Python Seguras via AST
+## 5. Exemplos Completos de Expressões Python Seguras via AST
 
 O sistema permite definir expressões declarativas no arquivo `configuracoes/projeto.yaml`. O interpretador restrito em `app/regras_negocio/avaliador_regras.py` avalia os nós da sintaxe abstrata (`ast.BinOp`, `ast.Compare`, `ast.Subscript`, `ast.Call`), proibindo acessos a arquivos, chamadas de sistema, imports e execução arbitrária.
 
-### 4.1. Sintaxe de Filtros de Limpeza de Dados
+### 5.1. Sintaxe de Filtros de Limpeza de Dados
 
 Os filtros eliminam amostras inconsistentes antes da ingestão para o staging:
 
@@ -109,7 +190,7 @@ filtros:
         polars: "pl.col('Metragem') <= 600"
 ```
 
-### 4.2. Sintaxe de Transformações de Colunas Existentes
+### 5.2. Sintaxe de Transformações de Colunas Existentes
 
 Transformações alteram colunas já existentes no DataFrame:
 
@@ -134,7 +215,7 @@ transformacoes:
         polars: "pl.col('Vagas_Garagem').fill_null(1)"
 ```
 
-### 4.3. Sintaxe de Criação de Novos Atributos (Feature Engineering)
+### 5.3. Sintaxe de Criação de Novos Atributos (Feature Engineering)
 
 Cria novas colunas calculadas a partir de variáveis brutas:
 
@@ -167,7 +248,7 @@ atributos_novos:
         polars: "pl.col('Valor_do_Condominio') / pl.col('Metragem')"
 ```
 
-### 4.4. Sintaxe de Regras de Negócio de Pós-Processamento
+### 5.4. Sintaxe de Regras de Negócio de Pós-Processamento
 
 As regras de negócio são aplicadas após a inferência do modelo campeão pelo `ModeloServico`, recebendo o vetor `preco_predito`:
 
@@ -207,21 +288,31 @@ regras_negocio:
 
 ---
 
-## 5. Suíte de Testes Automatizados e Quality Gates
+## 6. Suíte de Testes Automatizados e Quality Gates (81 Testes)
 
-O projeto possui qualidade de código garantida por 48 testes automatizados em Pytest, divididos em testes unitários e de integração:
+O projeto possui qualidade e conformidade rigorosamente comprovadas por **81 testes automatizados com pytest** (100% Passed):
 
-| Arquivo de Teste | Quantidade | Escopo Validado |
-|---|---|---|
-| `tests/test_motor_sklearn.py` | 3 | Protocolo, 10 regressores configuráveis, Tuning por `grid` e `random`. |
-| `tests/test_motor_pycaret.py` | 3 | Protocolo, `RegressionExperiment`, folds customizáveis, setup nativo. |
-| `tests/test_modelos_votacao.py` | 7 | As 7 técnicas de ensemble (`VotingRegressor`, `Stacking`, `Mediana`, etc.). |
-| `tests/test_teste_friedman.py` | 2 | Teste de Friedman, postos médios e pós-teste de Nemenyi com CD. |
-| `tests/test_regras_negocio.py` | 4 | Segurança AST, bloqueio de injeção de código, vetorização Pandas. |
-| `tests/test_motor_pandas.py` | 13 | Filtros, transformações, novas features e sintaxes vetorizadas `df[...]`. |
-| `tests/test_motor_polars.py` | 7 | Filtros e expressões lazy/eager no motor Polars (`pl.col`). |
-| `tests/test_repositorio_fonte.py` | 5 | Ingestão `FonteExcel`, `FonteSql`, `FonteApi` e Staging `RepositorioSqlite`. |
-| `tests/test_main_pipeline.py` | 4 | Execuções completas end-to-end com PyCaret, Sklearn, Polars e Ensembles. |
+| Arquivo de Teste | Quantidade | Escopo Validado | Status |
+| :--- | :---: | :--- | :---: |
+| `tests/test_comparador_transformacao.py` | 5 | Avaliação pareada Sem Log vs Com Log, dados sintéticos log-normais, Prometheus e validação estrutural do Grafana JSON. | **100% Passed** |
+| `tests/test_diagnostico_curva.py` | 8 | Curvas viés x variância, hiperparâmetro dinâmico do modelo campeão (ex: rede neural, ridge, floresta), K-Fold e YAML. | **100% Passed** |
+| `tests/test_importancia_atributos.py` | 4 | Extração de feature_importances_, \|coef_\|, permutação e painéis nativos Grafana. | **100% Passed** |
+| `tests/test_motor_sklearn.py` | 5 | Protocolo, 10 regressores configuráveis, Tuning (grid, random, halving), transformação do alvo e transformação log de features contínuas. | **100% Passed** |
+| `tests/test_motor_pycaret.py` | 5 | Integração nativa com PyCaret `RegressionExperiment`, fold strategies, setup, transformação do alvo e transformação de features. | **100% Passed** |
+| `tests/test_modelos_votacao.py` | 8 | As 7 técnicas de ensemble (`VotingRegressor`, `Stacking`, `Mediana`, postos, aparada, etc.). | **100% Passed** |
+| `tests/test_teste_friedman.py` | 2 | Teste não-paramétrico de Friedman, qui-quadrado, postos pareados e Nemenyi com CD. | **100% Passed** |
+| `tests/test_regras_negocio.py` | 4 | Segurança AST, bloqueio de injeção de código, execução vetorizada de pós-processamento. | **100% Passed** |
+| `tests/test_motor_pandas.py` | 7 | Vetorização Pandas, filtros com sintaxe `df['coluna']`, transformações e novas features. | **100% Passed** |
+| `tests/test_motor_polars.py` | 8 | Execução Lazy/Eager no Polars, expressões `pl.col(...)` e compatibilidade tabular. | **100% Passed** |
+| `tests/test_fonte_dados.py` | 6 | Ingestão polimórfica (Excel, SQL, API), fábrica de fontes de dados e leitura configurada via YAML. | **100% Passed** |
+| `tests/test_repositorio_fonte.py` | 2 | Staging persistente SQLite e recuperação isolada para auditoria. | **100% Passed** |
+| `tests/test_main_pipeline.py` | 5 | Execuções completas end-to-end com Sklearn, PyCaret, Polars, Ensembles e Modo Campeão. | **100% Passed** |
+| `tests/test_publicador_mlflow.py` | 4 | Publicação de `ModeloServico` no MLflow, busca dinâmica do campeão e fallback seguro. | **100% Passed** |
+| `tests/test_observador_mlflow.py` | 4 | Padrão GoF Observer no MLflow: auditoria JSONL e métricas Prometheus. | **100% Passed** |
+| `tests/test_analise_eda.py` | 1 | Geração de gráficos EDA estatísticos e perfil de dados tabular. | **100% Passed** |
+| `tests/test_modelo_servico.py` | 1 | Predição em tempo real com pós-processamento de regras de negócio em AST. | **100% Passed** |
+| `tests/test_leitor_configuracao.py` | 1 | Validação de carregamento e integridade do arquivo `projeto.yaml`. | **100% Passed** |
+| `tests/test_contrato_basico.py` | 1 | Verificação de conformidade do protocolo inicial de EDA e integridade de tipos. | **100% Passed** |
 
 ### Como Executar os Testes
 
@@ -235,22 +326,30 @@ O projeto possui qualidade de código garantida por 48 testes automatizados em P
 
 ---
 
-## 6. Observabilidade e Dashboards no Grafana
+## 7. Observabilidade e Dashboards no Grafana
 
-O monitoramento do sistema é provisionado automaticamente em `config_ob/dashboards/dashboard_monitoramento_ml.json`:
-1. **Saúde do Serviço**: Uptime, Throughput e Latência de inferência p50/p95/p99 via Prometheus.
-2. **Resultados Estatísticos de ML**: Postos de Friedman e RMSE por modelo gravados nos metadados do MLflow.
-3. **Métricas de EDA**: Mediana de preços de Ribeirão Preto, total de apartamentos no staging e taxa de nulos.
-4. **Drift & Governança**: Índices PSI e KS para detecção de deriva do alvo predito e distribuição de acionamento das regras de negócio.
-5. **Logs de Inferência**: Auditoria em tempo real via Grafana Loki.
+O monitoramento e análise analítica do sistema é provisionado automaticamente em `config_ob/dashboards/dashboard_monitoramento_ml.json` (versão 4), conectando-se nativamente a **Prometheus**, **PostgreSQL (MLflow)** e **Grafana Loki** sem uso de Matplotlib:
+1. **Saúde do Serviço (MLflow Serving)**: Uptime operacional, Throughput (req/s 2xx/5xx) e Latência de inferência p50/p95/p99 via Prometheus.
+2. **Seleção e Comparação Estatística de Modelos**: Postos Médios de Friedman (barchart) e Tabela de Significância Nemenyi CD via PostgreSQL MLflow.
+3. **Métricas de EDA e Qualidade Tabular**: Total de amostras no Staging SQLite, Mediana do Preço de Venda em Ribeirão Preto, Preço Médio por m² e Taxa Máxima de Nulos.
+4. **Drift & Governança**: Monitoramento de Concept/Data Drift (PSI/KS) e auditoria de regras de negócio dinâmicas em AST.
+5. **Diagnóstico de Overfitting vs Underfitting (Seção 4.2)**: Painel nativo `timeseries` com diretiva `custom.fillBelowTo` demarcando o Gap de Variância entre treino e validação, card de regime operacional e tabela de diagnóstico.
+6. **Explicabilidade & Feature Importance (Seção 4.3)**: Gráficos de barras nativos com importância de variáveis (`feature_importances_`, `|coef_|` e permutação) e tabela analítica com mini-gauge nas células.
+7. **Análise Comparativa de Treino: Sem Log vs Com Log (Seção 4.4)**:
+   - **Barchart Nativo Vertical Agrupado (Painel 21)**: Confronto direto de **RMSE Sem Log (R$)** vs **RMSE Com Log (R$)** para cada modelo selecionado pela variável de template `$modelo`.
+   - **Card de Stat de Redução de RMSE (Painel 22)**: Redução percentual do erro quadrático médio (ex: +18.2% a +22.8% de ganho de precisão).
+   - **Card de Stat de Redução de MAE (Painel 23)**: Redução percentual do erro absoluto médio em reais.
+   - **Painel Gauge de R² Score (Painel 24)**: Comparativo de $R^2$ na escala original de preços ($R\$$) antes e depois da transformação logarítmica com reversão automática.
+   - **Relatório Comparativo Consolidado (Painel 25)**: Tabela analítica completa para todos os 10 modelos e o modelo campeão com células dinâmicas de mini-gauge (`custom.cellOptions` type `gauge`), delta de erro absoluto em reais e veredito de recomendação ("Altamente Recomendado", "Recomendado", "Neutro").
+8. **Logs de Execução e Treinamento (Seção 5)**: Auditoria em tempo real e visualização de streams operacionais via Grafana Loki.
 
 ---
 
-## 7. Inicializador e Deploy: Script `executar_treinamento.sh`
+## 8. Inicializador e Deploy: Script `executar_treinamento.sh`
 
 Para agilizar o ciclo de vida do modelo em produção e em pipelines de CI/CD, o projeto inclui o script unificado `executar_treinamento.sh`.
 
-### 7.1. Modos de Execução
+### 8.1. Modos de Execução
 
 - **Modo Rápido (`--apenas-campeao`)**:
   - Pula a bateria de validação cruzada pareada de todos os 10 modelos e o tuning de hiperparâmetros.
@@ -261,7 +360,7 @@ Para agilizar o ciclo de vida do modelo em produção e em pipelines de CI/CD, o
   - Executa a bateria científica completa: Ingestão, Staging, EDA, CV Pareada (10 modelos), Friedman/Nemenyi, Tuning e Registro MLflow.
   - Tempo de execução: **~130 segundos**.
 
-### 7.2. Exemplos de Comandos
+### 8.2. Exemplos de Comandos
 
 ```bash
 # Treinar o modelo campeão direto e subir/recarregar a API do MLflow Serving:
@@ -280,7 +379,7 @@ Para agilizar o ciclo de vida do modelo em produção e em pipelines de CI/CD, o
 ./executar_treinamento.sh --ajuda
 ```
 
-### 7.3. Consumo REST no Endpoint `/invocations`
+### 8.3. Consumo REST no Endpoint `/invocations`
 
 ```bash
 curl -X POST http://localhost:8080/invocations \
@@ -309,7 +408,7 @@ Retorno JSON automático com predição e regras de negócio:
 ]
 ```
 
-### 7.4. Padrão GoF Observer no Ciclo de Vida do MLflow
+### 8.4. Padrão GoF Observer no Ciclo de Vida do MLflow
 
 O Subject `PublicadorServico` gerencia o ciclo de publicação e notifica observadores síncronos desacoplados através do protocolo `ObservadorMLflow`:
 - **`ObservadorAuditoria`**: Persiste registros de governança e auditoria em `storage-data/auditoria_mlflow.jsonl` (ISO timestamp, run_id, model_uri, tags).
