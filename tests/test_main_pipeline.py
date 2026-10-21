@@ -109,4 +109,33 @@ def test_execucao_main_pipeline_com_ensemble_votacao() -> None:
         if os.path.exists(caminho_tmp):
             os.remove(caminho_tmp)
 
+def test_execucao_main_pipeline_modo_apenas_campeao() -> None:
+    os.environ["IMOVEIS_XLSX_PATH"] = "storage-data/imoveis_apartamentos_rp.xlsx"
+    os.environ["STAGING_DATABASE_URL"] = "storage-data/staging_imoveis.db"
+    os.environ["MLFLOW_TRACKING_URI"] = "http://localhost:5000"
+    os.environ["GRAFANA_URL"] = "http://localhost:3000"
+
+    with open("configuracoes/projeto.yaml", "r", encoding="utf-8") as f:
+        conf = yaml.safe_load(f)
+
+    conf["pipeline"] = {"modo": "apenas_campeao", "modelo_campeao_padrao": "random_forest"}
+    conf["mlflow"]["registrar_modelo_campeao"] = False # Desativa registro no teste unitário rápido
+
+    with tempfile.NamedTemporaryFile(suffix=".yaml", mode="w", encoding="utf-8", delete=False) as tmp:
+        yaml.dump(conf, tmp)
+        caminho_tmp = tmp.name
+
+    try:
+        pipeline = MainPipeline(caminho_tmp)
+        resultado = pipeline.executar_pipeline(modo="apenas_campeao", modelo_campeao_forcado="random_forest")
+        assert resultado["status"] == "sucesso"
+        assert resultado["modo"] == "apenas_campeao"
+        assert resultado["linhas_processadas"] > 0
+        assert resultado["servico_mlflow_pronto"] is True
+        assert resultado["estatistica"]["modelo_campeao"] == "random_forest"
+        assert "Validacao cruzada pareada e tuning ignorados" in str(resultado["tuning"]["mensagem"])
+    finally:
+        if os.path.exists(caminho_tmp):
+            os.remove(caminho_tmp)
+
 

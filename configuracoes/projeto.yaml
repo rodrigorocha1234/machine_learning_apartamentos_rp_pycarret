@@ -157,8 +157,17 @@ mlflow:
   tracking_uri: ${MLFLOW_TRACKING_URI}
   experimento: imoveis_regressao
   modelo_registrado: previsao_preco_imoveis
+  modelo_campeao: random_forest # modelo campeão padrão/fallback caso não haja modelo salvo anterior
+  registrar_modelo_campeao: true
+  subir_api_serving: false # quando true ou via --subir-api no script, inicializa o MLflow Serving após o treinamento
+  porta_serving: 8080
+  host_serving: "0.0.0.0"
   serving: {api: mlflow_models_serve, endpoint: /invocations}
+pipeline:
+  modo: completo # completo | apenas_campeao
+  modelo_campeao_padrao: random_forest
 observabilidade:
   grafana_url: ${GRAFANA_URL}
   dashboards: [eda, modelos, estatistica, servico]
   metricas: [rmse, mae, r2, latencia_p50, latencia_p95, latencia_p99, taxa_erro, drift]
+

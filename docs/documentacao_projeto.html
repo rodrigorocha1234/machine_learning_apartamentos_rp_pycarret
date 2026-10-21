@@ -514,6 +514,7 @@
       <div class="nav-header">Operação & Governança</div>
       <a href="#manual-yaml" class="nav-item">Manual do projeto.yaml</a>
       <a href="#observabilidade" class="nav-item">Dashboard Grafana</a>
+      <a href="#deploy-mlflow-serving" class="nav-item">Deploy & MLflow Serving</a>
     </nav>
   </aside>
 
@@ -534,8 +535,9 @@
         <span class="badge secondary">PyCaret 3.3+</span>
         <span class="badge success">Polars & Pandas</span>
         <span class="badge primary">MLflow Serving</span>
+        <span class="badge primary">GoF Observer Pattern</span>
         <span class="badge warning">Grafana Nativo (Sem Matplotlib)</span>
-        <span class="badge success">60 Testes Automatizados (100% Passed)</span>
+        <span class="badge success">73 Testes Automatizados (100% Passed)</span>
       </div>
     </header>
 
@@ -543,7 +545,7 @@
     <section id="arquitetura">
       <h2 class="section-title"><span class="number">1</span> Arquitetura de Software e Decisões de Design</h2>
       <p>
-        O projeto implementa rigorosamente os princípios <strong>SOLID</strong> e padrões <strong>GoF</strong> (Strategy, Factory, Adapter, Facade) através de contratos estritos definidos com <code>typing.Protocol</code>. Não foram utilizados frameworks web desacoplados como FastAPI; o modelo final é servido de forma nativa e conteinerizada através da abstração <code>mlflow.pyfunc.PythonModel</code>.
+        O projeto implementa rigorosamente os princípios <strong>SOLID</strong> e padrões <strong>GoF</strong> (Strategy, Factory, Adapter, Facade, Observer) através de contratos estritos definidos com <code>typing.Protocol</code>. Não foram utilizados frameworks web desacoplados como FastAPI; o modelo final é servido de forma nativa e conteinerizada através da abstração <code>mlflow.pyfunc.PythonModel</code>.
       </p>
 
       <div class="grid-3">
@@ -555,8 +557,10 @@
             <li><code>MotorTreino</code>: Validação cruzada e tuning</li>
             <li><code>MotorTabela</code>: Vetorização Pandas / Polars</li>
             <li><code>FonteDados</code>: Ingestão polimórfica</li>
+            <li><code>ObservadorMLflow</code>: Padrão Observer de publicação</li>
           </ul>
         </div>
+
 
         <div class="card">
           <h3>⚡ Tipagem Pura sem "object"</h3>
@@ -699,8 +703,20 @@
             </tr>
             <tr>
               <td><code>test_main_pipeline.py</code></td>
+              <td>5</td>
+              <td>Execuções completas end-to-end com Sklearn, PyCaret, Polars, Ensembles e Modo Apenas Campeão.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_publicador_mlflow.py</code></td>
               <td>4</td>
-              <td>Execuções completas end-to-end com Sklearn, PyCaret, Polars e Ensembles.</td>
+              <td>Publicação de ModeloServico no MLflow, busca dinâmica do campeão salvo e fallback seguro.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_observador_mlflow.py</code></td>
+              <td>4</td>
+              <td>Padrão GoF Observer no MLflow: notificações de sucesso/falha, auditoria JSONL e métricas Prometheus.</td>
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
@@ -1614,7 +1630,325 @@
       </div>
     </section>
 
+    <!-- 13. Deploy e MLflow Serving -->
+    <section id="deploy-mlflow-serving">
+      <h2 class="section-title"><span class="number">13</span> Execução, Publicação e API do MLflow Serving</h2>
+      <p>
+        Para atender aos requisitos de governança, automação contínua e ciclo ágil de publicação, o projeto disponibiliza o script oficial <code>executar_treinamento.sh</code> com suporte nativo ao <strong>Modo Rápido de Deploy (<code>--apenas-campeao</code>)</strong> e à inicialização e recarregamento da <strong>API do MLflow Serving (<code>--subir-api</code>)</strong>.
+      </p>
+
+      <div class="grid-2">
+        <div class="card" style="border-top: 4px solid var(--primary);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <h3 style="margin: 0;">⚡ Modo Rápido (Apenas Campeão)</h3>
+            <span class="badge success">~14 segundos (90% mais rápido)</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+            Ideal para <strong>atualização de regras de negócio</strong> ou novos dados em staging:
+          </p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+            <li>Recupera automaticamente o último modelo campeão salvo no <strong>MLflow Registry</strong> (<code>previsao_preco_imoveis</code>).</li>
+            <li>Pula a validação cruzada pareada de 10 modelos e o tuning de hiperparâmetros.</li>
+            <li>Treina o estimador diretamente na base completa de staging com imputação e encoding ajustados.</li>
+            <li>Empacota no wrapper <code>ModeloServico(mlflow.pyfunc)</code> com as regras dinâmicas de negócio em AST.</li>
+            <li>Registra a nova versão do modelo no MLflow Model Registry.</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--secondary);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <h3 style="margin: 0;">🔬 Modo Completo (Benchmark Formal)</h3>
+            <span class="badge warning">~130 segundos (Bateria Completa)</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+            Ideal para <strong>novos experimentos</strong> e reavaliação científica:
+          </p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+            <li>Executa Validação Cruzada Pareada em todos os 10 modelos configurados.</li>
+            <li>Executa Teste Não-Paramétrico de Friedman e Pós-Hoc de Nemenyi / Wilcoxon pareado.</li>
+            <li>Ajusta hiperparâmetros (Tuning Random / Bayesian) ou monta Ensemble de Votação (7 técnicas).</li>
+            <li>Treina o vencedor na base completa e congela os artefatos de avaliação.</li>
+            <li>Registra métricas, postos, curvas de complexidade e modelo no MLflow.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Abas Interativas de Uso do Script -->
+      <div class="tab-header" style="margin-top: 2rem;">
+        <button class="tab-btn active" onclick="switchTab(event, 'tab-script-cli')">1. Comandos & Flags de Linha de Comando</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-script-estatico')">2. Configuração no Topo do Script</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-script-docker')">3. Integração Docker & Reload Serving</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-script-api')">4. Consumo REST (/invocations)</button>
+      </div>
+
+      <!-- Tab 1: CLI -->
+      <div id="tab-script-cli" class="tab-content active">
+        <div class="card">
+          <h3>💻 Guia de Sintaxe e Exemplos Práticos</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            O script aceita parâmetros intuitivos que sobrescrevem os valores definidos nos arquivos YAML e no cabeçalho do script:
+          </p>
+          <pre><code class="language-bash"># 1. Modo Rápido + Subir/Recarregar API de Inferência (Uso mais comum no dia a dia):
+./executar_treinamento.sh --apenas-campeao --subir-api
+
+# 2. Modo Rápido sem subir servidor (ideal para pipelines de CI/CD automatizados):
+./executar_treinamento.sh --apenas-campeao
+
+# 3. Forçar um estimador específico para deploy imediato (ex: LightGBM ou Random Forest):
+./executar_treinamento.sh --apenas-campeao --modelo lightgbm --subir-api
+
+# 4. Customizar a porta e o host de binding da API:
+./executar_treinamento.sh --apenas-campeao --subir-api --porta 8080 --host 0.0.0.0
+
+# 5. Execução completa do benchmark científico (com CV pareada e Friedman):
+./executar_treinamento.sh --modo completo
+
+# 6. Consultar o manual interativo de parâmetros no terminal:
+./executar_treinamento.sh --ajuda</code></pre>
+
+          <h3 style="margin-top: 1.5rem;">📋 Tabela de Parâmetros Suportados</h3>
+          <table class="table-enciclopedia">
+            <thead>
+              <tr>
+                <th>Parâmetro / Flag</th>
+                <th>Tipo</th>
+                <th>Padrão</th>
+                <th>Descrição Técnica</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>--apenas-campeao</code>, <code>--somente-campeao</code></td>
+                <td>Booleano</td>
+                <td><code>false</code></td>
+                <td>Ativa o modo rápido: pula CV e tuning e treina direto o modelo campeão salvo no MLflow.</td>
+              </tr>
+              <tr>
+                <td><code>--subir-api</code>, <code>--servir</code></td>
+                <td>Booleano</td>
+                <td><code>false</code></td>
+                <td>Inicia o servidor nativo MLflow Serving ou recarrega o container Docker existente.</td>
+              </tr>
+              <tr>
+                <td><code>--modo</code>, <code>-m</code></td>
+                <td>String</td>
+                <td><code>completo</code></td>
+                <td>Modo explícito: <code>completo</code> ou <code>apenas_campeao</code>.</td>
+              </tr>
+              <tr>
+                <td><code>--modelo</code></td>
+                <td>String</td>
+                <td><code>(automático)</code></td>
+                <td>Força o nome do modelo (ex: <code>random_forest</code>, <code>lightgbm</code>, <code>xgboost</code>).</td>
+              </tr>
+              <tr>
+                <td><code>--porta</code>, <code>-p</code></td>
+                <td>Inteiro</td>
+                <td><code>8080</code></td>
+                <td>Porta TCP para escuta do endpoint de inferência.</td>
+              </tr>
+              <tr>
+                <td><code>--host</code></td>
+                <td>String</td>
+                <td><code>0.0.0.0</code></td>
+                <td>Endereço IP de binding para a API.</td>
+              </tr>
+              <tr>
+                <td><code>--config</code>, <code>-c</code></td>
+                <td>Caminho</td>
+                <td><code>configuracoes/projeto.yaml</code></td>
+                <td>Caminho alternativo para arquivo de configuração do projeto.</td>
+              </tr>
+              <tr>
+                <td><code>--ajuda</code>, <code>-h</code></td>
+                <td>Booleano</td>
+                <td>-</td>
+                <td>Exibe a tela de ajuda com instruções completas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Configuração Estática -->
+      <div id="tab-script-estatico" class="tab-content">
+        <div class="card">
+          <h3>⚙️ Executando sem passar parâmetros de linha de comando</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+            Caso prefira executar o script simplesmente com <code>./executar_treinamento.sh</code> (ou via duplo-clique / agendador cron), basta editar diretamente as variáveis declarativas no topo do arquivo <code>executar_treinamento.sh</code>:
+          </p>
+          <pre><code class="language-bash"># ==============================================================================
+# ⚙️ CONFIGURAÇÕES PRINCIPAIS (Altere diretamente aqui ou utilize flags de CLI)
+# ==============================================================================
+# MODO_EXECUCAO:
+#   "completo"        -> Ingestão + Staging + EDA + CV Pareada + Friedman + Tuning + Registro
+#   "apenas_campeao"  -> Pula CV e Tuning; treina direto o modelo campeão do MLflow
+MODO_EXECUCAO="apenas_campeao"
+
+# SUBIR_API_SERVING:
+#   true  -> Inicia/recarrega a API do MLflow Serving ao término do treinamento
+#   false -> Apenas executa o treinamento e publicação no MLflow
+SUBIR_API_SERVING=true
+
+# Porta e Host de Binding para a API do MLflow Serving
+PORTA_SERVING=8080
+HOST_SERVING="0.0.0.0"
+
+# MODELO_CAMPEAO_ESPECIFICO (opcional):
+#   Se vazio (""), consulta automaticamente o modelo campeão salvo no MLflow Registry
+MODELO_CAMPEAO_ESPECIFICO=""
+
+# Caminho padrão do arquivo de configuração do projeto
+CONFIG_FILE="configuracoes/projeto.yaml"</code></pre>
+
+          <div style="margin-top: 1rem; padding: 1rem; background: rgba(56, 189, 248, 0.08); border-left: 4px solid var(--primary); border-radius: 6px;">
+            <strong style="color: var(--primary);">📌 Ordem de Precedência de Configurações:</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.5rem 0 0 0;">
+              Flags de Linha de Comando (CLI) <strong>&gt;</strong> Variáveis do Script <code>executar_treinamento.sh</code> <strong>&gt;</strong> Arquivo <code>configuracoes/projeto.yaml</code> <strong>&gt;</strong> Variáveis de Ambiente do <code>.env</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Docker -->
+      <div id="tab-script-docker" class="tab-content">
+        <div class="card">
+          <h3>🐳 Recarregamento Automático e Compatibilidade Multi-Ambiente</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+            O script foi desenhado com inteligência de infraestrutura para operar perfeitamente em dois cenários:
+          </p>
+
+          <div class="grid-2" style="margin-top: 1rem;">
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border-color);">
+              <h4 style="color: var(--success); margin-top: 0;">Cenário A: Stack Docker Compose em Execução</h4>
+              <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+                Se o container <code>mlflow-serving</code> for detectado no Docker, o script:
+              </p>
+              <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+                <li>Publica a nova versão do modelo no Model Registry conectado ao PostgreSQL e RustFS.</li>
+                <li>Executa o recarregamento do container (<code>docker restart mlflow-serving</code>).</li>
+                <li>Garante que a porta <code>8080</code> não sofra conflito de socket.</li>
+                <li>Valida o status de saúde imediatamente em <code>/health</code>.</li>
+              </ul>
+            </div>
+
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border-color);">
+              <h4 style="color: var(--primary); margin-top: 0;">Cenário B: Ambiente Local sem Docker</h4>
+              <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+                Caso o Docker não esteja em execução, o script:
+              </p>
+              <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+                <li>Inicia o servidor de inferência oficial nativo do MLflow no Python virtual:</li>
+                <li><code>mlflow models serve -m "models:/previsao_preco_imoveis/latest" -p 8080 -h 0.0.0.0 --no-conda</code></li>
+                <li>Fica ativo e monitora interrupções (Ctrl+C).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: API REST -->
+      <div id="tab-script-api" class="tab-content">
+        <div class="card">
+          <h3>📡 Especificação e Teste do Endpoint de Inferência</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+            O modelo servido pelo MLflow Serving expõe o contrato oficial <code>/invocations</code>. Quando uma requisição é enviada, o modelo prediz o preço base e imediatamente avalia as fórmulas dinâmicas de regras de negócio em tempo real.
+          </p>
+
+          <pre><code class="language-bash"># Chamada HTTP POST com cURL:
+curl -X POST http://localhost:8080/invocations \
+     -H "Content-Type: application/json" \
+     -d '{
+       "dataframe_records": [
+         {
+           "Metragem": 110.0,
+           "Quartos": 3,
+           "Vagas": 2,
+           "Banheiros": 2,
+           "Condominio": 750.0
+         }
+       ]
+     }'</code></pre>
+
+          <h4 style="color: var(--success); margin-top: 1.5rem;">Payload JSON de Resposta Enriquecido:</h4>
+          <pre><code class="language-json">[
+  {
+    "Metragem": 110.0,
+    "Quartos": 3,
+    "Vagas": 2,
+    "Banheiros": 2,
+    "Condominio": 750.0,
+    "preco_predito": 540000.0,
+    "preco_minimo_sugerido": 513000.0,
+    "preco_maximo_sugerido": 567000.0,
+    "preco_m2_predito": 4909.09,
+    "valor_comissao_estimada": 32400.0
+  }
+]</code></pre>
+        </div>
+      </div>
+
+      <!-- 13.5 Padrão GoF Observer no MLflow -->
+      <div class="card" style="margin-top: 2rem; border-left: 4px solid var(--accent);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h3 style="margin: 0;">👁️ Padrão GoF Observer no MLflow (Governança & Métricas Desacopladas)</h3>
+          <span class="badge primary">GoF Behavioral Pattern</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
+          Para garantir total desacoplamento entre o registro de modelos no MLflow e as ações secundárias de auditoria, métricas e alertas, foi implementado o padrão <strong>GoF Observer</strong> com contratos estritos via <code>typing.Protocol</code>:
+        </p>
+
+        <div class="grid-3" style="margin-top: 1.25rem;">
+          <div style="background: rgba(15, 23, 42, 0.7); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <h4 style="color: var(--primary); margin-top: 0; font-size: 0.95rem;">1. Subject (PublicadorServico)</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;">
+              Atua como o <em>Subject</em> que gerencia os observadores inscritos via <code>adicionar_observador()</code> e <code>remover_observador()</code>. Ao finalizar o registro ou ao detectar falhas, dispara <code>_notificar_observadores(evento)</code> de forma resiliente.
+            </p>
+          </div>
+
+          <div style="background: rgba(15, 23, 42, 0.7); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <h4 style="color: var(--success); margin-top: 0; font-size: 0.95rem;">2. ObservadorAuditoria (JSONL)</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;">
+              Grava automaticamente logs estruturados de governança em <code>storage-data/auditoria_mlflow.jsonl</code>, contendo <code>timestamp_iso</code>, <code>run_id</code>, <code>model_uri</code>, <code>modelo_campeao</code>, <code>modo_execucao</code> e tags de compliance.
+            </p>
+          </div>
+
+          <div style="background: rgba(15, 23, 42, 0.7); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <h4 style="color: var(--accent); margin-top: 0; font-size: 0.95rem;">3. ObservadorMetricas (Prometheus)</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;">
+              Calcula contadores em tempo real (<code>mlflow_publicacao_sucesso_total</code>, <code>mlflow_publicacao_falha_total</code>) e exporta metadados em <code>storage-data/metricas_mlflow.prom</code> para consumo pelo Prometheus e Grafana.
+            </p>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem;">
+          <h4 style="color: var(--text-main); font-size: 0.9rem;">Exemplo de Uso no Pipeline Python:</h4>
+          <pre><code class="language-python">from app.orquestracao_ml.publicador_servico import PublicadorServico
+from app.orquestracao_ml.observador_auditoria import ObservadorAuditoria
+from app.orquestracao_ml.observador_metricas import ObservadorMetricas
+
+# 1. Instancia o Subject com o tracking URI do MLflow
+publicador = PublicadorServico(tracking_uri="http://localhost:5000")
+
+# 2. Conecta os Observers desacoplados
+publicador.adicionar_observador(ObservadorAuditoria())
+publicador.adicionar_observador(ObservadorMetricas())
+
+# 3. Publica o modelo — todos os observadores são notificados automaticamente!
+publicador.publicar_modelo_servico(
+    modelo_servico=servico,
+    experimento="imoveis_regressao",
+    nome_modelo_registrado="previsao_preco_imoveis",
+    tags={"modelo_campeao": "random_forest", "modo_execucao": "apenas_campeao"}
+)</code></pre>
+        </div>
+      </div>
+    </section>
+
+
+
   </main>
+
 
   <script>
     function switchTab(evt, tabId) {

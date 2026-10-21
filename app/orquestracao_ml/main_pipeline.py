@@ -18,7 +18,13 @@ from app.motores_tabela.fabrica_motores import FabricaMotores
 from app.motores_treino.motor_pycaret import MotorPycaret
 from app.motores_treino.motor_sklearn import MotorSklearn
 from app.orquestracao_ml.modelo_servico import ModeloServico
+from app.orquestracao_ml.observador_auditoria import ObservadorAuditoria
+from app.orquestracao_ml.observador_metricas import ObservadorMetricas
+from app.orquestracao_ml.publicador_servico import PublicadorServico
 from app.repositorios_dados.repositorio_sqlite import RepositorioSqlite
+
+
+
 
 type ValorResultadoPipeline = (
     str
@@ -29,6 +35,7 @@ type ValorResultadoPipeline = (
     | list[str]
     | dict[str, str | int | float | bool | dict[str, float]]
     | dict[str, str | list[str]]
+    | dict[str, str]
     | dict[str, ValorMetricaParametro]
 )
 
@@ -44,12 +51,20 @@ class MainPipeline:
         self._caminho_configuracao = caminho_configuracao
         self._leitor = LeitorConfiguracao()
 
-    def executar_pipeline(self) -> dict[str, ValorResultadoPipeline]:
+    def executar_pipeline(
+        self,
+        modo: str | None = None,
+        modelo_campeao_forcado: str | None = None
+    ) -> dict[str, ValorResultadoPipeline]:
         # 1. Carrega e valida configurações com variáveis de ambiente
         config = self._leitor.carregar_configuracao(self._caminho_configuracao)
         config_projeto = config.get("projeto", {})
         alvo = str(config_projeto.get("alvo", "Valor_da_Venda"))
         semente = int(config_projeto.get("semente", 42))
+
+        # Determina modo de execução (completo vs apenas_campeao)
+        config_pipeline = config.get("pipeline", {})
+        modo_efetivo = str(config_pipeline.get("modo", "completo")).lower() if modo is None else modo.lower()
 
         # 2. Ingestão via FonteDados (polimórfica via FabricaFontes: Excel, SQL, API)
         config_fonte = config.get("fonte", {})
@@ -123,7 +138,6 @@ class MainPipeline:
             ]
             if colunas_ativas:
                 dados_processados = motor_tabela.selecionar_colunas(dados_processados, colunas_ativas)
-
 
         # 4. Staging SQLite via RepositorioDados
         config_staging = config.get("staging", {})
@@ -204,60 +218,106 @@ class MainPipeline:
                 metodo_tuning=metodo_tuning,
             )
 
-        # 8. Validação Cruzada Pareada de Todos os Modelos Ativos
-        perdas_pareadas = motor_treino.avaliar_modelos(df_dev, alvo=alvo)
+        config_mlflow = config.get("mlflow", {})
+        tracking_uri = str(config_mlflow.get("tracking_uri", os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")))
 
-        # 9. Camada Estatística Independente (Friedman e Pós-Hoc Pareado)
-        avaliador_estatistico = TesteFriedman()
-        config_estatistica = config.get("estatistica", {})
-        alpha = float(config_estatistica.get("alpha", 0.05))
-        resultado_estatistico = avaliador_estatistico.testar_diferencas(perdas_pareadas, alpha=alpha)
-        modelo_campeao_nome = resultado_estatistico.modelo_campeao
+        # 8, 9, 10. Ramificação de acordo com o modo de execução
+        resultado_tuning: dict[str, ValorMetricaParametro] = {}
+        resultado_estatistico_dict: dict[str, str | int | float | bool | dict[str, float]] = {}
 
-        # 10. Ensemble de Votação (caso ativo) ou Tuning do Modelo Campeão Individual
-        config_votacao = config.get("votacao", {})
-        usar_votacao = bool(config_votacao.get("ativo", False))
+        if modo_efetivo == "apenas_campeao":
+            publicador = PublicadorServico(tracking_uri=tracking_uri)
+            if modelo_campeao_forcado:
+                modelo_campeao_nome = modelo_campeao_forcado
+            else:
+                modelo_campeao_padrao = str(
+                    config.get("pipeline", {}).get(
+                        "modelo_campeao_padrao",
+                        config_mlflow.get("modelo_campeao", "random_forest")
+                    )
+                )
+                nome_registrado = str(config_mlflow.get("modelo_registrado", "previsao_preco_imoveis"))
+                modelo_campeao_nome = publicador.obter_modelo_campeao_salvo(
+                    nome_modelo_registrado=nome_registrado,
+                    fallback_padrao=modelo_campeao_padrao
+                )
 
-        if usar_votacao:
-            tecnica_votacao = str(config_votacao.get("tecnica", "media_simples"))
-            melhores_n = int(config_votacao.get("melhores_n", 3))
-
-            # Ordena os modelos pelos postos médios de Friedman (menor posto = melhor)
-            modelos_ordenados = list(resultado_estatistico.postos_medios.index)
-            top_modelos_nomes = modelos_ordenados[:melhores_n]
-
-            # Treina os N melhores modelos na base completa
-            estimadores_top: list[tuple[str, ModeloPreditor]] = []
-            for nome_m in top_modelos_nomes:
-                est = motor_treino.treinar_final(dados_staging, alvo=alvo, modelo_nome=nome_m)
-                estimadores_top.append((nome_m, est))
-
-            metricas_rmse = perdas_pareadas.mean().to_dict()
-            postos_friedman = resultado_estatistico.postos_medios.to_dict()
-
-            modelo_final = FabricaVotacao.criar_ensemble_votacao(
-                estimadores=estimadores_top,
-                tecnica=tecnica_votacao,
-                metricas_rmse=metricas_rmse,
-                postos_friedman=postos_friedman,
-                cv_folds=splits_folds
-            )
-            modelo_campeao_nome = f"ensemble_{tecnica_votacao}"
+            # Treina diretamente o modelo campeão na base completa de staging (sem CV e sem Tuning)
+            modelo_final = motor_treino.treinar_final(dados_staging, alvo=alvo, modelo_nome=modelo_campeao_nome)
             resultado_tuning = {
-                "ensemble": tecnica_votacao,
-                "modelos_componentes": top_modelos_nomes
+                "modo": "apenas_campeao",
+                "mensagem": "Validacao cruzada pareada e tuning ignorados; modelo campeao treinado diretamente.",
+                "modelo_campeao": modelo_campeao_nome
+            }
+            resultado_estatistico_dict = {
+                "modo": "apenas_campeao",
+                "modelo_campeao": modelo_campeao_nome,
+                "rejeitou_nula": False
             }
         else:
-            # Tuning de Hiperparâmetros do Modelo Campeão Eleito Estatisticamente
-            resultado_tuning = motor_treino.ajustar_parametros(
-                df_dev,
-                alvo=alvo,
-                iteracoes=iteracoes,
-                modelo_nome=modelo_campeao_nome,
-                metodo_tuning=metodo_tuning,
-            )
-            # Retreino final na base completa para produção
-            modelo_final = motor_treino.treinar_final(dados_staging, alvo=alvo, modelo_nome=modelo_campeao_nome)
+            # 8. Validação Cruzada Pareada de Todos os Modelos Ativos
+            perdas_pareadas = motor_treino.avaliar_modelos(df_dev, alvo=alvo)
+
+            # 9. Camada Estatística Independente (Friedman e Pós-Hoc Pareado)
+            avaliador_estatistico = TesteFriedman()
+            config_estatistica = config.get("estatistica", {})
+            alpha = float(config_estatistica.get("alpha", 0.05))
+            resultado_estatistico = avaliador_estatistico.testar_diferencas(perdas_pareadas, alpha=alpha)
+            modelo_campeao_nome = resultado_estatistico.modelo_campeao
+            resultado_estatistico_dict = {
+                "estatistica_friedman": resultado_estatistico.estatistica_friedman,
+                "valor_p_friedman": resultado_estatistico.valor_p_friedman,
+                "rejeitou_nula": resultado_estatistico.hipotese_nula_rejeitada,
+                "postos_medios": resultado_estatistico.postos_medios.to_dict(),
+                "modelo_campeao": modelo_campeao_nome
+            }
+
+            # 10. Ensemble de Votação (caso ativo) ou Tuning do Modelo Campeão Individual
+            config_votacao = config.get("votacao", {})
+            usar_votacao = bool(config_votacao.get("ativo", False))
+
+            if usar_votacao:
+                tecnica_votacao = str(config_votacao.get("tecnica", "media_simples"))
+                melhores_n = int(config_votacao.get("melhores_n", 3))
+
+                # Ordena os modelos pelos postos médios de Friedman (menor posto = melhor)
+                modelos_ordenados = list(resultado_estatistico.postos_medios.index)
+                top_modelos_nomes = modelos_ordenados[:melhores_n]
+
+                # Treina os N melhores modelos na base completa
+                estimadores_top: list[tuple[str, ModeloPreditor]] = []
+                for nome_m in top_modelos_nomes:
+                    est = motor_treino.treinar_final(dados_staging, alvo=alvo, modelo_nome=nome_m)
+                    estimadores_top.append((nome_m, est))
+
+                metricas_rmse = perdas_pareadas.mean().to_dict()
+                postos_friedman = resultado_estatistico.postos_medios.to_dict()
+
+                modelo_final = FabricaVotacao.criar_ensemble_votacao(
+                    estimadores=estimadores_top,
+                    tecnica=tecnica_votacao,
+                    metricas_rmse=metricas_rmse,
+                    postos_friedman=postos_friedman,
+                    cv_folds=splits_folds
+                )
+                modelo_campeao_nome = f"ensemble_{tecnica_votacao}"
+                resultado_estatistico_dict["modelo_campeao"] = modelo_campeao_nome
+                resultado_tuning = {
+                    "ensemble": tecnica_votacao,
+                    "modelos_componentes": top_modelos_nomes
+                }
+
+            else:
+                # Tuning de Hiperparâmetros do Modelo Campeão Eleito Estatisticamente
+                resultado_tuning = motor_treino.ajustar_parametros(
+                    df_dev,
+                    alvo=alvo,
+                    iteracoes=iteracoes,
+                    modelo_nome=modelo_campeao_nome,
+                    metodo_tuning=metodo_tuning,
+                )
+                # Retreino final na base completa para produção
+                modelo_final = motor_treino.treinar_final(dados_staging, alvo=alvo, modelo_nome=modelo_campeao_nome)
 
         # 11. Montagem do ModeloServico com Regras de Negócio Dinâmicas
         config_regras = config.get("regras_negocio", {})
@@ -281,19 +341,50 @@ class MainPipeline:
             coluna_alvo_predito=coluna_alvo_predito
         )
 
+        # 12. Publicação e Registro no MLflow Tracking & Model Registry
+        info_publicacao: dict[str, str] = {
+            "status": "ignorado",
+            "mensagem": "Registro de modelo no MLflow desativado na configuracao."
+        }
+        if bool(config_mlflow.get("registrar_modelo_campeao", True)):
+            try:
+                publicador = PublicadorServico(tracking_uri=tracking_uri)
+                publicador.adicionar_observador(ObservadorAuditoria())
+                publicador.adicionar_observador(ObservadorMetricas())
+                tags = {
+
+                    "modelo_campeao": modelo_campeao_nome,
+                    "modo_execucao": modo_efetivo,
+                    "framework": motor_nome
+                }
+                parametros_log: dict[str, str | int | float] = {
+                    "modelo_campeao": modelo_campeao_nome,
+                    "modo_execucao": modo_efetivo,
+                    "linhas_staging": len(dados_staging),
+                    "colunas_staging": len(dados_staging.columns)
+                }
+                info_publicacao = publicador.publicar_modelo_servico(
+                    modelo_servico=servico_mlflow,
+                    experimento=str(config_mlflow.get("experimento", "imoveis_regressao")),
+                    nome_modelo_registrado=str(config_mlflow.get("modelo_registrado", "previsao_preco_imoveis")),
+                    tags=tags,
+                    parametros=parametros_log
+                )
+            except Exception as erro:
+                info_publicacao = {
+                    "status": "erro_registro",
+                    "detalhe": str(erro)
+                }
+
         return {
             "status": "sucesso",
+            "modo": modo_efetivo,
             "linhas_processadas": len(dados_staging),
             "colunas_processadas": len(dados_staging.columns),
             "tuning": resultado_tuning,
-            "estatistica": {
-                "estatistica_friedman": resultado_estatistico.estatistica_friedman,
-                "valor_p_friedman": resultado_estatistico.valor_p_friedman,
-                "rejeitou_nula": resultado_estatistico.hipotese_nula_rejeitada,
-                "postos_medios": resultado_estatistico.postos_medios.to_dict(),
-                "modelo_campeao": modelo_campeao_nome
-            },
-            "servico_mlflow_pronto": servico_mlflow is not None
+            "estatistica": resultado_estatistico_dict,
+            "servico_mlflow_pronto": servico_mlflow is not None,
+            "publicacao_mlflow": info_publicacao
         }
 
 if __name__ == "__main__":
@@ -309,21 +400,55 @@ if __name__ == "__main__":
         default="configuracoes/projeto.yaml",
         help="Caminho para o arquivo de configuração YAML (padrão: configuracoes/projeto.yaml)"
     )
+    parser.add_argument(
+        "--modo",
+        "-m",
+        type=str,
+        choices=["completo", "apenas_campeao"],
+        default=None,
+        help="Modo de execução: 'completo' (com CV e tuning) ou 'apenas_campeao' (treino direto sem CV e sem tuning)"
+    )
+    parser.add_argument(
+        "--apenas-campeao",
+        action="store_true",
+        help="Atalho para executar em modo 'apenas_campeao' (pula validação cruzada pareada e tuning de parâmetros)"
+    )
+    parser.add_argument(
+        "--modelo",
+        type=str,
+        default=None,
+        help="Nome específico do modelo campeão para treinar diretamente (ex: random_forest, lightgbm)"
+    )
+    parser.add_argument(
+        "--subir-api",
+        action="store_true",
+        help="Sinaliza intenção de inicialização do MLflow Serving"
+    )
     args = parser.parse_args()
+
+    modo_selecionado = "apenas_campeao" if args.apenas_campeao else args.modo
 
     print("=" * 70)
     print(" INICIANDO PIPELINE DE TREINAMENTO — IMÓVEIS RIBEIRÃO PRETO")
     print("=" * 70)
-    print(f"Arquivo de configuração: {args.config}\n")
+    print(f"Arquivo de configuração : {args.config}")
+    print(f"Modo de execução        : {modo_selecionado or 'definido pelo YAML'}")
+    if args.modelo:
+        print(f"Modelo forçado          : {args.modelo}")
+    print("=" * 70 + "\n")
 
     try:
         pipeline = MainPipeline(caminho_configuracao=args.config)
-        resultado = pipeline.executar_pipeline()
+        resultado = pipeline.executar_pipeline(
+            modo=modo_selecionado,
+            modelo_campeao_forcado=args.modelo
+        )
         print("\n" + "=" * 70)
-        print(" TREINAMENTO CONCLUÍDO COM SUCESSO!")
+        print(" TREINAMENTO E REGISTRO CONCLUÍDOS COM SUCESSO!")
         print("=" * 70)
         print(json.dumps(resultado, indent=2, ensure_ascii=False))
         sys.exit(0)
     except Exception as erro:
         print(f"\n[ERRO CRÍTICO NO PIPELINE]: {erro}", file=sys.stderr)
         sys.exit(1)
+

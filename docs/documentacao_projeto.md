@@ -243,3 +243,77 @@ O monitoramento do sistema é provisionado automaticamente em `config_ob/dashboa
 3. **Métricas de EDA**: Mediana de preços de Ribeirão Preto, total de apartamentos no staging e taxa de nulos.
 4. **Drift & Governança**: Índices PSI e KS para detecção de deriva do alvo predito e distribuição de acionamento das regras de negócio.
 5. **Logs de Inferência**: Auditoria em tempo real via Grafana Loki.
+
+---
+
+## 7. Inicializador e Deploy: Script `executar_treinamento.sh`
+
+Para agilizar o ciclo de vida do modelo em produção e em pipelines de CI/CD, o projeto inclui o script unificado `executar_treinamento.sh`.
+
+### 7.1. Modos de Execução
+
+- **Modo Rápido (`--apenas-campeao`)**:
+  - Pula a bateria de validação cruzada pareada de todos os 10 modelos e o tuning de hiperparâmetros.
+  - Consulta dinamicamente o último modelo campeão salvo no **MLflow Registry** (`previsao_preco_imoveis`).
+  - Treina diretamente o campeão na base completa de staging e empacota no `ModeloServico(mlflow.pyfunc)` com as regras de negócio em AST.
+  - Tempo de execução: **~14 segundos** (redução de 90% no tempo).
+- **Modo Completo (`--modo completo`)**:
+  - Executa a bateria científica completa: Ingestão, Staging, EDA, CV Pareada (10 modelos), Friedman/Nemenyi, Tuning e Registro MLflow.
+  - Tempo de execução: **~130 segundos**.
+
+### 7.2. Exemplos de Comandos
+
+```bash
+# Treinar o modelo campeão direto e subir/recarregar a API do MLflow Serving:
+./executar_treinamento.sh --apenas-campeao --subir-api
+
+# Apenas retreinar o campeão com novas regras de negócio e registrar no MLflow:
+./executar_treinamento.sh --apenas-campeao
+
+# Forçar um modelo específico (ex: LightGBM) e subir a API na porta 8080:
+./executar_treinamento.sh --apenas-campeao --modelo lightgbm --subir-api --porta 8080
+
+# Execução do benchmark exaustivo completo:
+./executar_treinamento.sh --modo completo
+
+# Ajuda e catálogo de opções:
+./executar_treinamento.sh --ajuda
+```
+
+### 7.3. Consumo REST no Endpoint `/invocations`
+
+```bash
+curl -X POST http://localhost:8080/invocations \
+     -H "Content-Type: application/json" \
+     -d '{
+       "dataframe_records": [
+         {"Metragem": 110.0, "Quartos": 3, "Vagas": 2, "Banheiros": 2, "Condominio": 750.0}
+       ]
+     }'
+```
+Retorno JSON automático com predição e regras de negócio:
+```json
+[
+  {
+    "Metragem": 110.0,
+    "Quartos": 3,
+    "Vagas": 2,
+    "Banheiros": 2,
+    "Condominio": 750.0,
+    "preco_predito": 540000.0,
+    "preco_minimo_sugerido": 513000.0,
+    "preco_maximo_sugerido": 567000.0,
+    "preco_m2_predito": 4909.09,
+    "valor_comissao_estimada": 32400.0
+  }
+]
+```
+
+### 7.4. Padrão GoF Observer no Ciclo de Vida do MLflow
+
+O Subject `PublicadorServico` gerencia o ciclo de publicação e notifica observadores síncronos desacoplados através do protocolo `ObservadorMLflow`:
+- **`ObservadorAuditoria`**: Persiste registros de governança e auditoria em `storage-data/auditoria_mlflow.jsonl` (ISO timestamp, run_id, model_uri, tags).
+- **`ObservadorMetricas`**: Atualiza métricas Prometheus em `storage-data/metricas_mlflow.prom` (`mlflow_publicacao_sucesso_total`, `mlflow_publicacao_falha_total`, etc.).
+- **Tratamento de Falhas**: Notifica eventos do tipo `falha_publicacao` permitindo observabilidade imediata em caso de indisponibilidade de tracking server.
+
+
