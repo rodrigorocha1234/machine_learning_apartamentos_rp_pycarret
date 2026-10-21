@@ -37,7 +37,8 @@ class MotorPycaret(MotorTreino):
         colunas_categoricas: list[str] | None = None,
         preprocessamento_por_modelo: dict[str, dict[str, str]] | None = None,
         modelos_configurados: list[dict[str, str | bool]] | None = None,
-        parametros_tuning: dict[str, dict[str, list[str | int | float | bool]]] | None = None,
+        parametros_tuning: dict[str, dict[str,
+                                          list[str | int | float | bool]]] | None = None,
         metodo_tuning: str = "random",
     ) -> None:
         self._semente = semente
@@ -189,8 +190,10 @@ class MotorPycaret(MotorTreino):
         try:
             inicial = self._experimento.create_model(pycaret_id, verbose=False)
             custom_grid = self._parametros_tuning.get(nome_alvo)
-            metodo_candidato = (metodo_tuning or self._metodo_tuning).lower().strip()
-            algoritmo_busca = metodo_candidato if metodo_candidato in ("random", "grid", "bayesian", "optuna", "tune-sklearn") else "random"
+            metodo_candidato = (
+                metodo_tuning or self._metodo_tuning).lower().strip()
+            algoritmo_busca = metodo_candidato if metodo_candidato in (
+                "random", "grid", "bayesian", "optuna", "tune-sklearn") else "random"
 
             if custom_grid:
                 ajustado = self._experimento.tune_model(
@@ -198,14 +201,14 @@ class MotorPycaret(MotorTreino):
                     n_iter=iteracoes,
                     custom_grid=custom_grid,
                     search_algorithm=algoritmo_busca,
-                    verbose=False
+                    verbose=True
                 )
             else:
                 ajustado = self._experimento.tune_model(
                     inicial,
                     n_iter=iteracoes,
                     search_algorithm=algoritmo_busca,
-                    verbose=False
+                    verbose=True
                 )
 
             self._modelo_campeao = ajustado

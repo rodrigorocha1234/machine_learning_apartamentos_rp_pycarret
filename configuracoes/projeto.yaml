@@ -106,6 +106,24 @@ estatistica:
   pos_teste: nemenyi
   alpha: 0.05
   desempate: menor_rmse
+diagnostico_curva:
+  ativo: true
+  parametros_complexidade:
+    arvore_decisao: max_depth
+    decision_tree: max_depth
+    random_forest: max_depth
+    floresta_aleatoria: max_depth
+    xgboost: max_depth
+    lightgbm: max_depth
+    ridge: alpha
+    lasso: alpha
+    elasticnet: alpha
+    regressao_linear: fit_intercept
+    svr: C
+    svm: C
+    rede_neural: hidden_layer_sizes
+    mlp: hidden_layer_sizes
+    modelo_campeao: "max_depth (campeão)"
 votacao:
   ativo: false
   tecnica: media_simples # media_simples | voting_regressor | media_ponderada_rmse | media_ponderada_postos | mediana | media_aparada | stacking

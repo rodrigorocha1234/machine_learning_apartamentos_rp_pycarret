@@ -295,3 +295,35 @@ class MainPipeline:
             },
             "servico_mlflow_pronto": servico_mlflow is not None
         }
+
+if __name__ == "__main__":
+    import argparse
+    import json
+    import sys
+
+    parser = argparse.ArgumentParser(description="Executa o pipeline completo de treinamento e avaliação imobiliária.")
+    parser.add_argument(
+        "--config",
+        "-c",
+        type=str,
+        default="configuracoes/projeto.yaml",
+        help="Caminho para o arquivo de configuração YAML (padrão: configuracoes/projeto.yaml)"
+    )
+    args = parser.parse_args()
+
+    print("=" * 70)
+    print(" INICIANDO PIPELINE DE TREINAMENTO — IMÓVEIS RIBEIRÃO PRETO")
+    print("=" * 70)
+    print(f"Arquivo de configuração: {args.config}\n")
+
+    try:
+        pipeline = MainPipeline(caminho_configuracao=args.config)
+        resultado = pipeline.executar_pipeline()
+        print("\n" + "=" * 70)
+        print(" TREINAMENTO CONCLUÍDO COM SUCESSO!")
+        print("=" * 70)
+        print(json.dumps(resultado, indent=2, ensure_ascii=False))
+        sys.exit(0)
+    except Exception as erro:
+        print(f"\n[ERRO CRÍTICO NO PIPELINE]: {erro}", file=sys.stderr)
+        sys.exit(1)

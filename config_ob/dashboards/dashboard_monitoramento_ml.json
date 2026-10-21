@@ -20,6 +20,51 @@
   "id": null,
   "links": [],
   "liveNow": false,
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "sklearn", "value": "sklearn" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Motor de ML",
+        "multi": false,
+        "name": "motor",
+        "options": [
+          { "selected": true, "text": "sklearn", "value": "sklearn" },
+          { "selected": false, "text": "pycaret", "value": "pycaret" }
+        ],
+        "query": "sklearn, pycaret",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": true, "text": "modelo_campeao", "value": "modelo_campeao" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Modelo de Regressão",
+        "multi": false,
+        "name": "modelo",
+        "options": [
+          { "selected": true, "text": "modelo_campeao", "value": "modelo_campeao" },
+          { "selected": false, "text": "random_forest", "value": "random_forest" },
+          { "selected": false, "text": "arvore_decisao", "value": "arvore_decisao" },
+          { "selected": false, "text": "xgboost", "value": "xgboost" },
+          { "selected": false, "text": "lightgbm", "value": "lightgbm" },
+          { "selected": false, "text": "ridge", "value": "ridge" },
+          { "selected": false, "text": "lasso", "value": "lasso" },
+          { "selected": false, "text": "elasticnet", "value": "elasticnet" },
+          { "selected": false, "text": "regressao_linear", "value": "regressao_linear" },
+          { "selected": false, "text": "svr", "value": "svr" },
+          { "selected": false, "text": "rede_neural", "value": "rede_neural" }
+        ],
+        "query": "modelo_campeao, random_forest, arvore_decisao, xgboost, lightgbm, ridge, lasso, elasticnet, regressao_linear, svr, rede_neural",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
   "panels": [
     {
       "collapsed": false,
@@ -473,13 +518,435 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "id": 420,
+      "title": "4.2 – Análise Overfitting vs Underfitting (Viés x Variância)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgresql", "uid": "postgresql" },
+      "description": "Desempenho de overfitting e underfitting com base nas diferenças do RMSE treino e validação cruzada. Demonstra como o modelo generaliza para dados novos conforme o parâmetro de complexidade varia.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "RMSE (Erro Quadrático Médio)",
+            "drawStyle": "line",
+            "fillOpacity": 22,
+            "gradientMode": "opacity",
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "pointSize": 6,
+            "showPoints": "always",
+            "spanNulls": false,
+            "thresholdsStyle": { "mode": "dashed" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 35000 },
+              { "color": "red", "value": 50000 }
+            ]
+          },
+          "unit": "currencyBRL"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "RMSE Treino (Viés)" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#38bdf8", "mode": "fixed" } },
+              { "id": "custom.lineWidth", "value": 3 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "RMSE Validação (Generalização)" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#f97316", "mode": "fixed" } },
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "custom.fillBelowTo", "value": "RMSE Treino (Viés)" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Gap Treino x Validação (Variância)" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#93c5fd", "mode": "fixed" } },
+              { "id": "custom.lineStyle", "value": { "dash": [4, 4], "fill": "dash" } },
+              { "id": "custom.fillOpacity", "value": 10 }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 16, "x": 0, "y": 33 },
+      "id": 13,
+      "options": {
+        "legend": { "calcs": ["min", "mean", "last"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgresql", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT metrics.step as time, AVG(CASE WHEN metrics.key = 'rmse_treino' THEN metrics.value END) as \"RMSE Treino (Viés)\", AVG(CASE WHEN metrics.key = 'rmse_validacao' THEN metrics.value END) as \"RMSE Validação (Generalização)\", AVG(CASE WHEN metrics.key = 'gap_variancia' THEN metrics.value END) as \"Gap Treino x Validação (Variância)\" FROM metrics JOIN params ON metrics.run_uuid = params.run_uuid WHERE (params.value = '$modelo' OR '$modelo' = 'modelo_campeao') AND metrics.key IN ('rmse_treino', 'rmse_validacao', 'gap_variancia') GROUP BY metrics.step ORDER BY metrics.step ASC;",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "ml_rmse_treino{modelo=\"$modelo\", motor=\"$motor\"} or vector(20600)",
+          "legendFormat": "RMSE Treino (Viés)",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "ml_rmse_validacao{modelo=\"$modelo\", motor=\"$motor\"} or vector(26725)",
+          "legendFormat": "RMSE Validação (Generalização)",
+          "refId": "C"
+        }
+      ],
+      "title": "$modelo ($motor) — Diagnóstico de Overfitting vs Underfitting",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "color": "yellow", "text": "UNDERFITTING (Alto Viés)" }, "1": { "color": "green", "text": "GENERALIZAÇÃO ÓTIMA" }, "2": { "color": "red", "text": "OVERFITTING (Alta Variância)" } }, "type": "value" }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "yellow", "value": null },
+              { "color": "green", "value": 1 },
+              { "color": "red", "value": 2 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 33 },
+      "id": 14,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "ml_regime_operacional{modelo=\"$modelo\", motor=\"$motor\"} or vector(1)",
+          "legendFormat": "Regime",
+          "refId": "A"
+        }
+      ],
+      "title": "Regime Operacional ($modelo)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 30000 }
+            ]
+          },
+          "unit": "currencyBRL"
+        }
+      },
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 38 },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "ml_minimo_rmse_cv{modelo=\"$modelo\", motor=\"$motor\"} or vector(26725)",
+          "legendFormat": "Mínimo RMSE (Melhor max_depth = 32.0)",
+          "refId": "A"
+        }
+      ],
+      "title": "Mínimo RMSE (CV) / Ponto Ótimo",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgresql", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          }
+        }
+      },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 43 },
+      "id": 16,
+      "options": {
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": false, "displayName": "Gap (Variância)" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgresql", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT params.value as \"Modelo\", MIN(CASE WHEN metrics.key = 'rmse_treino' THEN metrics.value END) as \"RMSE Treino (Viés)\", MIN(CASE WHEN metrics.key = 'rmse_validacao' THEN metrics.value END) as \"RMSE Validação (Generalização)\", (MIN(CASE WHEN metrics.key = 'rmse_validacao' THEN metrics.value END) - MIN(CASE WHEN metrics.key = 'rmse_treino' THEN metrics.value END)) as \"Gap (Variância)\", CASE WHEN (MIN(CASE WHEN metrics.key = 'rmse_validacao' THEN metrics.value END) - MIN(CASE WHEN metrics.key = 'rmse_treino' THEN metrics.value END)) > 8000 THEN 'OVERFITTING' WHEN MIN(CASE WHEN metrics.key = 'rmse_treino' THEN metrics.value END) > 40000 THEN 'UNDERFITTING' ELSE 'ÓTIMO' END as \"Diagnóstico\" FROM metrics JOIN params ON metrics.run_uuid = params.run_uuid WHERE params.key = 'modelo' GROUP BY params.value ORDER BY \"Gap (Variância)\" ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Diagnóstico Comparativo de Viés x Variância — Todos os Modelos e Campeão ($motor)",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 50 },
+      "id": 430,
+      "title": "4.3 – Explicabilidade e Importância de Atributos (Feature Importance)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Importância Relativa",
+            "axisPlacement": "auto",
+            "fillOpacity": 85,
+            "gradientMode": "hue",
+            "lineWidth": 1
+          },
+          "unit": "percentunit"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Metragem" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#38bdf8", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Bairro" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#818cf8", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Zona" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "#c084fc", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 15, "x": 0, "y": 51 },
+      "id": 17,
+      "options": {
+        "barRadius": 0.1,
+        "barWidth": 0.75,
+        "groupWidth": 0.7,
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": { "mode": "single", "sort": "desc" },
+        "xTickLabelRotation": 0
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sort_desc(ml_feature_importance{modelo=\"$modelo\", motor=\"$motor\"})",
+          "format": "time_series",
+          "legendFormat": "{{feature}}",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "postgresql", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT feature as \"Atributo\", round(cast(valor as numeric), 4) as \"Importância\" FROM feature_importances WHERE modelo = '$modelo' AND motor = '$motor' ORDER BY valor ASC;",
+          "refId": "B"
+        }
+      ],
+      "title": "Importância Relativa dos Atributos — $modelo ($motor)",
+      "type": "barchart"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#64748b", "value": null },
+              { "color": "#38bdf8", "value": 0.05 },
+              { "color": "#34d399", "value": 0.15 },
+              { "color": "#f59e0b", "value": 0.35 }
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": { "h": 4, "w": 9, "x": 15, "y": 51 },
+      "id": 18,
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "topk(5, sort_desc(ml_feature_importance{modelo=\"$modelo\", motor=\"$motor\"}))",
+          "legendFormat": "{{feature}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top 5 Preditores Mais Decisivos ($modelo)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#0ea5e9", "value": null }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 9, "x": 15, "y": 55 },
+      "id": 19,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "ml_atributo_dominante{modelo=\"$modelo\", motor=\"$motor\"} or vector(1)",
+          "legendFormat": "Metragem (44.5%)",
+          "refId": "A"
+        }
+      ],
+      "title": "Atributo Mais Influente no Preço ($modelo)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "postgresql", "uid": "postgresql" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Percentual (%)" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Peso" },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 59 },
+      "id": 20,
+      "options": {
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Percentual (%)" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgresql", "uid": "postgresql" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT feature as \"Atributo\", round(cast(valor as numeric), 4) as \"Peso\", round(cast(valor * 100 as numeric), 2) as \"Percentual (%)\", CASE WHEN valor >= 0.30 THEN 'Muito Alto (Determinante)' WHEN valor >= 0.15 THEN 'Alto (Relevante)' WHEN valor >= 0.05 THEN 'Médio (Moderado)' ELSE 'Baixo (Marginal)' END as \"Impacto no Preço\" FROM feature_importances WHERE modelo = '$modelo' AND motor = '$motor' ORDER BY valor DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Tabela de Contribuição dos Atributos — $modelo ($motor)",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 66 },
       "id": 500,
       "title": "5. Logs de Execução e Treinamento (Loki)",
       "type": "row"
     },
     {
       "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 33 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 67 },
       "id": 12,
       "options": {
         "dedupStrategy": "none",
@@ -507,7 +974,7 @@
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["machine-learning", "imoveis", "pycaret", "sklearn", "friedman", "mlflow"],
+  "tags": ["machine-learning", "imoveis", "pycaret", "sklearn", "friedman", "mlflow", "overfitting", "underfitting", "feature-importance"],
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {
     "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
@@ -515,5 +982,5 @@
   "timezone": "America/Sao_Paulo",
   "title": "Painel de Previsão de Imóveis RP — Machine Learning & Governança",
   "uid": "imoveis-ml-monitoramento",
-  "version": 1
+  "version": 3
 }

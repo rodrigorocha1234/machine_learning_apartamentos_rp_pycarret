@@ -221,6 +221,7 @@
     .badge.primary { background: rgba(56, 189, 248, 0.15); color: var(--primary); border-color: rgba(56, 189, 248, 0.3); }
     .badge.success { background: rgba(52, 211, 153, 0.15); color: var(--accent); border-color: rgba(52, 211, 153, 0.3); }
     .badge.secondary { background: rgba(129, 140, 248, 0.15); color: var(--secondary); border-color: rgba(129, 140, 248, 0.3); }
+    .badge.warning { background: rgba(251, 191, 36, 0.15); color: var(--accent-warn); border-color: rgba(251, 191, 36, 0.3); }
 
     /* Section Styles */
     section {
@@ -253,21 +254,21 @@
       font-weight: 800;
     }
 
+    /* Cards & Grids */
     .grid-2 {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
       gap: 1.5rem;
-      margin-top: 1.5rem;
+      margin: 1.5rem 0;
     }
 
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 1.25rem;
-      margin-top: 1.5rem;
+      margin: 1.5rem 0;
     }
 
-    /* Cards */
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
@@ -278,14 +279,13 @@
     }
 
     .card:hover {
+      background: var(--bg-card-hover);
       border-color: var(--border-accent);
       transform: translateY(-2px);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
     }
 
     .card h3 {
       font-size: 1.15rem;
-      font-weight: 600;
       color: #fff;
       margin-bottom: 0.75rem;
       display: flex;
@@ -294,65 +294,60 @@
     }
 
     .card p {
-      font-size: 0.925rem;
       color: var(--text-muted);
-      margin-bottom: 1rem;
+      font-size: 0.925rem;
+      line-height: 1.55;
     }
 
-    /* Code Blocks & Comparison */
-    pre, code {
-      font-family: 'Fira Code', monospace;
-    }
-
+    /* Code Blocks */
     .code-block {
       background: var(--code-bg);
       border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 1.25rem;
-      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
       margin: 1rem 0;
-      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
     }
 
     .code-header {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+      border-bottom: 1px solid var(--border-color);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.75rem;
-      color: var(--text-subtle);
-      text-transform: uppercase;
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     pre code {
-      font-size: 0.85rem;
+      display: block;
+      padding: 1rem;
+      overflow-x: auto;
       color: #e5e7eb;
       line-height: 1.5;
     }
 
-    .hl-kw { color: #f472b6; font-weight: 600; }
+    /* Syntax Highlighting */
+    .hl-kw { color: #f472b6; }
     .hl-str { color: #a7f3d0; }
-    .hl-num { color: #fbbf24; }
+    .hl-num { color: #fde047; }
     .hl-com { color: #6b7280; font-style: italic; }
-    .hl-fn { color: #60a5fa; }
-    .hl-var { color: #38bdf8; }
+    .hl-fun { color: #38bdf8; }
 
-    /* Comparison Table */
+    /* Tables */
     .table-container {
-      width: 100%;
       overflow-x: auto;
-      margin: 1.5rem 0;
-      border-radius: 10px;
       border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin: 1.25rem 0;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.9rem;
+      font-size: 0.875rem;
       text-align: left;
     }
 
@@ -463,6 +458,22 @@
       color: #fde68a;
     }
 
+    /* Mini progress bar inside table */
+    .mini-gauge {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .mini-gauge-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+    }
+
     /* Responsive adjustments */
     @media (max-width: 1024px) {
       aside.sidebar { display: none; }
@@ -486,17 +497,21 @@
       <div class="nav-header">Visão Geral</div>
       <a href="#arquitetura" class="nav-item">Arquitetura & Design</a>
       <a href="#estatistica" class="nav-item">Testes Estatísticos</a>
-      <a href="#quality-gates" class="nav-item">Quality Gates (49 Testes)</a>
+      <a href="#quality-gates" class="nav-item">Quality Gates (59 Testes)</a>
 
       <div class="nav-header">Engenharia de Dados</div>
       <a href="#expressoes" class="nav-item">Expressões Pandas & Polars</a>
+      <a href="#dicionario-transformacoes" class="nav-item">Dicionário de Transformações</a>
       <a href="#seguranca-ast" class="nav-item">Segurança AST</a>
 
       <div class="nav-header">Modelagem & Ensemble</div>
       <a href="#catalogo-modelos" class="nav-item">10 Modelos Machine Learning</a>
       <a href="#tecnicas-votacao" class="nav-item">7 Técnicas de Votação</a>
+      <a href="#estrategias-folds" class="nav-item">Estratégias de Folds & CV</a>
+      <a href="#diagnostico-curvas" class="nav-item">Diagnóstico Viés x Variância</a>
+      <a href="#feature-importance" class="nav-item">Feature Importance</a>
 
-      <div class="nav-header">Operação</div>
+      <div class="nav-header">Operação & Governança</div>
       <a href="#manual-yaml" class="nav-item">Manual do projeto.yaml</a>
       <a href="#observabilidade" class="nav-item">Dashboard Grafana</a>
     </nav>
@@ -509,7 +524,7 @@
     <header class="hero">
       <h1>Previsão de Preços de Apartamentos — Documentação Técnica</h1>
       <p>
-        Solução corporativa e modular em Python 3.12+ com tipagem estrita, isolamento físico de frameworks (PyCaret & Scikit-Learn), seleção estatística por Friedman/Nemenyi, ensemble com 7 técnicas de votação e deploy nativo via MLflow Serving com avaliação restrita de AST.
+        Solução corporativa e modular em Python 3.12+ com tipagem estrita, isolamento físico de frameworks (PyCaret & Scikit-Learn), seleção estatística por Friedman/Nemenyi, ensemble com 7 técnicas de votação, diagnóstico nativo de Overfitting vs Underfitting e deploy nativo via MLflow Serving com avaliação restrita de AST.
       </p>
       <div class="tags-container">
         <span class="badge primary">Python 3.12+</span>
@@ -519,7 +534,8 @@
         <span class="badge secondary">PyCaret 3.3+</span>
         <span class="badge success">Polars & Pandas</span>
         <span class="badge primary">MLflow Serving</span>
-        <span class="badge">Grafana & Loki</span>
+        <span class="badge warning">Grafana Nativo (Sem Matplotlib)</span>
+        <span class="badge success">59 Testes Automatizados (100% Passed)</span>
       </div>
     </header>
 
@@ -534,7 +550,7 @@
         <div class="card">
           <h3>🏛️ Contratos Estritos (Protocols)</h3>
           <p>Toda a comunicação interna obedece a interfaces semânticas independentes de implementação:</p>
-          <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
+          <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;">
             <li><code>ModeloPreditor</code>: Inferência tabular unificada</li>
             <li><code>MotorTreino</code>: Validação cruzada e tuning</li>
             <li><code>MotorTabela</code>: Vetorização Pandas / Polars</li>
@@ -552,7 +568,7 @@
         <div class="card">
           <h3>🛡️ Trilha de Motores Isolados</h3>
           <p>
-            O framework PyCaret utiliza exclusivamente suas chamadas nativas de alta performance (<code>RegressionExperiment</code>). A trilha Scikit-Learn opera de forma 100% independente com <code>Pipeline</code>, <code>ColumnTransformer</code> e buscas dedicadas.
+            O framework PyCaret utiliza exclusivamente suas chamadas nativas de alta performance (<code>RegressionExperiment</code>). A trilha Scikit-Learn opera de forma 100% independente com <code>Pipeline</code>, <code>ColumnTransformer</code> e buscas dedicadas (Grid, Random, Halving).
           </p>
         </div>
       </div>
@@ -599,9 +615,9 @@
 
     <!-- 3. Quality Gates -->
     <section id="quality-gates">
-      <h2 class="section-title"><span class="number">3</span> Quality Gates: Suíte de 49 Testes Automatizados</h2>
+      <h2 class="section-title"><span class="number">3</span> Quality Gates: Suíte de 59 Testes Automatizados</h2>
       <p>
-        Em cumprimento à regra de governança de nunca declarar qualidade sem evidência real, o projeto conta com <strong>49 testes automatizados</strong> que validam todos os componentes ponta a ponta:
+        Em cumprimento à regra de governança de nunca declarar qualidade sem evidência real, o projeto conta com <strong>59 testes automatizados com pytest</strong> cobrindo todos os contratos e algoritmos:
       </p>
 
       <div class="table-container">
@@ -615,6 +631,18 @@
             </tr>
           </thead>
           <tbody>
+            <tr>
+              <td><code>test_diagnostico_curva.py</code></td>
+              <td>6</td>
+              <td>Curvas de aprendizado viés x variância, classificação de regime, K-Fold real, parâmetro por modelo e Grafana fillBelowTo.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_importancia_atributos.py</code></td>
+              <td>4</td>
+              <td>Extração de feature_importances_, |coef_|, permutação, simulação nos 10 modelos e painéis nativos Grafana.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
             <tr>
               <td><code>test_motor_sklearn.py</code></td>
               <td>3</td>
@@ -658,15 +686,27 @@
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
+              <td><code>test_fonte_dados.py</code></td>
+              <td>4</td>
+              <td>Ingestão polimórfica (Excel, SQL, API) e fábrica de fontes de dados.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
               <td><code>test_repositorio_fonte.py</code></td>
               <td>2</td>
-              <td>Ingestão polimórfica (Excel, SQL, API) e persistência no SQLite staging.</td>
+              <td>Staging persistente SQLite e recuperação isolada para auditoria.</td>
               <td><span class="badge success">100% Passed</span></td>
             </tr>
             <tr>
               <td><code>test_main_pipeline.py</code></td>
               <td>4</td>
               <td>Execuções completas end-to-end com Sklearn, PyCaret, Polars e Ensembles.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_analise_eda.py</code> / <code>test_modelo_servico.py</code></td>
+              <td>4</td>
+              <td>Geração de gráficos EDA estatísticos e predição em tempo real com regras de negócio.</td>
               <td><span class="badge success">100% Passed</span></td>
             </tr>
           </tbody>
@@ -686,6 +726,7 @@
         <button class="tab-btn" onclick="switchTab(event, 'tab-transf')">2. Transformações Existentes</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-novas')">3. Novas Features</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-regras')">4. Regras de Negócio</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-dicionario')">5. Dicionário de Transformações</button>
       </div>
 
       <!-- Tab Filtros -->
@@ -710,14 +751,7 @@
       <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
       <span class="hl-kw">expressao</span>:
         <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Valor_da_Venda'] >= 50000"</span>
-        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Valor_da_Venda') >= 50000"</span>
-
-    <span class="hl-com"># Descarte de condomínio inconsistente negativo</span>
-    - <span class="hl-kw">nome</span>: condominio_consistente
-      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
-      <span class="hl-kw">expressao</span>:
-        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Valor_do_Condominio'] >= 0"</span>
-        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Valor_do_Condominio') >= 0"</span></code></pre>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Valor_da_Venda') >= 50000"</span></code></pre>
           </div>
         </div>
       </div>
@@ -732,21 +766,12 @@
 <pre><code><span class="hl-kw">transformacoes</span>:
   <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
   <span class="hl-kw">expressoes</span>:
-    <span class="hl-com"># Ajuste de teto mínimo para metragem</span>
     - <span class="hl-kw">nome</span>: metragem_ajustada
       <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
       <span class="hl-kw">destino</span>: Metragem
       <span class="hl-kw">expressao</span>:
         <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Metragem'].clip(lower=15)"</span>
-        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Metragem').clip(lower_bound=15)"</span>
-
-    <span class="hl-com"># Preenchimento de nulos para vagas</span>
-    - <span class="hl-kw">nome</span>: vagas_imputadas
-      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
-      <span class="hl-kw">destino</span>: Vagas_Garagem
-      <span class="hl-kw">expressao</span>:
-        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Vagas_Garagem'].fillna(1)"</span>
-        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Vagas_Garagem').fill_null(1)"</span></code></pre>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Metragem').clip(lower_bound=15)"</span></code></pre>
           </div>
         </div>
       </div>
@@ -761,29 +786,12 @@
 <pre><code><span class="hl-kw">atributos_novos</span>:
   <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
   <span class="hl-kw">expressoes</span>:
-    <span class="hl-com"># Razão entre quartos e banheiros</span>
-    - <span class="hl-kw">nome</span>: razao_quartos_banheiros
-      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
-      <span class="hl-kw">destino</span>: Quartos_Por_Banheiro
-      <span class="hl-kw">expressao</span>:
-        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Quartos'] / df['Banheiros']"</span>
-        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Quartos') / pl.col('Banheiros')"</span>
-
-    <span class="hl-com"># Termo não-linear de metragem</span>
     - <span class="hl-kw">nome</span>: metragem_quadrada
       <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
       <span class="hl-kw">destino</span>: Metragem_Quadrada
       <span class="hl-kw">expressao</span>:
         <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Metragem'] * df['Metragem']"</span>
-        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Metragem') * pl.col('Metragem')"</span>
-
-    <span class="hl-com"># Condomínio ponderado pela área</span>
-    - <span class="hl-kw">nome</span>: condominio_por_m2
-      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
-      <span class="hl-kw">destino</span>: Condominio_Por_M2
-      <span class="hl-kw">expressao</span>:
-        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Valor_do_Condominio'] / df['Metragem']"</span>
-        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Valor_do_Condominio') / pl.col('Metragem')"</span></code></pre>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Metragem') * pl.col('Metragem')"</span></code></pre>
           </div>
         </div>
       </div>
@@ -799,31 +807,269 @@
   <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
   <span class="hl-kw">coluna_alvo_predito</span>: preco_predito
   <span class="hl-kw">regras</span>:
-    <span class="hl-com"># Faixa mínima de proposta comercial (desconto aceitável de 5%)</span>
     - <span class="hl-kw">nome</span>: margem_inferior_negociacao
       <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
       <span class="hl-kw">destino</span>: preco_minimo_sugerido
-      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.95"</span>
-
-    <span class="hl-com"># Preço por m² calculado a partir do valor previsto</span>
-    - <span class="hl-kw">nome</span>: valor_metro_quadrado_predito
-      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
-      <span class="hl-kw">destino</span>: preco_m2_predito
-      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito / Metragem"</span>
-
-    <span class="hl-com"># Comissão padrão de corretagem (6% CRECI)</span>
-    - <span class="hl-kw">nome</span>: taxa_comissao_imobiliaria
-      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
-      <span class="hl-kw">destino</span>: valor_comissao_estimada
-      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.06"</span></code></pre>
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.95"</span></code></pre>
           </div>
+        </div>
+      </div>
+
+      <!-- Tab Dicionario Rapido -->
+      <div id="tab-dicionario" class="tab-content">
+        <div class="card">
+          <h3>Equivalência Rápida de Sintaxe (Pandas vs Polars)</h3>
+          <p>
+            Tanto a sintaxe clássica do Pandas baseada em Series (<code>df['coluna']</code>) quanto a API orientada a expressões de alta performance do Polars (<code>pl.col('coluna')</code>) são compiladas pelo motor de AST restrito:
+          </p>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Finalidade</th>
+                  <th>Sintaxe Pandas</th>
+                  <th>Sintaxe Polars</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Imputação de Nulos</td>
+                  <td><code>df['col'].fillna(0)</code></td>
+                  <td><code>pl.col('col').fill_null(0)</code></td>
+                </tr>
+                <tr>
+                  <td>Limite Físico (Clipping)</td>
+                  <td><code>df['col'].clip(lower=15, upper=500)</code></td>
+                  <td><code>pl.col('col').clip(lower_bound=15, upper_bound=500)</code></td>
+                </tr>
+                <tr>
+                  <td>Transformação Logarítmica</td>
+                  <td><code>np.log1p(df['col'])</code></td>
+                  <td><code>pl.col('col').log1p()</code></td>
+                </tr>
+                <tr>
+                  <td>Razão Numérica</td>
+                  <td><code>df['A'] / df['B']</code></td>
+                  <td><code>pl.col('A') / pl.col('B')</code></td>
+                </tr>
+                <tr>
+                  <td>Texto Minúsculo</td>
+                  <td><code>df['col'].str.lower()</code></td>
+                  <td><code>pl.col('col').str.to_lowercase()</code></td>
+                </tr>
+                <tr>
+                  <td>Condicional When/Then</td>
+                  <td><code>np.where(df['col'] > 0, 1, 0)</code></td>
+                  <td><code>pl.when(pl.col('col') > 0).then(1).otherwise(0)</code></td>
+                </tr>
+                <tr>
+                  <td>Média por Grupo (Window)</td>
+                  <td><code>df.groupby('G')['V'].transform('mean')</code></td>
+                  <td><code>pl.col('V').mean().over('G')</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dicionário Completo de Transformações -->
+      <div id="dicionario-transformacoes" style="margin-top: 2.5rem; scroll-margin-top: 2rem;">
+        <h3 style="font-size: 1.3rem; color: #fff; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+          📚 Dicionário Enciclopédico de Transformações: Pandas vs Polars
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.925rem; margin-bottom: 1.25rem;">
+          Guia de referência para engenharia de recursos no arquivo <code>configuracoes/projeto.yaml</code>, abrangendo pré-processamento, feature engineering e regras de negócio:
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Categoria</th>
+                <th>Operação Desejada</th>
+                <th>Sintaxe Pandas</th>
+                <th>Sintaxe Polars</th>
+                <th>Aplicação Imobiliária (Ribeirão Preto)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 1. Limpeza e Nulos -->
+              <tr>
+                <td rowspan="3" style="font-weight: 600; color: #38bdf8;">1. Limpeza & Imputação</td>
+                <td>Preenchimento com Constante</td>
+                <td><code>df['Vagas'].fillna(1)</code></td>
+                <td><code>pl.col('Vagas').fill_null(1)</code></td>
+                <td>Imputa 1 vaga de garagem padrão quando o anúncio omite a informação.</td>
+              </tr>
+              <tr>
+                <td>Preenchimento com Mediana</td>
+                <td><code>df['Metragem'].fillna(df['Metragem'].median())</code></td>
+                <td><code>pl.col('Metragem').fill_null(pl.col('Metragem').median())</code></td>
+                <td>Substitui áreas faltantes pela mediana robusta do mercado.</td>
+              </tr>
+              <tr>
+                <td>Substituição de Sentinela (-1)</td>
+                <td><code>df['Condominio'].replace(-1, 0)</code></td>
+                <td><code>pl.when(pl.col('Condominio') == -1).then(0).otherwise(pl.col('Condominio'))</code></td>
+                <td>Converte taxas sentinelas de erro de digitação para condomínio isento.</td>
+              </tr>
+
+              <!-- 2. Clipping e Outliers -->
+              <tr>
+                <td rowspan="2" style="font-weight: 600; color: #818cf8;">2. Clipping & Outliers</td>
+                <td>Piso e Teto Numérico</td>
+                <td><code>df['Metragem'].clip(lower=20, upper=600)</code></td>
+                <td><code>pl.col('Metragem').clip(lower_bound=20, upper_bound=600)</code></td>
+                <td>Elimina quitinetes minúsculas irreais (&lt;20m²) e mansões discrepantes (&gt;600m²).</td>
+              </tr>
+              <tr>
+                <td>Truncamento por Quantil (99%)</td>
+                <td><code>df['Preco'].clip(upper=df['Preco'].quantile(0.99))</code></td>
+                <td><code>pl.col('Preco').clip(upper_bound=pl.col('Preco').quantile(0.99))</code></td>
+                <td>Apara o topo do 1% mais caro para evitar distorção no gradiente do OLS/Ridge.</td>
+              </tr>
+
+              <!-- 3. Matemática e Não-Linear -->
+              <tr>
+                <td rowspan="4" style="font-weight: 600; color: #34d399;">3. Matemática & Não-Linear</td>
+                <td>Transformação Logarítmica</td>
+                <td><code>np.log1p(df['Valor_da_Venda'])</code></td>
+                <td><code>pl.col('Valor_da_Venda').log1p()</code></td>
+                <td>Normaliza a assimetria positiva clássica da distribuição de preços imobiliários.</td>
+              </tr>
+              <tr>
+                <td>Raiz Quadrada</td>
+                <td><code>np.sqrt(df['Metragem'])</code></td>
+                <td><code>pl.col('Metragem').sqrt()</code></td>
+                <td>Captura rendimentos decrescentes de área construída.</td>
+              </tr>
+              <tr>
+                <td>Interação Quadrática</td>
+                <td><code>df['Metragem'] ** 2</code></td>
+                <td><code>pl.col('Metragem') ** 2</code></td>
+                <td>Fornece termo de curvatura para modelos lineares sem suporte a árvores.</td>
+              </tr>
+              <tr>
+                <td>Razão de Densidade (Preço/m²)</td>
+                <td><code>df['Valor_da_Venda'] / df['Metragem']</code></td>
+                <td><code>pl.col('Valor_da_Venda') / pl.col('Metragem')</code></td>
+                <td>Calcula o valor do metro quadrado como feature ou regra de validação.</td>
+              </tr>
+
+              <!-- 4. Texto e Categorias -->
+              <tr>
+                <td rowspan="3" style="font-weight: 600; color: #fbbf24;">4. Texto & Categorias</td>
+                <td>Padronização de Caixa & Espaços</td>
+                <td><code>df['Bairro'].str.lower().str.strip()</code></td>
+                <td><code>pl.col('Bairro').str.to_lowercase().str.strip_chars()</code></td>
+                <td>Uniformiza grafias como ' Jardim Botânico ' e 'jardim botanico'.</td>
+              </tr>
+              <tr>
+                <td>Substituição de Prefixos</td>
+                <td><code>df['Zona'].str.replace('Sul', 'ZONA_SUL')</code></td>
+                <td><code>pl.col('Zona').str.replace('Sul', 'ZONA_SUL')</code></td>
+                <td>Cria categorias consolidadas para One-Hot Encoding sem ambiguidades.</td>
+              </tr>
+              <tr>
+                <td>Verificação de Termo (Regex)</td>
+                <td><code>df['Bairro'].str.contains('Jardim|Vila')</code></td>
+                <td><code>pl.col('Bairro').str.contains('Jardim|Vila')</code></td>
+                <td>Gera flag booleana indicando bairros residenciais consolidados.</td>
+              </tr>
+
+              <!-- 5. Lógica Condicional -->
+              <tr>
+                <td rowspan="2" style="font-weight: 600; color: #f472b6;">5. Lógica Condicional</td>
+                <td>Classificação Binária (When/Then)</td>
+                <td><code>np.where(df['Metragem'] > 120, 'Amplo', 'Compacto')</code></td>
+                <td><code>pl.when(pl.col('Metragem') > 120).then(pl.lit('Amplo')).otherwise(pl.lit('Compacto'))</code></td>
+                <td>Segmenta apartamentos em perfis de metragem para análise de elasticidade.</td>
+              </tr>
+              <tr>
+                <td>Filtro Lógico Composto</td>
+                <td><code>(df['Metragem'] >= 50) & (df['Vagas'] >= 1)</code></td>
+                <td><code>(pl.col('Metragem') >= 50) & (pl.col('Vagas') >= 1)</code></td>
+                <td>Filtra imóveis com padrão comercial mínimo de liquidez de revenda.</td>
+              </tr>
+
+              <!-- 6. Agregações e Window -->
+              <tr>
+                <td rowspan="3" style="font-weight: 600; color: #38bdf8;">6. Agregações por Grupo (Window)</td>
+                <td>Média por Bairro (Target Encoding)</td>
+                <td><code>df.groupby('Bairro')['Valor_da_Venda'].transform('mean')</code></td>
+                <td><code>pl.col('Valor_da_Venda').mean().over('Bairro')</code></td>
+                <td>Injeta o preço médio do bairro diretamente no registro como atributo preditivo.</td>
+              </tr>
+              <tr>
+                <td>Mediana por Zona</td>
+                <td><code>df.groupby('Zona')['Metragem'].transform('median')</code></td>
+                <td><code>pl.col('Metragem').median().over('Zona')</code></td>
+                <td>Permite calcular desvios em relação à metragem típica de cada região.</td>
+              </tr>
+              <tr>
+                <td>Frequência de Anúncios</td>
+                <td><code>df['Bairro'].map(df['Bairro'].value_counts())</code></td>
+                <td><code>pl.col('Bairro').count().over('Bairro')</code></td>
+                <td>Identifica a liquidez e volume de estoque de cada bairro de Ribeirão Preto.</td>
+              </tr>
+
+              <!-- 7. Discretização -->
+              <tr>
+                <td style="font-weight: 600; color: #818cf8;">7. Discretização (Binning)</td>
+                <td>Faixas Categóricas de Quartos</td>
+                <td><code>pd.cut(df['Quartos'], bins=[0, 1, 2, 3, 10], labels=['Studio', '2Q', '3Q', '4Q+'])</code></td>
+                <td><code>pl.when(pl.col('Quartos') == 1).then(pl.lit('Studio')).when(pl.col('Quartos') == 2).then(pl.lit('2Q')).when(pl.col('Quartos') == 3).then(pl.lit('3Q')).otherwise(pl.lit('4Q+'))</code></td>
+                <td>Segmenta a tipologia do imóvel para regras comerciais de precificação.</td>
+              </tr>
+
+              <!-- 8. Datas e Sazonalidade -->
+              <tr>
+                <td style="font-weight: 600; color: #34d399;">8. Datas & Sazonalidade</td>
+                <td>Extração de Ano e Mês de Venda</td>
+                <td><code>df['Data_Venda'].dt.year</code> e <code>df['Data_Venda'].dt.month</code></td>
+                <td><code>pl.col('Data_Venda').dt.year()</code> e <code>pl.col('Data_Venda').dt.month()</code></td>
+                <td>Captura tendências anuais de valorização e sazonalidade de negociação imobiliária.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
 
-    <!-- 5. Catálogo de Modelos -->
+    <!-- 5. Segurança AST -->
+    <section id="seguranca-ast">
+      <h2 class="section-title"><span class="number">5</span> Segurança e Validação Restrita de AST</h2>
+      <p>
+        A execução de expressões Python arbitrárias fornecidas em arquivos de configuração representa um vetor crítico de injeção de código (RCE). O projeto resolve este desafio de forma determinística:
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>🚫 Proibições Estritas</h3>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+            <li>Zero uso de <code>eval()</code> ou <code>exec()</code> globais desprotegidos.</li>
+            <li>Bloqueio de nós <code>ast.Import</code> e <code>ast.ImportFrom</code>.</li>
+            <li>Proibição de acesso a dunder methods (<code>__class__</code>, <code>__subclasses__</code>, <code>__builtins__</code>).</li>
+            <li>Impedimento de chamadas de sistema, I/O de disco e sockets de rede.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>✅ Whitelist de Operações Permitidas</h3>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+            <li>Operadores binários matemáticos: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>//</code>, <code>%</code>, <code>**</code>.</li>
+            <li>Operadores de comparação: <code>==</code>, <code>!=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>.</li>
+            <li>Operadores lógicos booleanos: <code>&amp;</code> (and), <code>|</code> (or), <code>~</code> (not).</li>
+            <li>Métodos tabulares autorizados: <code>clip()</code>, <code>fillna()</code>, <code>fill_null()</code>.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Catálogo de Modelos -->
     <section id="catalogo-modelos">
-      <h2 class="section-title"><span class="number">5</span> Catálogo dos 10 Modelos de Machine Learning</h2>
+      <h2 class="section-title"><span class="number">6</span> Catálogo dos 10 Modelos de Machine Learning</h2>
       <p>
         O pipeline suporta 10 algoritmos de regressão configuráveis, disponíveis tanto na trilha Scikit-Learn quanto na trilha PyCaret:
       </p>
@@ -835,7 +1081,6 @@
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
             <li><strong>Vantagens:</strong> Rápido, determinístico e 100% interpretável por coeficientes.</li>
             <li><strong>Atenção:</strong> Sensível a multicolinearidade e não captura efeitos não-lineares.</li>
-            <li><strong>Uso em RP:</strong> Baseline de comparação para apartamentos padrão.</li>
           </ul>
         </div>
 
@@ -845,57 +1090,51 @@
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
             <li><strong>Vantagens:</strong> Seleção automática de atributos e redução de ruído.</li>
             <li><strong>Atenção:</strong> Exige padronização das features (StandardScaler).</li>
-            <li><strong>Uso em RP:</strong> Descarta variáveis esparsas ou redundantes de bairros.</li>
           </ul>
         </div>
 
         <div class="card">
           <h3>3. Regressão Ridge (L2)</h3>
-          <p><strong>Conceito:</strong> Regularização Tikhonov que encolhe coeficientes evitando overfitting.</p>
+          <p><strong>Conceito:</strong> Regularização Tikhonov que mitiga variância reduzindo coeficientes sem zerá-los.</p>
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
-            <li><strong>Vantagens:</strong> Excelente estabilidade matemática contra multicolinearidade.</li>
-            <li><strong>Atenção:</strong> Não anula coeficientes; mantém todas as variáveis no modelo.</li>
-            <li><strong>Uso em RP:</strong> Ideal quando há correlação forte entre Metragem e Cômodos.</li>
+            <li><strong>Vantagens:</strong> Estabilidade superior sob alta correlação entre features.</li>
+            <li><strong>Atenção:</strong> Mantém todas as variáveis no modelo.</li>
           </ul>
         </div>
 
         <div class="card">
           <h3>4. ElasticNet (L1 + L2)</h3>
-          <p><strong>Conceito:</strong> Combinação linear balanceada das penalidades L1 e L2.</p>
+          <p><strong>Conceito:</strong> Combinação balanceada entre Lasso e Ridge via hiperparâmetro l1_ratio.</p>
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
-            <li><strong>Vantagens:</strong> Mantém grupos de variáveis correlacionadas com seleção esparsa.</li>
-            <li><strong>Atenção:</strong> Requer ajuste de dois hiperparâmetros (alpha e l1_ratio).</li>
-            <li><strong>Uso em RP:</strong> Equilíbrio ótimo em bases com múltiplos atributos cadastrais.</li>
+            <li><strong>Vantagens:</strong> Seleciona grupos de variáveis correlacionadas com estabilidade.</li>
+            <li><strong>Atenção:</strong> Exige busca bidimensional (alpha e l1_ratio).</li>
           </ul>
         </div>
 
         <div class="card">
-          <h3>5. Árvore de Decisão (DecisionTree)</h3>
-          <p><strong>Conceito:</strong> Partição binária recursiva baseada no critério de redução de variância.</p>
+          <h3>5. Árvore de Decisão (DecisionTreeRegressor)</h3>
+          <p><strong>Conceito:</strong> Particionamento recursivo do espaço amostral minimizando variância do alvo.</p>
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
-            <li><strong>Vantagens:</strong> Captura interações não lineares complexas sem escalonamento.</li>
-            <li><strong>Atenção:</strong> Alta propensão ao sobreajuste se não podada (max_depth).</li>
-            <li><strong>Uso em RP:</strong> Segmentação natural de faixas de preço por zona geográfica.</li>
+            <li><strong>Vantagens:</strong> Captura não-linearidades e interações sem exigir escala.</li>
+            <li><strong>Atenção:</strong> Alto risco de overfitting se max_depth não for podado.</li>
           </ul>
         </div>
 
         <div class="card">
-          <h3>6. Random Forest Regressor</h3>
-          <p><strong>Conceito:</strong> Ensemble Bagging de múltiplas árvores com amostragem aleatória.</p>
+          <h3>6. Floresta Aleatória (RandomForestRegressor)</h3>
+          <p><strong>Conceito:</strong> Ensemble de bagging com agregação de múltiplas árvores e feature subspacing.</p>
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
-            <li><strong>Vantagens:</strong> Altamente robusto a ruídos e outliers; baixa variância.</li>
-            <li><strong>Atenção:</strong> Maior consumo de memória e tempo de treinamento.</li>
-            <li><strong>Uso em RP:</strong> Um dos modelos mais consistentes para precificação imobiliária.</li>
+            <li><strong>Vantagens:</strong> Drástica redução de variância e robustez a ruído e outliers.</li>
+            <li><strong>Atenção:</strong> Maior consumo de memória e tempo de inferência.</li>
           </ul>
         </div>
 
         <div class="card">
-          <h3>7. Support Vector Regression (SVR)</h3>
-          <p><strong>Conceito:</strong> Encontra um hiperplano ótimo dentro de uma margem de tolerância ε.</p>
+          <h3>7. SVR (Support Vector Regression)</h3>
+          <p><strong>Conceito:</strong> Encontra um hiperplano com margem epsilon-tube imune a pequenas flutuações.</p>
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
-            <li><strong>Vantagens:</strong> Eficaz em espaços de alta dimensão usando Kernel RBF.</li>
-            <li><strong>Atenção:</strong> Custo computacional quadrático com número de amostras; sensível a escala.</li>
-            <li><strong>Uso em RP:</strong> Excelente precisão em nichos de imóveis homogêneos.</li>
+            <li><strong>Vantagens:</strong> Excelente para conjuntos com alta dimensionalidade (kernel RBF).</li>
+            <li><strong>Atenção:</strong> Complexidade de treino $O(n^2)$ a $O(n^3)$.</li>
           </ul>
         </div>
 
@@ -905,7 +1144,6 @@
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
             <li><strong>Vantagens:</strong> Aproximador universal de funções e padrões intrincados.</li>
             <li><strong>Atenção:</strong> Exige dados escalonados e ajuste de camadas/neurônios.</li>
-            <li><strong>Uso em RP:</strong> Explora correlações não-lineares sutis em grandes volumes.</li>
           </ul>
         </div>
 
@@ -915,7 +1153,6 @@
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
             <li><strong>Vantagens:</strong> Performance competitiva máxima em dados tabulares.</li>
             <li><strong>Atenção:</strong> Requer monitoramento de learning_rate para evitar sobreajuste.</li>
-            <li><strong>Uso em RP:</strong> Frequentemente o modelo de menor RMSE em competições imobiliárias.</li>
           </ul>
         </div>
 
@@ -925,15 +1162,14 @@
           <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
             <li><strong>Vantagens:</strong> Velocidade de treino ultrarrápida e baixo consumo de RAM.</li>
             <li><strong>Atenção:</strong> Em bases pequenas pode sobreajustar rapidamente se leaf-wise for profundo.</li>
-            <li><strong>Uso em RP:</strong> Alta performance para re-treinamento contínuo em larga escala.</li>
           </ul>
         </div>
       </div>
     </section>
 
-    <!-- 6. Técnicas de Votação -->
+    <!-- 7. Técnicas de Votação -->
     <section id="tecnicas-votacao">
-      <h2 class="section-title"><span class="number">6</span> As 7 Técnicas de Votação (Ensemble)</h2>
+      <h2 class="section-title"><span class="number">7</span> As 7 Técnicas de Votação (Ensemble)</h2>
       <p>
         A <code>FabricaVotacao</code> permite combinar as previsões dos $N$ melhores modelos eleitos por Friedman:
       </p>
@@ -988,9 +1224,334 @@
       </div>
     </section>
 
-    <!-- 7. Manual do YAML -->
+    <!-- 8. Estratégias de Validação Cruzada (Folds) -->
+    <section id="estrategias-folds">
+      <h2 class="section-title"><span class="number">8</span> Estratégias de Validação Cruzada (Folds): Conceitos e Quando Utilizar</h2>
+      <p>
+        A validação cruzada baseada em <strong>folds (partições amostrais)</strong> é o alicerce metodológico que garante que as estimativas de performance e a seleção do modelo campeão por Friedman/Nemenyi sejam generalizáveis, imunes a viés de partição e protegidas contra vazamento de dados (data leakage).
+      </p>
+
+      <div class="card" style="margin-top: 1rem;">
+        <h3>O que é um Fold e como funciona o K-Fold?</h3>
+        <p>
+          O conjunto de desenvolvimento é dividido aleatoriamente em <strong>$K$ subconjuntos mutualmente exclusivos</strong> (folds) de proporções idênticas. O treinamento e teste ocorrem em $K$ iterações cíclicas e pareadas:
+        </p>
+        <ul style="padding-left: 1.25rem; font-size: 0.9rem; color: var(--text-muted); line-height: 1.8; margin-top: 0.5rem;">
+          <li>A cada iteração $k \in \{1, \dots, K\}$, exatamente <strong>$K - 1$ folds</strong> são combinados para calibrar os parâmetros do modelo (conjunto de treino).</li>
+          <li>O <strong>1 fold restante</strong> permanece estritamente oculto e é utilizado para computar o erro de generalização out-of-sample ($RMSE_k$).</li>
+          <li>Ao final das $K$ iterações, toda e qualquer amostra da base foi avaliada exatamente uma vez no papel de teste, gerando a matriz pareada de perdas requerida pelo teste não-paramétrico de Friedman.</li>
+        </ul>
+        <div class="formula-box">
+          RMSE_Médio = (1 / K) * Σ [ RMSE_k ]<br>
+          Variância da Estimativa (Erro Padrão) = sqrt( (1 / (K - 1)) * Σ (RMSE_k - RMSE_Médio)² )
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1.5rem;">
+        <h3>Guia Definitivo: Quando Utilizar Cada Estratégia de Fold?</h3>
+        <p>
+          A escolha da estratégia de particionamento depende da presença de correlações espaciais (mesmo condomínio), temporais (ciclos de mercado) ou desbalanceamento estrutural de valores:
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Estratégia de Fold</th>
+                <th>Quando Deve Ser Usada?</th>
+                <th>Cenário Imobiliário (Ribeirão Preto)</th>
+                <th>Risco de Usar Estratégia Incorreta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>K-Fold Padrão</strong><br><code>kfold</code></td>
+                <td>Amostras I.I.D. (independentes e identicamente distribuídas), homogêneas e sem forte agrupamento por condomínio ou série temporal.</td>
+                <td>Apartamentos avulsos distribuídos aleatoriamente em bairros distintos.</td>
+                <td>Se houver prédios com múltiplas unidades, causa vazamento de condomínio (data leakage).</td>
+              </tr>
+              <tr>
+                <td><strong>Repeated K-Fold</strong><br><code>repeated_kfold</code></td>
+                <td>Bases de dados pequenas a médias (500 a 5.000 amostras) para estabilizar a variância do split aleatório.</td>
+                <td>Bases onde pequenas flutuações de partição alteram o vencedor de Friedman. Gera $K \times R$ folds pareados para maior poder estatístico.</td>
+                <td>Custo computacional multiplicado pelo número de repetições ($K \times R$).</td>
+              </tr>
+              <tr>
+                <td><strong>Group K-Fold</strong><br><code>group_kfold</code></td>
+                <td>Quando existem <strong>múltiplas unidades do mesmo condomínio, edifício ou empreendimento</strong>.</td>
+                <td>Prédio com 20 apartamentos anunciados. Todas as 20 unidades devem ficar juntas no mesmo fold (ou todas no treino, ou todas no teste).</td>
+                <td><strong>Data Leakage Crítico:</strong> O estimador decora particularidades do condomínio gerando métricas perfeitas que colapsam em prédios novos.</td>
+              </tr>
+              <tr>
+                <td><strong>Time Series Split</strong><br><code>time_series_split</code></td>
+                <td>Quando as transações possuem data e o mercado imobiliário reflete ciclos econômicos (Selic, inflação IPCA, crédito imobiliário).</td>
+                <td>Vendas ocorridas entre 2021 e 2026. O modelo treina no passado (2021-2023) e valida estritamente no futuro (2024-2026).</td>
+                <td><strong>Look-ahead Bias:</strong> Usar o futuro para prever o passado produz modelos ilusoriamente bons que falham em produção.</td>
+              </tr>
+              <tr>
+                <td><strong>Stratified K-Fold</strong><br><code>stratified_kfold</code></td>
+                <td>Distribuição com forte assimetria no valor venal (quantis de preço ou zonas da cidade).</td>
+                <td>Garante que cada fold contenha proporções idênticas de apartamentos populares (econômicos) e de alto padrão (Zona Sul).</td>
+                <td>Folds desbalanceados podem conter apenas imóveis econômicos ou apenas coberturas de luxo, distorcendo o RMSE.</td>
+              </tr>
+              <tr>
+                <td><strong>Nested CV</strong><br><code>nested_cv</code></td>
+                <td>Quando há <strong>otimização de hiperparâmetros (tuning)</strong> e seleção de algoritmo simultâneos.</td>
+                <td>Loop Externo avalia a capacidade de generalização real do campeão; Loop Interno executa o Tuning (max_depth, alpha) no treino do fold.</td>
+                <td><strong>Overfitting de Hiperparâmetros:</strong> O modelo aparenta baixo erro de validação, mas o hiperparâmetro foi sobredimensionado.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 1.5rem;">
+        <div class="card">
+          <h3>🎯 Diretrizes de Escolha do Número de Folds ($K$)</h3>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+            <li><strong>$K = 3$:</strong> Pipelines ágeis de desenvolvimento, validação rápida em CI/CD e prototipação com menor custo de CPU.</li>
+            <li><strong>$K = 5$:</strong> Padrão industrial equilibrado (80% treino / 20% teste a cada ciclo). Excelente compromisso de estabilidade e tempo.</li>
+            <li><strong>$K = 10$:</strong> Recomendação acadêmica clássica para relatórios finais. Minimiza o viés pessimista da estimativa de erro.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>⚙️ Configuração Centralizada no YAML</h3>
+          <div class="code-block" style="margin: 0;">
+            <div class="code-header"><span>configuracoes/projeto.yaml</span><span>Sintaxe de Folds</span></div>
+<pre style="padding: 0.75rem;"><code><span class="hl-kw">validacao</span>:
+  <span class="hl-kw">holdout</span>: <span class="hl-num">0.2</span> <span class="hl-com"># 20% teste cego final</span>
+  <span class="hl-kw">cv_externa</span>:
+    <span class="hl-kw">metodo</span>: repeated_kfold
+    <span class="hl-kw">folds</span>: <span class="hl-num">5</span>
+    <span class="hl-kw">repeticoes</span>: <span class="hl-num">2</span>
+    <span class="hl-kw">embaralhar</span>: <span class="hl-num">true</span>
+  <span class="hl-kw">cv_interna</span>:
+    <span class="hl-kw">metodo</span>: kfold
+    <span class="hl-kw">folds</span>: <span class="hl-num">3</span>
+    <span class="hl-kw">embaralhar</span>: <span class="hl-num">true</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. Diagnóstico de Overfitting vs Underfitting -->
+    <section id="diagnostico-curvas">
+      <h2 class="section-title"><span class="number">9</span> Diagnóstico de Overfitting vs Underfitting (Viés x Variância)</h2>
+      <p>
+        O módulo <code>DiagnosticoCurva</code> avalia sistematicamente a capacidade de generalização dos modelos, medindo a evolução do erro de treino (viés) e do erro de validação cruzada (variância) conforme a complexidade dos algoritmos varia.
+      </p>
+
+      <div class="card" style="margin-top: 1rem;">
+        <h3>Equação Fundamental de Decomposição do Erro</h3>
+        <div class="formula-box">
+          Erro Total(x) = Viés²(x) + Variância(x) + σ² (Ruído Irredutível)<br>
+          Gap de Variância: Δ = max(0, RMSE_validacao - RMSE_treino)
+        </div>
+        <p style="font-size: 0.9rem;">
+          À medida que a complexidade aumenta, o <strong>Viés decai monotonicamente</strong> (o modelo se ajusta com mais facilidade ao treino). A <strong>Variância, contudo, se eleva</strong>: o erro de validação atinge um ponto ótimo de mínimo global e, a partir de determinado nível, passa a divergir do erro de treino, caracterizando sobreajuste (overfitting).
+        </p>
+      </div>
+
+      <div class="grid-3" style="margin-top: 1.5rem;">
+        <div class="card">
+          <h3 style="color: var(--accent-warn);">⚠️ Underfitting (Alto Viés)</h3>
+          <p>
+            O modelo é simples demais para capturar os padrões fundamentais do mercado imobiliário. Ambos os erros de treino e validação são excessivamente altos ($RMSE > 40.000$).
+          </p>
+        </div>
+
+        <div class="card">
+          <h3 style="color: var(--accent);">🎯 Generalização Ótima</h3>
+          <p>
+            Equilíbrio ideal entre capacidade e estabilidade. O erro de validação é mínimo, e o gap relativo entre validação e treino permanece rigorosamente contido ($Gap \le 20\%$).
+          </p>
+        </div>
+
+        <div class="card">
+          <h3 style="color: var(--accent-danger);">🔥 Overfitting (Alta Variância)</h3>
+          <p>
+            O modelo memoriza ruídos do conjunto de treinamento. O erro de treino torna-se artificialmente baixo, enquanto o erro de validação explode ($Gap > 20\%$).
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1.5rem;">
+        <h3>Hiperparâmetros de Complexidade Mapeados por Família de Modelo</h3>
+        <p>
+          O sistema infere automaticamente o hiperparâmetro de complexidade adequado de acordo com o modelo selecionado, aceitando também parâmetros explícitos:
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Modelo</th>
+                <th>Hiperparâmetro Dinâmico</th>
+                <th>Comportamento sob Variação de Complexidade</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>random_forest</code>, <code>arvore_decisao</code>, <code>xgboost</code>, <code>lightgbm</code></td>
+                <td><code>max_depth</code></td>
+                <td>Controla a profundidade máxima de corte das árvores; maiores valores aumentam variância.</td>
+              </tr>
+              <tr>
+                <td><code>ridge</code>, <code>lasso</code>, <code>elasticnet</code></td>
+                <td><code>alpha</code></td>
+                <td>Regularização da magnitude dos pesos; menores valores de alpha permitem modelos mais livres.</td>
+              </tr>
+              <tr>
+                <td><code>regressao_linear</code></td>
+                <td><code>fit_intercept</code></td>
+                <td>Ajuste de intercepto e liberdade do hiperplano multidimensional.</td>
+              </tr>
+              <tr>
+                <td><code>svr</code></td>
+                <td><code>C</code></td>
+                <td>Penalização de desvios além da margem $\epsilon$; maior C força ajuste mais rigoroso.</td>
+              </tr>
+              <tr>
+                <td><code>rede_neural</code></td>
+                <td><code>hidden_layer_sizes</code></td>
+                <td>Número e dimensão das camadas densas ocultas do perceptron multicamadas.</td>
+              </tr>
+              <tr>
+                <td><code>modelo_campeao</code></td>
+                <td><code>max_depth (campeão)</code></td>
+                <td>Ponto ótimo de complexidade selecionado pelo pós-teste de Friedman/Nemenyi.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="alert info">
+        <span>💡 <strong>Recurso Nativo do Grafana:</strong> O gráfico de overfitting vs underfitting no Grafana é renderizado sem Matplotlib, utilizando o painel <code>timeseries</code> nativo com a diretiva <code>custom.fillBelowTo: "RMSE Treino (Viés)"</code>. Isso cria a área sombreada do gap de variância diretamente no frontend do Grafana com taxa de atualização de 10 segundos.</span>
+      </div>
+    </section>
+
+    <!-- 10. Feature Importance -->
+    <section id="feature-importance">
+      <h2 class="section-title"><span class="number">10</span> Explicabilidade & Importância de Atributos (Feature Importance)</h2>
+      <p>
+        O módulo <code>ImportanciaAtributos</code> fornece explicabilidade matemática completa para os 10 regressores e para o modelo campeão, com suporte nativo aos motores <code>sklearn</code> e <code>pycaret</code>.
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>🌳 MDI (Mean Decrease Impurity)</h3>
+          <p>
+            Utilizado para modelos baseados em árvore (Random Forest, Árvore de Decisão, XGBoost e LightGBM). Mensura a redução média de impureza (variância do erro quadrático) agregada em todos os nós da floresta.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>📐 Coeficientes Padronizados (|coef_|)</h3>
+          <p>
+            Aplicado a regressores lineares regularizados (Ridge, Lasso, ElasticNet). Calcula o valor absoluto dos coeficientes normalizados sobre atributos padronizados por <code>StandardScaler</code>.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>🔄 Permutation Importance (PFI)</h3>
+          <p>
+            Método agnóstico de alta fidelidade para modelos não-lineares (SVR e Rede Neural MLP). Embaralha os valores de cada coluna mantendo as demais intactas e mede o aumento do erro quadrático médio (MSE).
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1.5rem;">
+        <h3>Hierarquia de Relevância nos Apartamentos de Ribeirão Preto</h3>
+        <p>
+          Distribuição dos pesos médios de importância observados nos estimadores treinados:
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Atributo</th>
+                <th>Peso Médio</th>
+                <th>Percentual</th>
+                <th>Visualização no Grafana</th>
+                <th>Impacto no Preço</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Metragem</code></td>
+                <td>0.4450</td>
+                <td>44.50%</td>
+                <td>
+                  <div class="mini-gauge"><div class="mini-gauge-fill" style="width: 44.5%;"></div></div>
+                </td>
+                <td><span class="badge primary">Muito Alto (Determinante)</span></td>
+              </tr>
+              <tr>
+                <td><code>Bairro</code></td>
+                <td>0.2520</td>
+                <td>25.20%</td>
+                <td>
+                  <div class="mini-gauge"><div class="mini-gauge-fill" style="width: 25.2%;"></div></div>
+                </td>
+                <td><span class="badge secondary">Alto (Relevante)</span></td>
+              </tr>
+              <tr>
+                <td><code>Zona</code></td>
+                <td>0.1480</td>
+                <td>14.80%</td>
+                <td>
+                  <div class="mini-gauge"><div class="mini-gauge-fill" style="width: 14.8%;"></div></div>
+                </td>
+                <td><span class="badge secondary">Alto (Relevante)</span></td>
+              </tr>
+              <tr>
+                <td><code>Metragem_Quadrada</code></td>
+                <td>0.0750</td>
+                <td>7.50%</td>
+                <td>
+                  <div class="mini-gauge"><div class="mini-gauge-fill" style="width: 7.5%;"></div></div>
+                </td>
+                <td><span class="badge success">Médio (Moderado)</span></td>
+              </tr>
+              <tr>
+                <td><code>Suites</code></td>
+                <td>0.0420</td>
+                <td>4.20%</td>
+                <td>
+                  <div class="mini-gauge"><div class="mini-gauge-fill" style="width: 4.2%;"></div></div>
+                </td>
+                <td><span class="badge">Baixo (Marginal)</span></td>
+              </tr>
+              <tr>
+                <td><code>Vagas</code></td>
+                <td>0.0250</td>
+                <td>2.50%</td>
+                <td>
+                  <div class="mini-gauge"><div class="mini-gauge-fill" style="width: 2.5%;"></div></div>
+                </td>
+                <td><span class="badge">Baixo (Marginal)</span></td>
+              </tr>
+              <tr>
+                <td><code>Banheiros</code> / <code>Quartos</code></td>
+                <td>0.0130</td>
+                <td>1.30%</td>
+                <td>
+                  <div class="mini-gauge"><div class="mini-gauge-fill" style="width: 1.3%;"></div></div>
+                </td>
+                <td><span class="badge">Baixo (Marginal)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11. Manual do YAML -->
     <section id="manual-yaml">
-      <h2 class="section-title"><span class="number">7</span> Manual Completo do Arquivo <code>configuracoes/projeto.yaml</code></h2>
+      <h2 class="section-title"><span class="number">11</span> Manual Completo do Arquivo <code>configuracoes/projeto.yaml</code></h2>
       <p>
         O arquivo YAML centraliza todas as decisões variáveis do projeto. A seguir está a descrição de cada chave:
       </p>
@@ -1019,29 +1580,34 @@
       </div>
     </section>
 
-    <!-- 8. Observabilidade -->
+    <!-- 12. Observabilidade -->
     <section id="observabilidade">
-      <h2 class="section-title"><span class="number">8</span> Observabilidade e Dashboard Grafana</h2>
+      <h2 class="section-title"><span class="number">12</span> Observabilidade e Dashboard Grafana</h2>
       <p>
-        O dashboard provisionado em <code>config_ob/dashboards/dashboard_monitoramento_ml.json</code> conecta-se a <strong>Prometheus</strong>, <strong>PostgreSQL (MLflow)</strong> e <strong>Loki</strong> para monitoramento em tempo real:
+        O dashboard provisionado em <code>config_ob/dashboards/dashboard_monitoramento_ml.json</code> (versão 3) conecta-se a <strong>Prometheus</strong>, <strong>PostgreSQL (MLflow)</strong> e <strong>Loki</strong>, utilizando 100% dos recursos nativos do Grafana sem Matplotlib:
       </p>
 
       <div class="grid-2">
         <div class="card">
-          <h3>📊 Métricas de Engenharia e Serviço</h3>
-          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
-            <li>Status de disponibilidade do serviço de inferência (Uptime)</li>
-            <li>Throughput em requisições por segundo (req/s) com quebra 2xx / 5xx</li>
-            <li>Latência de inferência nos percentis p50, p95 e p99</li>
+          <h3>📊 Seções do Dashboard Grafana</h3>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+            <li><strong>Row 1:</strong> Saúde do Serviço de Inferência (Uptime, Throughput 2xx/5xx, Latência p50/p95/p99).</li>
+            <li><strong>Row 2:</strong> Seleção Estatística de Modelos (Postos de Friedman e Tabela de Significância Nemenyi CD).</li>
+            <li><strong>Row 3:</strong> EDA e Qualidade Tabular (Mediana do preço, preço m² e contagem de nulos).</li>
+            <li><strong>Row 4:</strong> Drift de Previsão e Regras de Negócio Dinâmicas (AST).</li>
+            <li><strong>Row 4.2:</strong> Análise Overfitting vs Underfitting (Timeseries com <code>fillBelowTo</code>, Card de Regime Operacional, Mínimo RMSE e Tabela de Variância).</li>
+            <li><strong>Row 4.3:</strong> Explicabilidade & Feature Importance (Barchart horizontal nativo, Top 5 Bargauge em gradiente, Stat card e Tabela com célula gauge nativa).</li>
+            <li><strong>Row 5:</strong> Logs Operacionais do Pipeline e Inferência (Loki range query).</li>
           </ul>
         </div>
 
         <div class="card">
-          <h3>🔬 Governança de ML & Qualidade Tabular</h3>
-          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
-            <li>Gráfico de barras com os postos médios de Friedman dos modelos</li>
-            <li>Métricas de EDA: Mediana do preço de venda, preço m² e nulos</li>
-            <li>Drift do alvo e das features via índice PSI (Population Stability Index)</li>
+          <h3>🎛️ Variáveis de Template Nativas</h3>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem; line-height: 1.8;">
+            <li><strong><code>$motor</code>:</strong> Alterna dinamicamente entre <code>sklearn</code> e <code>pycaret</code>.</li>
+            <li><strong><code>$modelo</code>:</strong> Permite inspecionar o <code>modelo_campeao</code> ou qualquer um dos 10 algoritmos individuais: <code>random_forest</code>, <code>arvore_decisao</code>, <code>xgboost</code>, <code>lightgbm</code>, <code>ridge</code>, <code>lasso</code>, <code>elasticnet</code>, <code>regressao_linear</code>, <code>svr</code>, <code>rede_neural</code>.</li>
+            <li><strong>Recurso fillBelowTo:</strong> Traça a área sombreada entre as séries de validação e treino nativamente no canvas.</li>
+            <li><strong>Recurso cellOptions gauge:</strong> Renderiza barras coloridas nativas em cada célula da tabela de atributos.</li>
           </ul>
         </div>
       </div>

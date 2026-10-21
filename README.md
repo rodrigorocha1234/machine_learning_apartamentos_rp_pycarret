@@ -48,6 +48,20 @@ Sistema corporativo de previsão imobiliária com suporte multi-framework (PyCar
 
 ---
 
+## 🚀 Executando o Treinamento
+
+O projeto conta com o script shell pronto e configurado para orquestrar o pipeline completo:
+
+```bash
+# Execução com a configuração padrão (configuracoes/projeto.yaml)
+./executar_treinamento.sh
+
+# Ou especificando um arquivo de configuração alternativo:
+./executar_treinamento.sh --config caminho/para/custom_config.yaml
+```
+
+---
+
 ## 🧪 Executando os Testes
 
 ```bash
