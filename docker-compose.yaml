@@ -1,0 +1,377 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: mlflow-postgres
+    profiles:
+      - servico_ml
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mlflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mlflow_senha}
+      POSTGRES_DB: ${POSTGRES_DB:-mlflow}
+      PGPORT: ${PGPORT:-5432}
+      TZ: ${TZ:-America/Sao_Paulo}
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    ports:
+      - "${PGPORT:-5432}:${PGPORT:-5432}"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mlflow} -d ${POSTGRES_DB:-mlflow} -p ${PGPORT:-5432}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.27
+    restart: unless-stopped
+
+  storage:
+    image: rustfs/rustfs:1.0.0-alpha.83
+    container_name: storage
+    profiles:
+      - servico_ml
+    environment:
+      RUSTFS_ADDRESS: :9000
+      RUSTFS_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      RUSTFS_ACCESS_KEY: ${AWS_ACCESS_KEY_ID:-rustfs_admin}
+      RUSTFS_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY:-RustFS@2026Admin}
+      RUSTFS_CONSOLE_ENABLE: ${RUSTFS_CONSOLE_ENABLE:-true}
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./storage-data:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", 'curl -s http://127.0.0.1:9000/health | grep -q ''"status":"ok"''' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.28
+
+  create-bucket:
+    image: amazon/aws-cli:2.33.25
+    container_name: mlflow-create-bucket
+    profiles:
+      - servico_ml
+    depends_on:
+      storage:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        set -e;
+        echo 'Waiting for S3 gateway getting ready...';
+        for b in $${S3_BUCKET} $${DATA_BUCKET:-youtube-comentarios}; do
+          if aws --endpoint-url=$${MLFLOW_S3_ENDPOINT_URL} s3api head-bucket --bucket \$$b 2>/dev/null; then
+            echo \"Bucket \$$b already exists. Skipping creation.\";
+          else
+            echo \"Creating bucket \$$b...\";
+            aws --endpoint-url=$${MLFLOW_S3_ENDPOINT_URL} s3api create-bucket --bucket \$$b --region $${AWS_DEFAULT_REGION};
+          fi
+        done
+      "
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-rustfs_admin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-RustFS@2026Admin}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_S3_ADDRESSING_STYLE: path
+      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL:-http://storage:9000}
+      S3_BUCKET: ${S3_BUCKET:-mlflow-bucket}
+      DATA_BUCKET: ${DATA_BUCKET:-youtube-comentarios}
+      TZ: ${TZ:-America/Sao_Paulo}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    restart: "no"
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.29
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:${MLFLOW_VERSION:-v2.16.0}
+    container_name: mlflow-server
+    profiles:
+      - servico_ml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+      create-bucket:
+        condition: service_completed_successfully
+    environment:
+      # Backend store URI built from vars
+      MLFLOW_BACKEND_STORE_URI: ${MLFLOW_BACKEND_STORE_URI:-postgresql://mlflow:mlflow_senha@postgres:5432/mlflow}
+
+      # S3/RustFS settings
+      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL:-http://storage:9000}
+      MLFLOW_ARTIFACTS_DESTINATION: ${MLFLOW_ARTIFACTS_DESTINATION:-s3://mlflow-bucket/}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-rustfs_admin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-RustFS@2026Admin}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      MLFLOW_S3_IGNORE_TLS: "true"
+
+      # Server host/port
+      MLFLOW_HOST: ${MLFLOW_HOST:-0.0.0.0}
+      MLFLOW_PORT: ${MLFLOW_PORT:-5000}
+      TZ: ${TZ:-America/Sao_Paulo}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    command:
+      - /bin/bash
+      - -c
+      - |
+        pip install --no-cache-dir psycopg2-binary boto3
+        mlflow server \
+          --backend-store-uri "${MLFLOW_BACKEND_STORE_URI:-postgresql://mlflow:mlflow_senha@postgres:5432/mlflow}" \
+          --artifacts-destination "${MLFLOW_ARTIFACTS_DESTINATION:-s3://mlflow-bucket/}" \
+          --serve-artifacts \
+          --allowed-hosts "*" \
+          --host "${MLFLOW_HOST:-0.0.0.0}" \
+          --port "${MLFLOW_PORT:-5000}"
+
+    ports:
+      - "${MLFLOW_PORT:-5000}:${MLFLOW_PORT:-5000}"
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${MLFLOW_PORT:-5000}/health')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.30
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    profiles:
+      - dashboard
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+      - ./config_ob/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./config_ob/grafana_dashboards_provider.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./config_ob/dashboards:/etc/grafana/provisioning/dashboards/json
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      # - ./grafana_icons:/usr/share/grafana/public/img/icons/custom
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-Admin@2026}
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - TZ=${TZ:-America/Sao_Paulo}
+      - GF_DATE_FORMATS_DEFAULT_TIMEZONE=America/Sao_Paulo
+      - GF_DATE_FORMATS_TIME_ZONE=America/Sao_Paulo
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.24
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    hostname: loki
+    environment:
+      TZ: ${TZ:-America/Sao_Paulo}
+    profiles:
+      - dashboard
+    ports:
+      - "3100:3100"
+    command: "-config.file=/etc/loki/local-config.yaml"
+    volumes:
+      - ./config_ob/loki-config.yaml:/etc/loki/local-config.yaml
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.25
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    hostname: alloy
+    environment:
+      TZ: ${TZ:-America/Sao_Paulo}
+    profiles:
+      - dashboard
+    ports:
+      - "12345:12345"
+    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    volumes:
+      - ./config_ob/config.alloy:/etc/alloy/config.alloy
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.26
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    hostname: prometheus
+    environment:
+      TZ: ${TZ:-America/Sao_Paulo}
+    profiles:
+      - dashboard
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    volumes:
+      - ./config_ob/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus_data:/prometheus
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--tries=1", "--spider", "http://localhost:9090/-/healthy" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.31
+    restart: unless-stopped
+
+  mlflow-serving:
+    image: ghcr.io/mlflow/mlflow:${MLFLOW_VERSION:-v2.16.0}
+    container_name: mlflow-serving
+    profiles:
+      - serving
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow-server:${MLFLOW_PORT:-5000}
+      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL:-http://storage:9000}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-rustfs_admin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-RustFS@2026Admin}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      MLFLOW_S3_IGNORE_TLS: "true"
+      PYTHONPATH: /app:/app/src
+      TZ: ${TZ:-America/Sao_Paulo}
+    volumes:
+      - ./app:/app/app_build:ro
+      - ./configuracoes:/app/configuracoes:ro
+      - ./src:/app/src:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    command:
+      - /bin/bash
+      - -c
+      - |
+        apt-get update && apt-get install -y --no-install-recommends libgomp1
+        pip install --no-cache-dir boto3 scikit-learn lightgbm xgboost psycopg2-binary scipy pandas cloudpickle typing_extensions prometheus-client
+        python -c "import site, pathlib; p = pathlib.Path(site.getsitepackages()[0]) / 'app_src.pth'; p.write_text('/app\n/app/src\nimport typing, typing_extensions; setattr(typing, \"override\", getattr(typing_extensions, \"override\", lambda f: f))\n')"
+        ln -sfn /app/app_build /app/app
+        export PYTHONPATH=/app:/app/src:$${PYTHONPATH}
+        python -m app.observabilidade_metricas.servidor_inferencia
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.32
+    restart: unless-stopped
+
+  # metricas-treino:
+  #   image: ghcr.io/mlflow/mlflow:${MLFLOW_VERSION:-v2.16.0}
+  #   container_name: metricas-treino
+  #   profiles:
+  #     - dashboard
+  #   command: ["python", "/exportar_metricas.py"]
+  #   environment:
+  #     METRICAS_TREINO_ARQUIVO: /metricas/treino.prom
+  #   volumes:
+  #     - ./scripts/exportar_metricas.py:/exportar_metricas.py:ro
+  #     - ./observabilidade_data:/metricas:ro
+  #   networks:
+  #     mlflow-network:
+  #       ipv4_address: 172.20.0.33
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 5
+  #     start_period: 10s
+
+  api:
+    image: python:3.12-slim
+    container_name: api-fastapi
+    profiles:
+      - servico_ml
+      - api
+    depends_on:
+      storage:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+    environment:
+      - S3_ENDPOINT_URL=http://storage:9000
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-rustfs_admin}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-RustFS@2026Admin}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      - MLFLOW_TRACKING_URI=http://mlflow-server:${MLFLOW_PORT:-5000}
+      - MLFLOW_SERVING_URL=http://mlflow-serving:8080
+      - PYTHONPATH=/app
+      - TZ=${TZ:-America/Sao_Paulo}
+    volumes:
+      - .:/app:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    working_dir: /app
+    command:
+      - /bin/sh
+      - -c
+      - |
+        pip install --no-cache-dir fastapi uvicorn requests boto3 botocore mypy-boto3-s3 pyarrow PyYAML prometheus-client scikit-learn mlflow-skinny
+        python -m uvicorn app.servico_api.aplicacao_fastapi:criar_aplicacao --factory --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      mlflow-network:
+        ipv4_address: 172.20.0.34
+    restart: unless-stopped
+
+networks:
+  mlflow-network:
+    name: mlflow-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

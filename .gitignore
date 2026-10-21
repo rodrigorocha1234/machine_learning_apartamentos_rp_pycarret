@@ -1,0 +1,110 @@
+# ==========================================
+# Python & Bytecode
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==========================================
+# Ambientes Virtuais (Virtual Environments)
+# ==========================================
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# ==========================================
+# Variáveis de Ambiente & Segredos (.env)
+# ==========================================
+.env
+.env.local
+.env.*.local
+*.env
+!configuracoes/
+!config_ob/
+
+# ==========================================
+# IDEs & Editores (PyCharm, VS Code, Cursor)
+# ==========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.directory
+.DS_Store
+
+# ==========================================
+# Testes & Qualidade de Código (Pytest, Mypy)
+# ==========================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# ==========================================
+# MLflow & Rastreamento de Experimentos
+# ==========================================
+mlruns/
+mlartifacts/
+.trash/
+
+# ==========================================
+# Bancos de Dados & Persistência Local
+# ==========================================
+*.sqlite
+*.sqlite3
+*.db
+pgdata/
+
+# ==========================================
+# Observabilidade (Grafana, Prometheus, Loki)
+# ==========================================
+grafana_data/
+prometheus_data/
+observabilidade_data/
+
+# ==========================================
+# Storage Local & Buckets S3 / RustFS
+# ==========================================
+storage-data/
+
+# ==========================================
+# Logs Operacionais
+# ==========================================
+*.log
+logs.log
+
+# ==========================================
+# Arquivos Temporários de Trabalho
+# ==========================================
+pyproject copy.toml
+*.tmp
+*.bak

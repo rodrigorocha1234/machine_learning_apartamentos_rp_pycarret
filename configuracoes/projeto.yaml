@@ -1,0 +1,146 @@
+projeto:
+  nome: previsao_imoveis
+  alvo: Valor_da_Venda
+  semente: 42
+fonte:
+  tipo: xlsx
+  caminho: ${IMOVEIS_XLSX_PATH}
+  aba: 0
+selecao:
+  ativo: true
+  colunas:
+    - {nome: Valor_da_Venda, ativo: true, tipo: quantitativa_continua, papel: alvo}
+    - {nome: Metragem, ativo: true, tipo: quantitativa_continua, papel: numerica}
+    - {nome: Bairro, ativo: true, tipo: qualitativa_nominal, papel: categorica}
+    - {nome: Zona, ativo: true, tipo: qualitativa_nominal, papel: categorica}
+tabular:
+  motor: pandas # pandas | polars
+filtros:
+  ativo: true
+  expressoes:
+    - nome: metragem_positiva
+      ativo: true
+      expressao:
+        pandas: "df['Metragem'] > 0"
+        polars: "df['Metragem'] > 0"
+transformacoes:
+  ativo: true
+  expressoes:
+    - nome: metragem_ajustada
+      ativo: false
+      destino: Metragem
+      expressao:
+        pandas: "df['Metragem'].clip(lower=1)"
+        polars: "df['Metragem'].clip(lower_bound=1)"
+atributos_novos:
+  ativo: false
+  expressoes:
+    - nome: metragem_quadrada
+      ativo: false
+      destino: Metragem_Quadrada
+      expressao:
+        pandas: "df['Metragem'] * df['Metragem']"
+        polars: "df['Metragem'] * df['Metragem']"
+imputacao:
+  ativo: true
+  por_atributo:
+    Metragem: {ativo: true, estrategia: mediana}
+    Bairro: {ativo: true, estrategia: mais_frequente}
+preprocessamento:
+  modelos:
+    regressao_linear: {escalonador: standard, codificador: one_hot}
+    lasso: {escalonador: standard, codificador: one_hot}
+    ridge: {escalonador: standard, codificador: one_hot}
+    elasticnet: {escalonador: standard, codificador: one_hot}
+    arvore_decisao: {escalonador: nenhum, codificador: one_hot}
+    random_forest: {escalonador: nenhum, codificador: one_hot}
+    svr: {escalonador: standard, codificador: one_hot}
+    rede_neural: {escalonador: standard, codificador: one_hot}
+    xgboost: {escalonador: nenhum, codificador: one_hot}
+    lightgbm: {escalonador: nenhum, codificador: one_hot}
+staging:
+  motor: sqlite
+  url: ${STAGING_DATABASE_URL}
+  tabela: imoveis_preparados
+eda:
+  ativo: true
+  graficos: [resumo, nulos, distribuicao_alvo, correlacao]
+  expressoes:
+    - {nome: preco_mediano_zona, ativo: true, operacao: mediana_agrupada, coluna: Valor_da_Venda, por: Zona}
+framework:
+  motor: pycaret # pycaret | sklearn (implementações independentes)
+modelos:
+  - {nome: regressao_linear, ativo: true, pycaret_id: lr, sklearn_class: LinearRegression}
+  - {nome: lasso, ativo: true, pycaret_id: lasso, sklearn_class: Lasso}
+  - {nome: ridge, ativo: true, pycaret_id: ridge, sklearn_class: Ridge}
+  - {nome: elasticnet, ativo: true, pycaret_id: en, sklearn_class: ElasticNet}
+  - {nome: arvore_decisao, ativo: true, pycaret_id: dt, sklearn_class: DecisionTreeRegressor}
+  - {nome: random_forest, ativo: true, pycaret_id: rf, sklearn_class: RandomForestRegressor}
+  - {nome: svr, ativo: true, pycaret_id: svm, sklearn_class: SVR}
+  - {nome: rede_neural, ativo: true, pycaret_id: mlp, sklearn_class: MLPRegressor}
+  - {nome: xgboost, ativo: true, pycaret_id: xgboost, sklearn_class: XGBRegressor}
+  - {nome: lightgbm, ativo: true, pycaret_id: lightgbm, sklearn_class: LGBMRegressor}
+tuning:
+  ativo: true
+  metodo: random # Sklearn: random | grid | halving_random | halving_grid
+                 # PyCaret: random | grid | bayesian | optuna
+  iteracoes: 10
+  parametros:
+    regressao_linear: {fit_intercept: [true, false]}
+    lasso: {alpha: [0.01, 0.1, 1.0, 10.0]}
+    ridge: {alpha: [0.01, 0.1, 1.0, 10.0]}
+    elasticnet: {alpha: [0.01, 0.1, 1.0], l1_ratio: [0.2, 0.5, 0.8]}
+    arvore_decisao: {max_depth: [3, 5, 10], min_samples_split: [2, 5]}
+    random_forest: {n_estimators: [50, 100], max_depth: [5, 10]}
+    svr: {C: [0.1, 1.0, 10.0], kernel: [rbf, linear]}
+    rede_neural: {hidden_layer_sizes: [[50], [100]], max_iter: [200]}
+    xgboost: {n_estimators: [50, 100], max_depth: [3, 6], learning_rate: [0.05, 0.1]}
+    lightgbm: {n_estimators: [50, 100], max_depth: [3, 6], learning_rate: [0.05, 0.1]}
+validacao:
+  holdout: 0.2
+  cv_externa: {metodo: repeated_kfold, splits: 5, repeticoes: 3}
+  cv_interna: {metodo: kfold, splits: 3, embaralhar: true}
+  metrica: RMSE
+estatistica:
+  teste: friedman
+  pos_teste: nemenyi
+  alpha: 0.05
+  desempate: menor_rmse
+votacao:
+  ativo: false
+  tecnica: media_simples # media_simples | voting_regressor | media_ponderada_rmse | media_ponderada_postos | mediana | media_aparada | stacking
+  melhores_n: 3
+  meta_modelo: ridge # para técnica stacking (ridge | linear)
+regras_negocio:
+  ativo: true
+  coluna_alvo_predito: preco_predito
+  regras:
+    - nome: margem_inferior_negociacao
+      ativo: true
+      descricao: "Faixa mínima de negociação (5% abaixo do preço previsto pelo modelo campeão)"
+      destino: preco_minimo_sugerido
+      expressao: "preco_predito * 0.95"
+    - nome: margem_superior_negociacao
+      ativo: true
+      descricao: "Faixa máxima de negociação (5% acima do preço previsto pelo modelo campeão)"
+      destino: preco_maximo_sugerido
+      expressao: "preco_predito * 1.05"
+    - nome: valor_metro_quadrado_predito
+      ativo: true
+      descricao: "Preço por m² calculado a partir do preço previsto e da metragem do imóvel"
+      destino: preco_m2_predito
+      expressao: "preco_predito / Metragem"
+    - nome: taxa_comissao_imobiliaria
+      ativo: true
+      descricao: "Comissão estimada de corretagem (6% sobre o preço previsto)"
+      destino: valor_comissao_estimada
+      expressao: "preco_predito * 0.06"
+mlflow:
+  tracking_uri: ${MLFLOW_TRACKING_URI}
+  experimento: imoveis_regressao
+  modelo_registrado: previsao_preco_imoveis
+  serving: {api: mlflow_models_serve, endpoint: /invocations}
+observabilidade:
+  grafana_url: ${GRAFANA_URL}
+  dashboards: [eda, modelos, estatistica, servico]
+  metricas: [rmse, mae, r2, latencia_p50, latencia_p95, latencia_p99, taxa_erro, drift]

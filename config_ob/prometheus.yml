@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090
+
+  - job_name: alloy
+    static_configs:
+      - targets:
+          - alloy:12345
+
+  - job_name: loki
+    static_configs:
+      - targets:
+          - loki:3100
+
+  - job_name: ml_service
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - metricas-treino:8000
+
+  - job_name: ml_serving
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - mlflow-serving:8080

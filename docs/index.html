@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentação Técnica — Machine Learning Apartamentos Ribeirão Preto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --bg-card-hover: rgba(31, 41, 55, 0.8);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(56, 189, 248, 0.3);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-subtle: #6b7280;
+      --primary: #38bdf8;
+      --primary-glow: rgba(56, 189, 248, 0.25);
+      --secondary: #818cf8;
+      --accent: #34d399;
+      --accent-warn: #fbbf24;
+      --accent-danger: #f87171;
+      --code-bg: #030712;
+      --sidebar-width: 280px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f2937;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #374151;
+    }
+
+    /* Sidebar Navigation */
+    aside.sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #0b0f19;
+      font-size: 1.2rem;
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .brand-text h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+    }
+
+    .brand-text span {
+      font-size: 0.75rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    nav.nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      flex: 1;
+    }
+
+    .nav-header {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-subtle);
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+      padding-left: 0.75rem;
+      font-weight: 700;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--primary);
+      border-left: 3px solid var(--primary);
+    }
+
+    /* Main Content */
+    main.content {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      padding: 2.5rem 3.5rem;
+      max-width: 1400px;
+    }
+
+    /* Hero Banner */
+    .hero {
+      position: relative;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2.5rem;
+      margin-bottom: 3rem;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 900px;
+      margin-bottom: 1.5rem;
+    }
+
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .badge.primary { background: rgba(56, 189, 248, 0.15); color: var(--primary); border-color: rgba(56, 189, 248, 0.3); }
+    .badge.success { background: rgba(52, 211, 153, 0.15); color: var(--accent); border-color: rgba(52, 211, 153, 0.3); }
+    .badge.secondary { background: rgba(129, 140, 248, 0.15); color: var(--secondary); border-color: rgba(129, 140, 248, 0.3); }
+
+    /* Section Styles */
+    section {
+      margin-bottom: 4rem;
+      scroll-margin-top: 2rem;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-title span.number {
+      font-size: 1.1rem;
+      background: var(--primary);
+      color: #0b0f19;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      font-weight: 800;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.5rem;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(8px);
+      transition: all 0.25s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    .card h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card p {
+      font-size: 0.925rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    /* Code Blocks & Comparison */
+    pre, code {
+      font-family: 'Fira Code', monospace;
+    }
+
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.25rem;
+      position: relative;
+      margin: 1rem 0;
+      overflow-x: auto;
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    pre code {
+      font-size: 0.85rem;
+      color: #e5e7eb;
+      line-height: 1.5;
+    }
+
+    .hl-kw { color: #f472b6; font-weight: 600; }
+    .hl-str { color: #a7f3d0; }
+    .hl-num { color: #fbbf24; }
+    .hl-com { color: #6b7280; font-style: italic; }
+    .hl-fn { color: #60a5fa; }
+    .hl-var { color: #38bdf8; }
+
+    /* Comparison Table */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+
+    th {
+      background: rgba(31, 41, 55, 0.6);
+      color: #fff;
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-main);
+    }
+
+    /* Interactive Tabs */
+    .tab-header {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1rem;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.6rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px 6px 0 0;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Math Formula Block */
+    .formula-box {
+      background: rgba(15, 23, 42, 0.8);
+      border-left: 4px solid var(--primary);
+      padding: 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.25rem 0;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.95rem;
+      color: #93c5fd;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      display: flex;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .alert.info {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #bae6fd;
+    }
+
+    .alert.warning {
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: #fde68a;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+      aside.sidebar { display: none; }
+      main.content { margin-left: 0; padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">RP</div>
+      <div class="brand-text">
+        <h2>Imóveis ML</h2>
+        <span>Ribeirão Preto</span>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <div class="nav-header">Visão Geral</div>
+      <a href="#arquitetura" class="nav-item">Arquitetura & Design</a>
+      <a href="#estatistica" class="nav-item">Testes Estatísticos</a>
+      <a href="#quality-gates" class="nav-item">Quality Gates (49 Testes)</a>
+
+      <div class="nav-header">Engenharia de Dados</div>
+      <a href="#expressoes" class="nav-item">Expressões Pandas & Polars</a>
+      <a href="#seguranca-ast" class="nav-item">Segurança AST</a>
+
+      <div class="nav-header">Modelagem & Ensemble</div>
+      <a href="#catalogo-modelos" class="nav-item">10 Modelos Machine Learning</a>
+      <a href="#tecnicas-votacao" class="nav-item">7 Técnicas de Votação</a>
+
+      <div class="nav-header">Operação</div>
+      <a href="#manual-yaml" class="nav-item">Manual do projeto.yaml</a>
+      <a href="#observabilidade" class="nav-item">Dashboard Grafana</a>
+    </nav>
+  </aside>
+
+  <!-- Main Documentation Content -->
+  <main class="content">
+
+    <!-- Hero Section -->
+    <header class="hero">
+      <h1>Previsão de Preços de Apartamentos — Documentação Técnica</h1>
+      <p>
+        Solução corporativa e modular em Python 3.12+ com tipagem estrita, isolamento físico de frameworks (PyCaret & Scikit-Learn), seleção estatística por Friedman/Nemenyi, ensemble com 7 técnicas de votação e deploy nativo via MLflow Serving com avaliação restrita de AST.
+      </p>
+      <div class="tags-container">
+        <span class="badge primary">Python 3.12+</span>
+        <span class="badge success">Pyright Strict</span>
+        <span class="badge secondary">Zero Any & Zero Object</span>
+        <span class="badge primary">Scikit-Learn 1.4+</span>
+        <span class="badge secondary">PyCaret 3.3+</span>
+        <span class="badge success">Polars & Pandas</span>
+        <span class="badge primary">MLflow Serving</span>
+        <span class="badge">Grafana & Loki</span>
+      </div>
+    </header>
+
+    <!-- 1. Arquitetura -->
+    <section id="arquitetura">
+      <h2 class="section-title"><span class="number">1</span> Arquitetura de Software e Decisões de Design</h2>
+      <p>
+        O projeto implementa rigorosamente os princípios <strong>SOLID</strong> e padrões <strong>GoF</strong> (Strategy, Factory, Adapter, Facade) através de contratos estritos definidos com <code>typing.Protocol</code>. Não foram utilizados frameworks web desacoplados como FastAPI; o modelo final é servido de forma nativa e conteinerizada através da abstração <code>mlflow.pyfunc.PythonModel</code>.
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>🏛️ Contratos Estritos (Protocols)</h3>
+          <p>Toda a comunicação interna obedece a interfaces semânticas independentes de implementação:</p>
+          <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
+            <li><code>ModeloPreditor</code>: Inferência tabular unificada</li>
+            <li><code>MotorTreino</code>: Validação cruzada e tuning</li>
+            <li><code>MotorTabela</code>: Vetorização Pandas / Polars</li>
+            <li><code>FonteDados</code>: Ingestão polimórfica</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>⚡ Tipagem Pura sem "object"</h3>
+          <p>
+            Em conformidade com as regras de governança, o tipo <code>object</code> e <code>typing.Any</code> foram totalmente extintos. Foram criados Type Aliases semânticos recursivos (PEP 695) como <code>ValorConfiguracao</code>, <code>ValorMetricaParametro</code> e <code>ValorResultadoPipeline</code>.
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>🛡️ Trilha de Motores Isolados</h3>
+          <p>
+            O framework PyCaret utiliza exclusivamente suas chamadas nativas de alta performance (<code>RegressionExperiment</code>). A trilha Scikit-Learn opera de forma 100% independente com <code>Pipeline</code>, <code>ColumnTransformer</code> e buscas dedicadas.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Testes Estatísticos -->
+    <section id="estatistica">
+      <h2 class="section-title"><span class="number">2</span> Camada Estatística Independente: Testes de Friedman e Nemenyi</h2>
+      <p>
+        A escolha do modelo campeão <strong>não é baseada apenas na média simples de um único fold</strong>. Adotamos o protocolo estatístico formal de <em>Janez Demšar (2006)</em>, que assegura que o modelo vencedor é significativamente superior aos demais em uma bateria pareada de validação cruzada.
+      </p>
+
+      <div class="card" style="margin-top: 1rem;">
+        <h3>2.1. Teste Não-Paramétrico de Friedman</h3>
+        <p>
+          Compara $k$ algoritmos avaliados sobre $N$ blocos pareados (folds da validação cruzada). Para cada fold $i$, os modelos recebem postos de $1$ (menor erro RMSE) até $k$ (maior erro).
+        </p>
+
+        <div class="formula-box">
+          Estatística Qui-Quadrado de Friedman:<br>
+          χ²_F = [12N / (k * (k + 1))] * [ Σ (R_j)² - (k * (k + 1)²) / 4 ]
+        </div>
+
+        <p style="font-size: 0.9rem;">
+          Onde $R_j = \frac{1}{N} \sum_{i=1}^N r_i^j$ representa o <strong>posto médio</strong> do modelo $j$. Se o $p$-valor for inferior ao nível de significância configurado (ex: $\alpha = 0.05$), rejeita-se a hipótese nula de que todos os regressores possuem comportamento idêntico.
+        </p>
+      </div>
+
+      <div class="card" style="margin-top: 1.5rem;">
+        <h3>2.2. Pós-Teste de Nemenyi e Diferença Crítica (CD)</h3>
+        <p>
+          Após a rejeição de $H_0$ por Friedman, o teste de Nemenyi calcula a <strong>Diferença Crítica (CD)</strong> para comparações pareadas sem inflacionar o erro Tipo I (falsos positivos):
+        </p>
+
+        <div class="formula-box">
+          CD = q_α * sqrt( (k * (k + 1)) / (6 * N) )
+        </div>
+
+        <p style="font-size: 0.9rem;">
+          Se a diferença entre os postos médios de dois modelos $|R_a - R_b| > CD$, a diferença de performance é estatisticamente significante. O modelo com menor posto médio absoluto é eleito o <strong>Modelo Campeão Estatístico</strong>.
+        </p>
+      </div>
+    </section>
+
+    <!-- 3. Quality Gates -->
+    <section id="quality-gates">
+      <h2 class="section-title"><span class="number">3</span> Quality Gates: Suíte de 49 Testes Automatizados</h2>
+      <p>
+        Em cumprimento à regra de governança de nunca declarar qualidade sem evidência real, o projeto conta com <strong>49 testes automatizados</strong> que validam todos os componentes ponta a ponta:
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Módulo de Teste</th>
+              <th>Qtd</th>
+              <th>Escopo Verificado</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>test_motor_sklearn.py</code></td>
+              <td>3</td>
+              <td>Protocolo, 10 regressores configuráveis, Tuning (grid, random, halving) e erro de método inválido.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_modelos_votacao.py</code></td>
+              <td>8</td>
+              <td>As 7 técnicas de ensemble: VotingRegressor, Stacking, Média Ponderada RMSE, Postos, Mediana, Média Aparada.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_motor_pycaret.py</code></td>
+              <td>3</td>
+              <td>Integração nativa com PyCaret RegressionExperiment, fold strategies e pré-processamento.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_teste_friedman.py</code></td>
+              <td>2</td>
+              <td>Cálculo matemático de qui-quadrado, rank pareado e pós-teste de Nemenyi.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_motor_pandas.py</code></td>
+              <td>7</td>
+              <td>Vetorização Pandas, filtros com sintaxe <code>df['coluna']</code>, transformações e novas features.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_motor_polars.py</code></td>
+              <td>8</td>
+              <td>Execução Lazy/Eager no Polars, expressões <code>pl.col(...)</code> e compatibilidade tabular.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_regras_negocio.py</code></td>
+              <td>4</td>
+              <td>Segurança AST, bloqueio de injeção de código arbitrário e execução vetorizada de pós-processamento.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_repositorio_fonte.py</code></td>
+              <td>2</td>
+              <td>Ingestão polimórfica (Excel, SQL, API) e persistência no SQLite staging.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+            <tr>
+              <td><code>test_main_pipeline.py</code></td>
+              <td>4</td>
+              <td>Execuções completas end-to-end com Sklearn, PyCaret, Polars e Ensembles.</td>
+              <td><span class="badge success">100% Passed</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Expressões Pandas & Polars -->
+    <section id="expressoes">
+      <h2 class="section-title"><span class="number">4</span> Guia de Expressões Seguras: Pandas & Polars via AST</h2>
+      <p>
+        Para assegurar máxima flexibilidade sem violar a segurança, o sistema oferece suporte a expressões declarativas configuradas no arquivo YAML. O interpretador de AST (Abstract Syntax Tree) restrito compila e executa as expressões diretamente sobre as estruturas colunares dos motores.
+      </p>
+
+      <div class="tab-header">
+        <button class="tab-btn active" onclick="switchTab(event, 'tab-filtros')">1. Filtros de Limpeza</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-transf')">2. Transformações Existentes</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-novas')">3. Novas Features</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-regras')">4. Regras de Negócio</button>
+      </div>
+
+      <!-- Tab Filtros -->
+      <div id="tab-filtros" class="tab-content active">
+        <div class="card">
+          <h3>Filtros de Registros (Boolean Masking)</h3>
+          <p>Elimina amostras que violam integridade física ou regras de negócio antes do staging:</p>
+          <div class="code-block">
+            <div class="code-header"><span>configuracoes/projeto.yaml</span><span>Filtros Tabulares</span></div>
+<pre><code><span class="hl-kw">filtros</span>:
+  <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+  <span class="hl-kw">expressoes</span>:
+    <span class="hl-com"># Garante metragens fisicamente válidas</span>
+    - <span class="hl-kw">nome</span>: metragem_positiva
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">expressao</span>:
+        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Metragem'] > 0"</span>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Metragem') > 0"</span>
+
+    <span class="hl-com"># Preço mínimo de venda realista em Ribeirão Preto</span>
+    - <span class="hl-kw">nome</span>: preco_minimo_valido
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">expressao</span>:
+        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Valor_da_Venda'] >= 50000"</span>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Valor_da_Venda') >= 50000"</span>
+
+    <span class="hl-com"># Descarte de condomínio inconsistente negativo</span>
+    - <span class="hl-kw">nome</span>: condominio_consistente
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">expressao</span>:
+        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Valor_do_Condominio'] >= 0"</span>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Valor_do_Condominio') >= 0"</span></code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Transformações -->
+      <div id="tab-transf" class="tab-content">
+        <div class="card">
+          <h3>Transformações de Colunas Existentes</h3>
+          <p>Aplica mutações diretamente na coluna de destino especificada:</p>
+          <div class="code-block">
+            <div class="code-header"><span>configuracoes/projeto.yaml</span><span>Transformações In-Place</span></div>
+<pre><code><span class="hl-kw">transformacoes</span>:
+  <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+  <span class="hl-kw">expressoes</span>:
+    <span class="hl-com"># Ajuste de teto mínimo para metragem</span>
+    - <span class="hl-kw">nome</span>: metragem_ajustada
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">destino</span>: Metragem
+      <span class="hl-kw">expressao</span>:
+        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Metragem'].clip(lower=15)"</span>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Metragem').clip(lower_bound=15)"</span>
+
+    <span class="hl-com"># Preenchimento de nulos para vagas</span>
+    - <span class="hl-kw">nome</span>: vagas_imputadas
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">destino</span>: Vagas_Garagem
+      <span class="hl-kw">expressao</span>:
+        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Vagas_Garagem'].fillna(1)"</span>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Vagas_Garagem').fill_null(1)"</span></code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Novas Features -->
+      <div id="tab-novas" class="tab-content">
+        <div class="card">
+          <h3>Engenharia de Recursos (Novas Variáveis)</h3>
+          <p>Gera atributos derivados para enriquecer o poder preditivo dos modelos:</p>
+          <div class="code-block">
+            <div class="code-header"><span>configuracoes/projeto.yaml</span><span>Atributos Novos</span></div>
+<pre><code><span class="hl-kw">atributos_novos</span>:
+  <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+  <span class="hl-kw">expressoes</span>:
+    <span class="hl-com"># Razão entre quartos e banheiros</span>
+    - <span class="hl-kw">nome</span>: razao_quartos_banheiros
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">destino</span>: Quartos_Por_Banheiro
+      <span class="hl-kw">expressao</span>:
+        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Quartos'] / df['Banheiros']"</span>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Quartos') / pl.col('Banheiros')"</span>
+
+    <span class="hl-com"># Termo não-linear de metragem</span>
+    - <span class="hl-kw">nome</span>: metragem_quadrada
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">destino</span>: Metragem_Quadrada
+      <span class="hl-kw">expressao</span>:
+        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Metragem'] * df['Metragem']"</span>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Metragem') * pl.col('Metragem')"</span>
+
+    <span class="hl-com"># Condomínio ponderado pela área</span>
+    - <span class="hl-kw">nome</span>: condominio_por_m2
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">destino</span>: Condominio_Por_M2
+      <span class="hl-kw">expressao</span>:
+        <span class="hl-kw">pandas</span>: <span class="hl-str">"df['Valor_do_Condominio'] / df['Metragem']"</span>
+        <span class="hl-kw">polars</span>: <span class="hl-str">"pl.col('Valor_do_Condominio') / pl.col('Metragem')"</span></code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Regras Negocio -->
+      <div id="tab-regras" class="tab-content">
+        <div class="card">
+          <h3>Regras de Negócio de Pós-Inferência</h3>
+          <p>Executadas dinamicamente dentro do <code>ModeloServico</code> sobre a coluna predita <code>preco_predito</code>:</p>
+          <div class="code-block">
+            <div class="code-header"><span>configuracoes/projeto.yaml</span><span>Regras de Negócio AST</span></div>
+<pre><code><span class="hl-kw">regras_negocio</span>:
+  <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+  <span class="hl-kw">coluna_alvo_predito</span>: preco_predito
+  <span class="hl-kw">regras</span>:
+    <span class="hl-com"># Faixa mínima de proposta comercial (desconto aceitável de 5%)</span>
+    - <span class="hl-kw">nome</span>: margem_inferior_negociacao
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">destino</span>: preco_minimo_sugerido
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.95"</span>
+
+    <span class="hl-com"># Preço por m² calculado a partir do valor previsto</span>
+    - <span class="hl-kw">nome</span>: valor_metro_quadrado_predito
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">destino</span>: preco_m2_predito
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito / Metragem"</span>
+
+    <span class="hl-com"># Comissão padrão de corretagem (6% CRECI)</span>
+    - <span class="hl-kw">nome</span>: taxa_comissao_imobiliaria
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">destino</span>: valor_comissao_estimada
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.06"</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Catálogo de Modelos -->
+    <section id="catalogo-modelos">
+      <h2 class="section-title"><span class="number">5</span> Catálogo dos 10 Modelos de Machine Learning</h2>
+      <p>
+        O pipeline suporta 10 algoritmos de regressão configuráveis, disponíveis tanto na trilha Scikit-Learn quanto na trilha PyCaret:
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>1. Regressão Linear Múltipla</h3>
+          <p><strong>Conceito:</strong> Modelo linear clássico por Mínimos Quadrados Ordinários (OLS).</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Rápido, determinístico e 100% interpretável por coeficientes.</li>
+            <li><strong>Atenção:</strong> Sensível a multicolinearidade e não captura efeitos não-lineares.</li>
+            <li><strong>Uso em RP:</strong> Baseline de comparação para apartamentos padrão.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>2. Regressão Lasso (L1)</h3>
+          <p><strong>Conceito:</strong> Penalização L1 que zera coeficientes de variáveis irrelevantes.</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Seleção automática de atributos e redução de ruído.</li>
+            <li><strong>Atenção:</strong> Exige padronização das features (StandardScaler).</li>
+            <li><strong>Uso em RP:</strong> Descarta variáveis esparsas ou redundantes de bairros.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>3. Regressão Ridge (L2)</h3>
+          <p><strong>Conceito:</strong> Regularização Tikhonov que encolhe coeficientes evitando overfitting.</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Excelente estabilidade matemática contra multicolinearidade.</li>
+            <li><strong>Atenção:</strong> Não anula coeficientes; mantém todas as variáveis no modelo.</li>
+            <li><strong>Uso em RP:</strong> Ideal quando há correlação forte entre Metragem e Cômodos.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>4. ElasticNet (L1 + L2)</h3>
+          <p><strong>Conceito:</strong> Combinação linear balanceada das penalidades L1 e L2.</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Mantém grupos de variáveis correlacionadas com seleção esparsa.</li>
+            <li><strong>Atenção:</strong> Requer ajuste de dois hiperparâmetros (alpha e l1_ratio).</li>
+            <li><strong>Uso em RP:</strong> Equilíbrio ótimo em bases com múltiplos atributos cadastrais.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>5. Árvore de Decisão (DecisionTree)</h3>
+          <p><strong>Conceito:</strong> Partição binária recursiva baseada no critério de redução de variância.</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Captura interações não lineares complexas sem escalonamento.</li>
+            <li><strong>Atenção:</strong> Alta propensão ao sobreajuste se não podada (max_depth).</li>
+            <li><strong>Uso em RP:</strong> Segmentação natural de faixas de preço por zona geográfica.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>6. Random Forest Regressor</h3>
+          <p><strong>Conceito:</strong> Ensemble Bagging de múltiplas árvores com amostragem aleatória.</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Altamente robusto a ruídos e outliers; baixa variância.</li>
+            <li><strong>Atenção:</strong> Maior consumo de memória e tempo de treinamento.</li>
+            <li><strong>Uso em RP:</strong> Um dos modelos mais consistentes para precificação imobiliária.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>7. Support Vector Regression (SVR)</h3>
+          <p><strong>Conceito:</strong> Encontra um hiperplano ótimo dentro de uma margem de tolerância ε.</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Eficaz em espaços de alta dimensão usando Kernel RBF.</li>
+            <li><strong>Atenção:</strong> Custo computacional quadrático com número de amostras; sensível a escala.</li>
+            <li><strong>Uso em RP:</strong> Excelente precisão em nichos de imóveis homogêneos.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>8. Rede Neural MLP (Multi-Layer Perceptron)</h3>
+          <p><strong>Conceito:</strong> Rede neural densa feedforward com retropropagação de erro (Adam).</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Aproximador universal de funções e padrões intrincados.</li>
+            <li><strong>Atenção:</strong> Exige dados escalonados e ajuste de camadas/neurônios.</li>
+            <li><strong>Uso em RP:</strong> Explora correlações não-lineares sutis em grandes volumes.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>9. XGBoost (Extreme Gradient Boosting)</h3>
+          <p><strong>Conceito:</strong> Boosting com árvores de gradiente de 2ª ordem e regularização formal.</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Performance competitiva máxima em dados tabulares.</li>
+            <li><strong>Atenção:</strong> Requer monitoramento de learning_rate para evitar sobreajuste.</li>
+            <li><strong>Uso em RP:</strong> Frequentemente o modelo de menor RMSE em competições imobiliárias.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>10. LightGBM (Light Gradient Boosted Machine)</h3>
+          <p><strong>Conceito:</strong> Gradient boosting baseado em histogramas com crescimento leaf-wise.</p>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li><strong>Vantagens:</strong> Velocidade de treino ultrarrápida e baixo consumo de RAM.</li>
+            <li><strong>Atenção:</strong> Em bases pequenas pode sobreajustar rapidamente se leaf-wise for profundo.</li>
+            <li><strong>Uso em RP:</strong> Alta performance para re-treinamento contínuo em larga escala.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Técnicas de Votação -->
+    <section id="tecnicas-votacao">
+      <h2 class="section-title"><span class="number">6</span> As 7 Técnicas de Votação (Ensemble)</h2>
+      <p>
+        A <code>FabricaVotacao</code> permite combinar as previsões dos $N$ melhores modelos eleitos por Friedman:
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Técnica no YAML</th>
+              <th>Mecanismo de Combinação</th>
+              <th>Vantagem Estratégica</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>media_simples</code></td>
+              <td>Média aritmética uniforme entre os modelos componentes.</td>
+              <td>Reduz a variância sem custo computacional adicional.</td>
+            </tr>
+            <tr>
+              <td><code>voting_regressor</code></td>
+              <td>Instância oficial do <code>VotingRegressor</code> do Scikit-Learn.</td>
+              <td>Padrão ouro do ecossistema Scikit-Learn com suporte nativo a pipelines.</td>
+            </tr>
+            <tr>
+              <td><code>media_ponderada_rmse</code></td>
+              <td>Pesos inversamente proporcionais ao RMSE obtido em CV: $w_i \propto \frac{1}{\text{RMSE}_i}$.</td>
+              <td>Dá maior protagonismo aos modelos que erraram menos na validação.</td>
+            </tr>
+            <tr>
+              <td><code>media_ponderada_postos</code></td>
+              <td>Pesos decrescentes atribuídos segundo o ranking de Friedman.</td>
+              <td>Ponderação matematicamente robusta que não é distorcida por magnitudes de erro.</td>
+            </tr>
+            <tr>
+              <td><code>mediana</code></td>
+              <td>Mediana das previsões individuais para cada linha da inferência.</td>
+              <td>Imune a modelos que produzam predições aberrantes (outliers extremos).</td>
+            </tr>
+            <tr>
+              <td><code>media_aparada</code></td>
+              <td>Trimmed Mean: Descarta a menor e maior previsão por amostra e calcula a média central.</td>
+              <td>Filtra extremidades mantendo o dinamismo da média.</td>
+            </tr>
+            <tr>
+              <td><code>stacking</code></td>
+              <td>Meta-aprendizado via <code>StackingRegressor</code> com meta-modelo (ex: <code>RidgeCV</code>).</td>
+              <td>Aprende a ponderação ótima de combinação através de validação cruzada out-of-fold.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7. Manual do YAML -->
+    <section id="manual-yaml">
+      <h2 class="section-title"><span class="number">7</span> Manual Completo do Arquivo <code>configuracoes/projeto.yaml</code></h2>
+      <p>
+        O arquivo YAML centraliza todas as decisões variáveis do projeto. A seguir está a descrição de cada chave:
+      </p>
+
+      <div class="card">
+        <h3>Estrutura das Seções do YAML</h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.9rem; color: var(--text-muted); line-height: 1.8;">
+          <li><strong><code>projeto</code>:</strong> Metadados, coluna alvo (<code>Valor_da_Venda</code>) e semente randômica (<code>semente: 42</code>).</li>
+          <li><strong><code>fonte</code>:</strong> Provedor de dados (<code>tipo: xlsx | sql | api</code>), caminho, queries SQL ou endpoints HTTP com suporte a variáveis de ambiente.</li>
+          <li><strong><code>tabular</code>:</strong> Motor de processamento (<code>motor: pandas | polars</code>), modo lazy/eager e limites de memória.</li>
+          <li><strong><code>filtros</code>, <code>transformacoes</code>, <code>atributos_novos</code>:</strong> Expressões em AST para limpeza e feature engineering.</li>
+          <li><strong><code>framework</code>:</strong> Escolha do motor de ML (<code>motor: pycaret | sklearn</code>).</li>
+          <li><strong><code>modelos</code>:</strong> Lista declarativa com os 10 modelos e flag <code>ativo: true/false</code> para seleção pontual.</li>
+          <li><strong><code>tuning</code>:</strong> Ativação, iterações e método de busca:
+            <ul style="padding-left: 1.25rem; margin-top: 0.25rem;">
+              <li><strong>Sklearn:</strong> <code>random</code> (RandomizedSearchCV), <code>grid</code> (GridSearchCV), <code>halving_random</code>, <code>halving_grid</code>.</li>
+              <li><strong>PyCaret:</strong> <code>random</code>, <code>grid</code>, <code>bayesian</code>, <code>optuna</code>.</li>
+            </ul>
+          </li>
+          <li><strong><code>validacao</code>:</strong> Holdout (ex: <code>0.2</code>), CV externa (repeated k-fold) e CV interna (k-fold).</li>
+          <li><strong><code>estatistica</code>:</strong> Nível de significância (<code>alpha: 0.05</code>) e desempate para o teste de Friedman.</li>
+          <li><strong><code>votacao</code>:</strong> Ativação do ensemble e escolha de uma das 7 técnicas de combinação.</li>
+          <li><strong><code>regras_negocio</code>:</strong> Regras de pós-processamento aplicadas em tempo real pelo <code>ModeloServico</code>.</li>
+          <li><strong><code>mlflow</code>:</strong> Tracking URI, nome do experimento e registro de modelo.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 8. Observabilidade -->
+    <section id="observabilidade">
+      <h2 class="section-title"><span class="number">8</span> Observabilidade e Dashboard Grafana</h2>
+      <p>
+        O dashboard provisionado em <code>config_ob/dashboards/dashboard_monitoramento_ml.json</code> conecta-se a <strong>Prometheus</strong>, <strong>PostgreSQL (MLflow)</strong> e <strong>Loki</strong> para monitoramento em tempo real:
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>📊 Métricas de Engenharia e Serviço</h3>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li>Status de disponibilidade do serviço de inferência (Uptime)</li>
+            <li>Throughput em requisições por segundo (req/s) com quebra 2xx / 5xx</li>
+            <li>Latência de inferência nos percentis p50, p95 e p99</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>🔬 Governança de ML & Qualidade Tabular</h3>
+          <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 1rem;">
+            <li>Gráfico de barras com os postos médios de Friedman dos modelos</li>
+            <li>Métricas de EDA: Mediana do preço de venda, preço m² e nulos</li>
+            <li>Drift do alvo e das features via índice PSI (Population Stability Index)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function switchTab(evt, tabId) {
+      const parent = evt.target.closest('section');
+      parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      evt.target.classList.add('active');
+    }
+
+    // Scroll spy for sidebar links
+    window.addEventListener('scroll', () => {
+      const sections = document.querySelectorAll('section');
+      const navLinks = document.querySelectorAll('.nav-item');
+      let current = '';
+
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 120;
+        if (pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === `#${current}`) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
