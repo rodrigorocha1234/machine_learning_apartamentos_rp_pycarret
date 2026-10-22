@@ -77,3 +77,26 @@ class AnaliseExploratoria:
                 json.dump(relatorio, f, ensure_ascii=False, indent=2)
         except Exception as erro:
             raise ErroAnaliseEda(f"Falha ao salvar relatório EDA em '{caminho_destino}': {erro}") from erro
+
+    def gerar_relatorio_visual(
+        self,
+        coluna_alvo: str,
+        motor: str = "sweetviz",
+        caminho_saida: str = "storage-data/relatorio_eda.html",
+        analises_configuradas: list[dict[str, ValorConfiguracaoEda]] | None = None,
+        motor_tabular: str | None = None,
+    ) -> str:
+        """Gera o relatório visual de EDA utilizando o motor configurado via FabricaEda."""
+        from app.analises_eda.fabrica_eda import FabricaEda
+        try:
+            dados = self._repositorio.ler_dados()
+            gerador = FabricaEda.criar_gerador(motor=motor, motor_tabular=motor_tabular)
+            return gerador.gerar_relatorio(
+                dados=dados,
+                coluna_alvo=coluna_alvo,
+                caminho_saida=caminho_saida,
+                analises_configuradas=analises_configuradas,
+            )
+        except Exception as erro:
+            raise ErroAnaliseEda(f"Falha ao gerar relatório visual EDA com motor '{motor}': {erro}") from erro
+

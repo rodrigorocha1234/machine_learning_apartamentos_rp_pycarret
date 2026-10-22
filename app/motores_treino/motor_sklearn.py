@@ -24,6 +24,14 @@ from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 
 from app.contratos_dados.motor_treino import ModeloPreditor, MotorTreino, ValorMetricaParametro
+from app.tipos_enumerados import (
+    EstrategiaFold,
+    MetodoTransformacao,
+    MetodoTuning,
+    TipoCodificador,
+    TipoEscalonador,
+    TipoModelo,
+)
 
 class ErroMotorTreino(Exception):
     """Exceção para falhas nos motores de treino."""
@@ -34,34 +42,34 @@ class MotorSklearn(MotorTreino):
     """Trilha EXCLUSIVAMENTE scikit-learn com suporte completo aos 10 modelos configuráveis."""
 
     _DEFAULTS_MODELOS: list[dict[str, str | bool]] = [
-        {"nome": "regressao_linear", "sklearn_class": "LinearRegression", "ativo": True},
-        {"nome": "lasso", "sklearn_class": "Lasso", "ativo": True},
-        {"nome": "ridge", "sklearn_class": "Ridge", "ativo": True},
-        {"nome": "elasticnet", "sklearn_class": "ElasticNet", "ativo": True},
-        {"nome": "arvore_decisao", "sklearn_class": "DecisionTreeRegressor", "ativo": True},
-        {"nome": "random_forest", "sklearn_class": "RandomForestRegressor", "ativo": True},
-        {"nome": "svr", "sklearn_class": "SVR", "ativo": True},
-        {"nome": "rede_neural", "sklearn_class": "MLPRegressor", "ativo": True},
-        {"nome": "xgboost", "sklearn_class": "XGBRegressor", "ativo": True},
-        {"nome": "lightgbm", "sklearn_class": "LGBMRegressor", "ativo": True},
+        {"nome": TipoModelo.REGRESSAO_LINEAR.value, "sklearn_class": "LinearRegression", "ativo": True},
+        {"nome": TipoModelo.LASSO.value, "sklearn_class": "Lasso", "ativo": True},
+        {"nome": TipoModelo.RIDGE.value, "sklearn_class": "Ridge", "ativo": True},
+        {"nome": TipoModelo.ELASTICNET.value, "sklearn_class": "ElasticNet", "ativo": True},
+        {"nome": TipoModelo.ARVORE_DECISAO.value, "sklearn_class": "DecisionTreeRegressor", "ativo": True},
+        {"nome": TipoModelo.RANDOM_FOREST.value, "sklearn_class": "RandomForestRegressor", "ativo": True},
+        {"nome": TipoModelo.SVR.value, "sklearn_class": "SVR", "ativo": True},
+        {"nome": TipoModelo.REDE_NEURAL.value, "sklearn_class": "MLPRegressor", "ativo": True},
+        {"nome": TipoModelo.XGBOOST.value, "sklearn_class": "XGBRegressor", "ativo": True},
+        {"nome": TipoModelo.LIGHTGBM.value, "sklearn_class": "LGBMRegressor", "ativo": True},
     ]
 
     def __init__(
         self,
         semente: int = 42,
         folds: int = 3,
-        metodo_folds: str = "kfold",
+        metodo_folds: str = EstrategiaFold.KFOLD.value,
         embaralhar_folds: bool = True,
         colunas_numericas: list[str] | None = None,
         colunas_categoricas: list[str] | None = None,
         preprocessamento_por_modelo: dict[str, dict[str, str]] | None = None,
         modelos_configurados: list[dict[str, str | bool]] | None = None,
         parametros_tuning: dict[str, dict[str, list[str | int | float | bool]]] | None = None,
-        metodo_tuning: str = "random",
+        metodo_tuning: str = MetodoTuning.RANDOM.value,
         transformar_alvo: bool = False,
-        metodo_transformacao_alvo: str = "log1p",
+        metodo_transformacao_alvo: str = MetodoTransformacao.LOG1P.value,
         transformar_atributos: bool = False,
-        metodo_transformacao_atributos: str = "log1p",
+        metodo_transformacao_atributos: str = MetodoTransformacao.LOG1P.value,
         colunas_transformacao_atributos: list[str] | None = None,
     ) -> None:
         self._semente = semente
@@ -80,7 +88,7 @@ class MotorSklearn(MotorTreino):
         self._metodo_transformacao_atributos = metodo_transformacao_atributos.lower().strip()
         self._colunas_transformacao_atributos = colunas_transformacao_atributos
         self._melhor_estimador: ModeloPreditor | None = None
-        self._nome_modelo_campeao: str = "ridge"
+        self._nome_modelo_campeao: str = TipoModelo.RIDGE.value
 
 
     def _resolver_colunas(self, x: pd.DataFrame) -> tuple[list[str], list[str]]:
@@ -99,34 +107,35 @@ class MotorSklearn(MotorTreino):
         return col_num, col_cat
 
     def _instanciar_regressor(self, modelo_nome: str) -> BaseEstimator:
-        nome_normalizado = modelo_nome.lower().strip()
+        modelo_enum = TipoModelo.de_string(modelo_nome)
 
-        if nome_normalizado in ("regressao_linear", "linearregression", "lr"):
+        if modelo_enum == TipoModelo.REGRESSAO_LINEAR:
             return LinearRegression()
-        if nome_normalizado in ("lasso",):
+        if modelo_enum == TipoModelo.LASSO:
             return Lasso(alpha=0.1, random_state=self._semente)
-        if nome_normalizado in ("ridge",):
+        if modelo_enum == TipoModelo.RIDGE:
             return Ridge(alpha=1.0, random_state=self._semente)
-        if nome_normalizado in ("elasticnet", "en"):
+        if modelo_enum == TipoModelo.ELASTICNET:
             return ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=self._semente)
-        if nome_normalizado in ("arvore_decisao", "decisiontreeregressor", "dt"):
+        if modelo_enum == TipoModelo.ARVORE_DECISAO:
             return DecisionTreeRegressor(random_state=self._semente)
-        if nome_normalizado in ("random_forest", "randomforestregressor", "rf"):
+        if modelo_enum == TipoModelo.RANDOM_FOREST:
             return RandomForestRegressor(n_estimators=50, random_state=self._semente)
-        if nome_normalizado in ("svr", "svm"):
+        if modelo_enum == TipoModelo.SVR:
             return SVR()
-        if nome_normalizado in ("rede_neural", "mlpregressor", "mlp"):
+        if modelo_enum == TipoModelo.REDE_NEURAL:
             return MLPRegressor(hidden_layer_sizes=(50,), max_iter=200, random_state=self._semente)
-        if nome_normalizado in ("xgboost", "xgbregressor"):
+        if modelo_enum == TipoModelo.XGBOOST:
             return XGBRegressor(n_estimators=50, random_state=self._semente)
-        if nome_normalizado in ("lightgbm", "lgbmregressor"):
+        if modelo_enum == TipoModelo.LIGHTGBM:
             return LGBMRegressor(n_estimators=50, random_state=self._semente, verbose=-1)
 
         raise ErroMotorTreino(f"Modelo não suportado no motor Sklearn: '{modelo_nome}'")
 
     def _criar_pipeline(self, modelo_tipo: str, colunas_num: list[str], colunas_cat: list[str]) -> Pipeline:
         config_modelo = self._preprocessamento_por_modelo.get(modelo_tipo, {})
-        tipo_escalonador = config_modelo.get("escalonador", "standard")
+        valor_escalonador_raw = config_modelo.get("escalonador", TipoEscalonador.STANDARD.value)
+        tipo_escalonador = TipoEscalonador.de_string(valor_escalonador_raw)
         
         transformadores: list[tuple[str, Pipeline, list[str]]] = []
 
@@ -139,15 +148,16 @@ class MotorSklearn(MotorTreino):
                 )
                 colunas_sem_log = [c for c in colunas_num if c not in colunas_alvo_log]
 
-                func_transf = np.log if self._metodo_transformacao_atributos == "log" else np.log1p
-                inv_transf = np.exp if self._metodo_transformacao_atributos == "log" else np.expm1
+                metodo_transf_attr = MetodoTransformacao.de_string(self._metodo_transformacao_atributos)
+                func_transf = np.log if metodo_transf_attr == MetodoTransformacao.LOG else np.log1p
+                inv_transf = np.exp if metodo_transf_attr == MetodoTransformacao.LOG else np.expm1
 
                 if colunas_alvo_log:
                     passos_num_log: list[tuple[str, BaseEstimator]] = [
                         ("imputer", SimpleImputer(strategy="median")),
                         ("log", FunctionTransformer(func=func_transf, inverse_func=inv_transf, check_inverse=False)),
                     ]
-                    if tipo_escalonador == "standard":
+                    if tipo_escalonador == TipoEscalonador.STANDARD:
                         passos_num_log.append(("scaler", StandardScaler()))
                     transformadores.append(("num_log", Pipeline(passos_num_log), colunas_alvo_log))
 
@@ -155,14 +165,14 @@ class MotorSklearn(MotorTreino):
                     passos_num_sem_log: list[tuple[str, BaseEstimator]] = [
                         ("imputer", SimpleImputer(strategy="median"))
                     ]
-                    if tipo_escalonador == "standard":
+                    if tipo_escalonador == TipoEscalonador.STANDARD:
                         passos_num_sem_log.append(("scaler", StandardScaler()))
                     transformadores.append(("num_direto", Pipeline(passos_num_sem_log), colunas_sem_log))
             else:
                 passos_num: list[tuple[str, BaseEstimator]] = [
                     ("imputer", SimpleImputer(strategy="median"))
                 ]
-                if tipo_escalonador == "standard":
+                if tipo_escalonador == TipoEscalonador.STANDARD:
                     passos_num.append(("scaler", StandardScaler()))
                 transformadores.append(("num", Pipeline(passos_num), colunas_num))
 
@@ -178,13 +188,14 @@ class MotorSklearn(MotorTreino):
 
         regressor_final: BaseEstimator
         if self._transformar_alvo:
-            if self._metodo_transformacao_alvo in ("yeo-johnson", "yeojohnson", "box-cox", "boxcox"):
-                metodo_pt = "yeo-johnson" if "yeo" in self._metodo_transformacao_alvo else "box-cox"
+            metodo_alvo = MetodoTransformacao.de_string(self._metodo_transformacao_alvo)
+            if metodo_alvo in (MetodoTransformacao.YEO_JOHNSON, MetodoTransformacao.BOX_COX):
+                metodo_pt = "yeo-johnson" if metodo_alvo == MetodoTransformacao.YEO_JOHNSON else "box-cox"
                 regressor_final = TransformedTargetRegressor(
                     regressor=regressor,
                     transformer=PowerTransformer(method=metodo_pt)
                 )
-            elif self._metodo_transformacao_alvo == "log":
+            elif metodo_alvo == MetodoTransformacao.LOG:
                 regressor_final = TransformedTargetRegressor(
                     regressor=regressor,
                     func=np.log,
@@ -272,14 +283,21 @@ class MotorSklearn(MotorTreino):
 
 
         if grid_params:
-            if metodo_escolhido in ("grid", "grid_search"):
+            try:
+                tuning_enum = MetodoTuning.de_string(metodo_escolhido)
+            except ValueError as erro:
+                raise ErroMotorTreino(
+                    f"Método de tuning '{metodo_escolhido}' não suportado no motor Sklearn: {erro}"
+                ) from erro
+
+            if tuning_enum == MetodoTuning.GRID:
                 busca = GridSearchCV(
                     pipeline,
                     grid_params,
                     cv=self._folds,
                     scoring="neg_root_mean_squared_error",
                 )
-            elif metodo_escolhido in ("halving_grid", "halving_grid_search"):
+            elif tuning_enum == MetodoTuning.HALVING and ("grid" in metodo_escolhido):
                 busca = HalvingGridSearchCV(
                     pipeline,
                     grid_params,
@@ -287,7 +305,7 @@ class MotorSklearn(MotorTreino):
                     scoring="neg_root_mean_squared_error",
                     random_state=self._semente,
                 )
-            elif metodo_escolhido in ("halving_random", "halving_random_search"):
+            elif tuning_enum == MetodoTuning.HALVING:
                 total_combinacoes = int(np.prod([len(v) for v in grid_params.values()]))
                 n_candidates = min(iteracoes, total_combinacoes)
                 busca = HalvingRandomSearchCV(
@@ -298,7 +316,7 @@ class MotorSklearn(MotorTreino):
                     scoring="neg_root_mean_squared_error",
                     random_state=self._semente,
                 )
-            elif metodo_escolhido in ("random", "random_search", "randomized"):
+            elif tuning_enum == MetodoTuning.RANDOM:
                 total_combinacoes = int(np.prod([len(v) for v in grid_params.values()]))
                 n_iter = min(iteracoes, total_combinacoes)
                 busca = RandomizedSearchCV(

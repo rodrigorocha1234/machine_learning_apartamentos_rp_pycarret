@@ -7,6 +7,9 @@
 #   ./executar_treinamento.sh
 #
 # Exemplos com flags:
+#   # Executar apenas a Análise Exploratória (EDA):
+#   ./executar_treinamento.sh --apenas-eda
+#
 #   # Treinar direto o modelo campeão já salvo no MLflow e subir a API (sem CV e sem Tuning):
 #   ./executar_treinamento.sh --apenas-campeao --subir-api
 #
@@ -28,6 +31,7 @@ set -euo pipefail
 # MODO_EXECUCAO:
 #   "completo"        -> Ingestão + Staging + EDA + CV Pareada + Friedman + Tuning + Registro MLflow
 #   "apenas_campeao"  -> Pula CV e Tuning; treina direto o modelo campeão salvo no MLflow e empacota no ModeloServico
+#   "apenas_eda"      -> Ingestão + Staging + EDA (gera relatórios HTML e JSON sem executar modelagem/treinamento)
 MODO_EXECUCAO="completo"
 
 # SUBIR_API_SERVING:
@@ -66,9 +70,10 @@ exibir_ajuda() {
     echo -e "${CLR_BOLD}Uso:${CLR_RESET} $0 [OPÇÕES]"
     echo ""
     echo -e "${CLR_BOLD}Opções:${CLR_RESET}"
+    echo "  --apenas-eda, --somente-eda, --eda    Executa apenas a análise exploratória (EDA), gerando relatórios HTML e JSON"
     echo "  --apenas-campeao, --somente-campeao   Executa em modo rápido: treina direto o campeão salvo no MLflow (pula CV e Tuning)"
     echo "  --subir-api                           Inicializa a API do MLflow Serving após o treinamento"
-    echo "  --modo <completo|apenas_campeao>      Define explicitamente o modo de execução"
+    echo "  --modo <completo|apenas_campeao|apenas_eda> Define explicitamente o modo de execução"
     echo "  --modelo <nome>                       Força o modelo campeão a treinar (ex: random_forest, lightgbm, xgboost)"
     echo "  --porta <porta>                       Define a porta da API do MLflow Serving (padrão: 8080)"
     echo "  --host <host>                         Define o host de binding da API (padrão: 0.0.0.0)"
@@ -76,6 +81,7 @@ exibir_ajuda() {
     echo "  --ajuda, -h                           Exibe esta mensagem de ajuda"
     echo ""
     echo -e "${CLR_BOLD}Exemplos:${CLR_RESET}"
+    echo "  $0 --apenas-eda"
     echo "  $0 --apenas-campeao --subir-api"
     echo "  $0 --apenas-campeao --modelo random_forest"
     echo "  $0 --config configuracoes/projeto.yaml --subir-api"
@@ -87,6 +93,10 @@ exibir_ajuda() {
 # ==============================================================================
 while [ "$#" -gt 0 ]; do
     case "$1" in
+        --apenas-eda|--somente-eda|--eda)
+            MODO_EXECUCAO="apenas_eda"
+            shift
+            ;;
         --apenas-campeao|--somente-campeao|--pular-cv-tuning)
             MODO_EXECUCAO="apenas_campeao"
             shift
@@ -169,8 +179,10 @@ fi
 ARGS_PYTHON=( "--config" "${CONFIG_FILE}" )
 if [ "${MODO_EXECUCAO}" = "apenas_campeao" ]; then
     ARGS_PYTHON+=( "--apenas-campeao" )
+elif [ "${MODO_EXECUCAO}" = "apenas_eda" ]; then
+    ARGS_PYTHON+=( "--apenas-eda" )
 fi
-if [ -n "${MODELO_CAMPEAO_ESPECIFICO}" ]; then
+if [ -n "${MODELO_CAMPEAO_ESPECIFICO}" ] && [ "${MODO_EXECUCAO}" != "apenas_eda" ]; then
     ARGS_PYTHON+=( "--modelo" "${MODELO_CAMPEAO_ESPECIFICO}" )
 fi
 
@@ -178,6 +190,9 @@ echo ""
 if [ "${MODO_EXECUCAO}" = "apenas_campeao" ]; then
     echo -e "${CLR_WARN}⚡ MODO RÁPIDO SELECIONADO:${CLR_RESET} Pulando Validação Cruzada Pareada e Tuning de Parâmetros."
     echo -e "${CLR_INFO}⚡ Treinando diretamente o modelo campeão salvo no MLflow com dados completos de staging e regras dinâmicas.${CLR_RESET}"
+elif [ "${MODO_EXECUCAO}" = "apenas_eda" ]; then
+    echo -e "${CLR_CYAN}📊 MODO ANÁLISE EXPLORATÓRIA (EDA) SELECIONADO:${CLR_RESET} Ingestão -> Staging -> Geração de Relatórios EDA."
+    echo -e "${CLR_INFO}📊 Nenhuma etapa de modelagem, validação cruzada ou tuning será executada.${CLR_RESET}"
 else
     echo -e "${CLR_INFO}[INFO]${CLR_RESET} Executando pipeline completo (Ingestão -> Staging -> EDA -> CV Pareada -> Friedman/Nemenyi -> Tuning -> Registro MLflow)..."
 fi
@@ -194,6 +209,22 @@ if [ ${STATUS_EXEC} -ne 0 ]; then
     echo -e "${CLR_ERR} ❌ Ocorreu uma falha na execução do pipeline (código ${STATUS_EXEC}).${CLR_RESET}"
     echo -e "${CLR_ERR}====================================================================${CLR_RESET}"
     exit ${STATUS_EXEC}
+fi
+
+if [ "${MODO_EXECUCAO}" = "apenas_eda" ]; then
+    echo ""
+    echo -e "${CLR_SUCCESS}====================================================================${CLR_RESET}"
+    echo -e "${CLR_SUCCESS} 📊 Análise Exploratória (EDA) concluída com sucesso!${CLR_RESET}"
+    echo -e "${CLR_SUCCESS}====================================================================${CLR_RESET}"
+    echo -e "${CLR_INFO} [INFO] Relatório HTML gerado em :${CLR_RESET} ${CLR_BOLD}storage-data/relatorio_eda.html${CLR_RESET}"
+    echo -e "${CLR_INFO} [INFO] Relatório JSON gerado em :${CLR_RESET} ${CLR_BOLD}storage-data/relatorio_eda.json${CLR_RESET}"
+    if [ -f "storage-data/relatorio_eda.html" ]; then
+        TAM_HTML=$(du -h "storage-data/relatorio_eda.html" | cut -f1)
+        echo -e "${CLR_CYAN} 💡 Dica: Para visualizar no navegador, execute:${CLR_RESET}"
+        echo -e "    ${CLR_BOLD}xdg-open storage-data/relatorio_eda.html${CLR_RESET} (${TAM_HTML})"
+    fi
+    echo -e "${CLR_SUCCESS}====================================================================${CLR_RESET}"
+    exit 0
 fi
 
 echo ""

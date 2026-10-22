@@ -5,25 +5,22 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from app.analises_eda.analise_exploratoria import AnaliseExploratoria
-from app.analises_estatisticas.teste_friedman import TesteFriedman
 from app.configuracao_projeto.leitor_configuracao import LeitorConfiguracao, ValorConfiguracao
 from app.contratos_dados.fonte_dados import FonteDados
 from app.contratos_dados.motor_tabela import MotorTabela
 from app.contratos_dados.motor_treino import ModeloPreditor, MotorTreino, ValorMetricaParametro
-from app.contratos_dados.regra_negocio import DefinicaoRegra
 from app.contratos_dados.repositorio_dados import RepositorioDados
 from app.fontes_dados.fabrica_fontes import FabricaFontes
-from app.modelos_votacao.fabrica_votacao import FabricaVotacao
 from app.motores_tabela.fabrica_motores import FabricaMotores
-from app.motores_treino.motor_pycaret import MotorPycaret
-from app.motores_treino.motor_sklearn import MotorSklearn
+from app.orquestracao_ml.executor_avaliacao import ExecutorAvaliacao
 from app.orquestracao_ml.modelo_servico import ModeloServico
+from app.orquestracao_ml.montador_servico import MontadorServico
 from app.orquestracao_ml.observador_auditoria import ObservadorAuditoria
 from app.orquestracao_ml.observador_metricas import ObservadorMetricas
+from app.orquestracao_ml.otimizador_campeao import OtimizadorCampeao
+from app.orquestracao_ml.preparador_treino import PreparadorTreino
 from app.orquestracao_ml.publicador_servico import PublicadorServico
 from app.repositorios_dados.repositorio_sqlite import RepositorioSqlite
-
-
 
 
 type ValorResultadoPipeline = (
@@ -50,6 +47,10 @@ class MainPipeline:
     def __init__(self, caminho_configuracao: str = "configuracoes/projeto.yaml") -> None:
         self._caminho_configuracao = caminho_configuracao
         self._leitor = LeitorConfiguracao()
+        self._preparador_treino = PreparadorTreino()
+        self._executor_avaliacao = ExecutorAvaliacao()
+        self._otimizador_campeao = OtimizadorCampeao()
+        self._montador_servico = MontadorServico()
 
     def executar_pipeline(
         self,
@@ -155,11 +156,50 @@ class MainPipeline:
 
         # 5. EDA a partir do staging SQLite
         dados_staging = repositorio.ler_dados()
-        eda = AnaliseExploratoria(repositorio)
-        relatorio_eda = eda.executar_eda(coluna_alvo=alvo)
-        
-        caminho_eda_json = "storage-data/relatorio_eda.json"
-        eda.salvar_relatorio_json(relatorio_eda, caminho_eda_json)
+        config_eda = config.get("eda", {})
+        ativo_eda = bool(config_eda.get("ativo", True))
+        motor_eda = str(config_eda.get("motor", "sweetviz"))
+        motor_tabular_eda = str(config_eda.get("motor_tabular", "pandas"))
+        caminho_eda_json = str(config_eda.get("caminho_relatorio_json", "storage-data/relatorio_eda.json"))
+        caminho_eda_html = str(config_eda.get("caminho_relatorio_html", "storage-data/relatorio_eda.html"))
+
+        if ativo_eda:
+            eda = AnaliseExploratoria(repositorio)
+            relatorio_eda = eda.executar_eda(coluna_alvo=alvo)
+            eda.salvar_relatorio_json(relatorio_eda, caminho_eda_json)
+            analises_eda = config_eda.get("analises", [])
+            try:
+                eda.gerar_relatorio_visual(
+                    coluna_alvo=alvo,
+                    motor=motor_eda,
+                    caminho_saida=caminho_eda_html,
+                    analises_configuradas=analises_eda if isinstance(analises_eda, list) else None,
+                    motor_tabular=motor_tabular_eda,
+                )
+            except Exception:
+                if modo_efetivo in ("apenas_eda", "eda"):
+                    raise
+                # Falha pontual na geração visual não interrompe o treinamento
+                pass
+
+        # Retorno imediato quando o modo for apenas análise exploratória (EDA)
+        if modo_efetivo in ("apenas_eda", "eda"):
+            return {
+                "modo": "apenas_eda",
+                "status": "sucesso",
+                "linhas_processadas": int(len(dados_staging)),
+                "linhas_staging": int(len(dados_staging)),
+                "colunas_staging": [str(c) for c in dados_staging.columns],
+                "motor_eda": motor_eda,
+                "motor_tabular": motor_tabular_eda,
+                "eda": {
+                    "ativo": ativo_eda,
+                    "motor": motor_eda,
+                    "motor_tabular": motor_tabular_eda,
+                    "relatorio_html": caminho_eda_html,
+                    "relatorio_json": caminho_eda_json,
+                },
+            }
 
         # 6. Segregação rigorosa de Holdout (Anti-Leakage)
         config_val = config.get("validacao", {})
@@ -171,82 +211,16 @@ class MainPipeline:
             random_state=semente
         )
 
-        # 7. Seleção do Motor de Treino (PyCaret ou Sklearn, isolados)
-        config_framework = config.get("framework", {})
-        motor_nome = str(config_framework.get("motor", "sklearn")).lower()
-
-        colunas_num = [
-            c["nome"] for c in config.get("selecao", {}).get("colunas", [])
-            if c.get("papel") == "numerica" and c.get("ativo", False)
-        ]
-        colunas_cat = [
-            c["nome"] for c in config.get("selecao", {}).get("colunas", [])
-            if c.get("papel") == "categorica" and c.get("ativo", False)
-        ]
-        config_preprocessamento = config.get("preprocessamento", {})
-        config_prep = config_preprocessamento.get("modelos", {})
-        transformar_alvo = bool(config_preprocessamento.get("transformar_alvo", False))
-        metodo_transformacao_alvo = str(config_preprocessamento.get("metodo_transformacao_alvo", "log1p"))
-
-        config_transf_attr = config_preprocessamento.get("transformar_atributos", {})
-        transformar_atributos = bool(config_transf_attr.get("ativo", False))
-        metodo_transformacao_atributos = str(config_transf_attr.get("metodo", "log1p"))
-        colunas_transf_attr_raw = config_transf_attr.get("colunas", ["Metragem"])
-        colunas_transf_attr = (
-            [str(c) for c in colunas_transf_attr_raw]
-            if isinstance(colunas_transf_attr_raw, list)
-            else None
-        )
-
-        config_cv = config_val.get("cv_interna", {})
-        metodo_folds = str(config_cv.get("metodo", "kfold"))
-        splits_folds = int(config_cv.get("splits", 3))
-        embaralhar_folds = bool(config_cv.get("embaralhar", True))
-
-        modelos_configurados = config.get("modelos", [])
-        config_tuning = config.get("tuning", {})
-        parametros_tuning = config_tuning.get("parametros", {})
-        iteracoes = int(config_tuning.get("iteracoes", 5))
-        metodo_tuning = str(config_tuning.get("metodo", "random"))
-
-        motor_treino: MotorTreino
-        if motor_nome == "pycaret":
-            motor_treino = MotorPycaret(
-                semente=semente,
-                folds=splits_folds,
-                metodo_folds=metodo_folds,
-                embaralhar_folds=embaralhar_folds,
-                colunas_numericas=colunas_num,
-                colunas_categoricas=colunas_cat,
-                preprocessamento_por_modelo=config_prep,
-                modelos_configurados=modelos_configurados,
-                parametros_tuning=parametros_tuning,
-                metodo_tuning=metodo_tuning,
-                transformar_alvo=transformar_alvo,
-                metodo_transformacao_alvo=metodo_transformacao_alvo,
-                transformar_atributos=transformar_atributos,
-                metodo_transformacao_atributos=metodo_transformacao_atributos,
-                colunas_transformacao_atributos=colunas_transf_attr,
-            )
-        else:
-            motor_treino = MotorSklearn(
-                semente=semente,
-                folds=splits_folds,
-                metodo_folds=metodo_folds,
-                embaralhar_folds=embaralhar_folds,
-                colunas_numericas=colunas_num,
-                colunas_categoricas=colunas_cat,
-                preprocessamento_por_modelo=config_prep,
-                modelos_configurados=modelos_configurados,
-                parametros_tuning=parametros_tuning,
-                metodo_tuning=metodo_tuning,
-                transformar_alvo=transformar_alvo,
-                metodo_transformacao_alvo=metodo_transformacao_alvo,
-                transformar_atributos=transformar_atributos,
-                metodo_transformacao_atributos=metodo_transformacao_atributos,
-                colunas_transformacao_atributos=colunas_transf_attr,
-            )
-
+        # 7. Seleção do Motor de Treino via PreparadorTreino
+        (
+            motor_treino,
+            motor_nome,
+            transformar_alvo,
+            metodo_transformacao_alvo,
+            transformar_atributos,
+            metodo_transformacao_atributos,
+            colunas_transf_attr,
+        ) = self._preparador_treino.criar_motor(config, semente=semente)
 
         config_mlflow = config.get("mlflow", {})
         tracking_uri = str(config_mlflow.get("tracking_uri", os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")))
@@ -285,90 +259,44 @@ class MainPipeline:
                 "rejeitou_nula": False
             }
         else:
-            # 8. Validação Cruzada Pareada de Todos os Modelos Ativos
-            perdas_pareadas = motor_treino.avaliar_modelos(df_dev, alvo=alvo)
-
-            # 9. Camada Estatística Independente (Friedman e Pós-Hoc Pareado)
-            avaliador_estatistico = TesteFriedman()
+            # 8 & 9. Validação Cruzada Pareada e Inferência Estatística via ExecutorAvaliacao
             config_estatistica = config.get("estatistica", {})
-            alpha = float(config_estatistica.get("alpha", 0.05))
-            resultado_estatistico = avaliador_estatistico.testar_diferencas(perdas_pareadas, alpha=alpha)
-            modelo_campeao_nome = resultado_estatistico.modelo_campeao
-            resultado_estatistico_dict = {
-                "estatistica_friedman": resultado_estatistico.estatistica_friedman,
-                "valor_p_friedman": resultado_estatistico.valor_p_friedman,
-                "rejeitou_nula": resultado_estatistico.hipotese_nula_rejeitada,
-                "postos_medios": resultado_estatistico.postos_medios.to_dict(),
-                "modelo_campeao": modelo_campeao_nome
-            }
-
-            # 10. Ensemble de Votação (caso ativo) ou Tuning do Modelo Campeão Individual
-            config_votacao = config.get("votacao", {})
-            usar_votacao = bool(config_votacao.get("ativo", False))
-
-            if usar_votacao:
-                tecnica_votacao = str(config_votacao.get("tecnica", "media_simples"))
-                melhores_n = int(config_votacao.get("melhores_n", 3))
-
-                # Ordena os modelos pelos postos médios de Friedman (menor posto = melhor)
-                modelos_ordenados = list(resultado_estatistico.postos_medios.index)
-                top_modelos_nomes = modelos_ordenados[:melhores_n]
-
-                # Treina os N melhores modelos na base completa
-                estimadores_top: list[tuple[str, ModeloPreditor]] = []
-                for nome_m in top_modelos_nomes:
-                    est = motor_treino.treinar_final(dados_staging, alvo=alvo, modelo_nome=nome_m)
-                    estimadores_top.append((nome_m, est))
-
-                metricas_rmse = perdas_pareadas.mean().to_dict()
-                postos_friedman = resultado_estatistico.postos_medios.to_dict()
-
-                modelo_final = FabricaVotacao.criar_ensemble_votacao(
-                    estimadores=estimadores_top,
-                    tecnica=tecnica_votacao,
-                    metricas_rmse=metricas_rmse,
-                    postos_friedman=postos_friedman,
-                    cv_folds=splits_folds
-                )
-                modelo_campeao_nome = f"ensemble_{tecnica_votacao}"
-                resultado_estatistico_dict["modelo_campeao"] = modelo_campeao_nome
-                resultado_tuning = {
-                    "ensemble": tecnica_votacao,
-                    "modelos_componentes": top_modelos_nomes
-                }
-
-            else:
-                # Tuning de Hiperparâmetros do Modelo Campeão Eleito Estatisticamente
-                resultado_tuning = motor_treino.ajustar_parametros(
-                    df_dev,
-                    alvo=alvo,
-                    iteracoes=iteracoes,
-                    modelo_nome=modelo_campeao_nome,
-                    metodo_tuning=metodo_tuning,
-                )
-                # Retreino final na base completa para produção
-                modelo_final = motor_treino.treinar_final(dados_staging, alvo=alvo, modelo_nome=modelo_campeao_nome)
-
-        # 11. Montagem do ModeloServico com Regras de Negócio Dinâmicas
-        config_regras = config.get("regras_negocio", {})
-        coluna_alvo_predito = str(config_regras.get("coluna_alvo_predito", "preco_predito"))
-        
-        lista_regras: list[DefinicaoRegra] = []
-        for r in config_regras.get("regras", []):
-            lista_regras.append(
-                DefinicaoRegra(
-                    nome=r.get("nome", ""),
-                    ativo=bool(r.get("ativo", True)),
-                    descricao=r.get("descricao", ""),
-                    destino=r.get("destino", ""),
-                    expressao=r.get("expressao", "")
-                )
+            avaliacao = self._executor_avaliacao.executar_avaliacao(
+                motor_treino=motor_treino,
+                df_dev=df_dev,
+                alvo=alvo,
+                config_estatistica=config_estatistica if isinstance(config_estatistica, dict) else None,
             )
+            resultado_estatistico_dict = avaliacao.resumo_estatistico
 
-        servico_mlflow = ModeloServico(
-            modelo_campeao=modelo_final,
-            regras=lista_regras,
-            coluna_alvo_predito=coluna_alvo_predito
+            # 10. Ensemble ou Tuning de Hiperparâmetros via OtimizadorCampeao
+            config_tuning = config.get("tuning", {})
+            config_votacao = config.get("votacao", {})
+            splits_folds = int(config.get("validacao", {}).get("cv_interna", {}).get("splits", 3))
+
+            otimizacao = self._otimizador_campeao.otimizar_ou_combinar(
+                motor_treino=motor_treino,
+                df_dev=df_dev,
+                dados_staging=dados_staging,
+                alvo=alvo,
+                modelo_campeao_nome=avaliacao.modelo_campeao,
+                config_tuning=config_tuning if isinstance(config_tuning, dict) else {},
+                config_votacao=config_votacao if isinstance(config_votacao, dict) else {},
+                resultado_estatistico=avaliacao.resultado_estatistico,
+                perdas_pareadas=avaliacao.perdas_pareadas,
+                cv_folds=splits_folds,
+            )
+            modelo_final = otimizacao.modelo_final
+            modelo_campeao_nome = otimizacao.modelo_campeao_nome
+            resultado_tuning = otimizacao.resultado_tuning
+            if "modelo_campeao" in resultado_estatistico_dict:
+                resultado_estatistico_dict["modelo_campeao"] = modelo_campeao_nome
+
+        # 11. Montagem do ModeloServico via MontadorServico
+        config_regras = config.get("regras_negocio", {})
+        servico_mlflow = self._montador_servico.montar_servico(
+            modelo_final=modelo_final,
+            config_regras=config_regras if isinstance(config_regras, dict) else None,
         )
 
         # 12. Publicação e Registro no MLflow Tracking & Model Registry
@@ -405,7 +333,8 @@ class MainPipeline:
                     experimento=str(config_mlflow.get("experimento", "imoveis_regressao")),
                     nome_modelo_registrado=str(config_mlflow.get("modelo_registrado", "previsao_preco_imoveis")),
                     tags=tags,
-                    parametros=parametros_log
+                    parametros=parametros_log,
+                    artefatos_adicionais=[caminho_eda_html, caminho_eda_json],
                 )
             except Exception as erro:
                 info_publicacao = {
@@ -422,6 +351,12 @@ class MainPipeline:
             "estatistica": resultado_estatistico_dict,
             "servico_mlflow_pronto": servico_mlflow is not None,
             "publicacao_mlflow": info_publicacao,
+            "eda": {
+                "ativo": ativo_eda,
+                "motor": motor_eda,
+                "relatorio_html": caminho_eda_html,
+                "relatorio_json": caminho_eda_json,
+            },
             "transformacao_alvo": {
                 "ativo": transformar_alvo,
                 "metodo": metodo_transformacao_alvo,
@@ -451,14 +386,21 @@ if __name__ == "__main__":
         "--modo",
         "-m",
         type=str,
-        choices=["completo", "apenas_campeao"],
+        choices=["completo", "apenas_campeao", "apenas_eda"],
         default=None,
-        help="Modo de execução: 'completo' (com CV e tuning) ou 'apenas_campeao' (treino direto sem CV e sem tuning)"
+        help="Modo de execução: 'completo' (com CV e tuning), 'apenas_campeao' (treino direto sem CV) ou 'apenas_eda' (apenas análise exploratória)"
     )
     parser.add_argument(
         "--apenas-campeao",
         action="store_true",
         help="Atalho para executar em modo 'apenas_campeao' (pula validação cruzada pareada e tuning de parâmetros)"
+    )
+    parser.add_argument(
+        "--apenas-eda",
+        "--eda",
+        dest="apenas_eda",
+        action="store_true",
+        help="Atalho para executar apenas a análise exploratória (EDA) e gerar relatórios visuais e estatísticos"
     )
     parser.add_argument(
         "--modelo",
@@ -473,14 +415,21 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    modo_selecionado = "apenas_campeao" if args.apenas_campeao else args.modo
+    modo_selecionado = (
+        "apenas_eda"
+        if args.apenas_eda
+        else ("apenas_campeao" if args.apenas_campeao else args.modo)
+    )
 
     print("=" * 70)
-    print(" INICIANDO PIPELINE DE TREINAMENTO — IMÓVEIS RIBEIRÃO PRETO")
+    if modo_selecionado == "apenas_eda":
+        print(" INICIANDO ANÁLISE EXPLORATÓRIA (EDA) — IMÓVEIS RIBEIRÃO PRETO")
+    else:
+        print(" INICIANDO PIPELINE DE TREINAMENTO — IMÓVEIS RIBEIRÃO PRETO")
     print("=" * 70)
     print(f"Arquivo de configuração : {args.config}")
     print(f"Modo de execução        : {modo_selecionado or 'definido pelo YAML'}")
-    if args.modelo:
+    if args.modelo and modo_selecionado != "apenas_eda":
         print(f"Modelo forçado          : {args.modelo}")
     print("=" * 70 + "\n")
 
@@ -491,7 +440,10 @@ if __name__ == "__main__":
             modelo_campeao_forcado=args.modelo
         )
         print("\n" + "=" * 70)
-        print(" TREINAMENTO E REGISTRO CONCLUÍDOS COM SUCESSO!")
+        if modo_selecionado == "apenas_eda":
+            print(" ANÁLISE EXPLORATÓRIA (EDA) CONCLUÍDA COM SUCESSO!")
+        else:
+            print(" TREINAMENTO E REGISTRO CONCLUÍDOS COM SUCESSO!")
         print("=" * 70)
         print(json.dumps(resultado, indent=2, ensure_ascii=False))
         sys.exit(0)

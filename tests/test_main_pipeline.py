@@ -139,3 +139,49 @@ def test_execucao_main_pipeline_modo_apenas_campeao() -> None:
             os.remove(caminho_tmp)
 
 
+def test_execucao_main_pipeline_modo_apenas_eda() -> None:
+    os.environ["IMOVEIS_XLSX_PATH"] = "storage-data/imoveis_apartamentos_rp.xlsx"
+    os.environ["STAGING_DATABASE_URL"] = "storage-data/staging_imoveis.db"
+    os.environ["MLFLOW_TRACKING_URI"] = "http://localhost:5000"
+    os.environ["GRAFANA_URL"] = "http://localhost:3000"
+
+    with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as tmp_html, \
+         tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp_json:
+        caminho_html = tmp_html.name
+        caminho_json = tmp_json.name
+
+    with open("configuracoes/projeto.yaml", "r", encoding="utf-8") as f:
+        conf = yaml.safe_load(f)
+
+    conf["eda"]["motor"] = "plotly"
+    conf["eda"]["caminho_relatorio_html"] = caminho_html
+    conf["eda"]["caminho_relatorio_json"] = caminho_json
+
+    with tempfile.NamedTemporaryFile(suffix=".yaml", mode="w", encoding="utf-8", delete=False) as tmp:
+        yaml.dump(conf, tmp)
+        caminho_tmp = tmp.name
+
+    try:
+        pipeline = MainPipeline(caminho_tmp)
+        resultado = pipeline.executar_pipeline(modo="apenas_eda")
+
+        assert resultado["status"] == "sucesso"
+        assert resultado["modo"] == "apenas_eda"
+        assert resultado["linhas_processadas"] > 0
+        assert resultado["linhas_staging"] > 0
+        assert resultado["motor_eda"] == "plotly"
+        assert os.path.exists(caminho_html)
+        assert os.path.getsize(caminho_html) > 0
+        assert os.path.exists(caminho_json)
+        assert os.path.getsize(caminho_json) > 0
+        assert "estatistica" not in resultado  # Confirma que não rodou modelagem/CV
+    finally:
+        if os.path.exists(caminho_tmp):
+            os.remove(caminho_tmp)
+        if os.path.exists(caminho_html):
+            os.remove(caminho_html)
+        if os.path.exists(caminho_json):
+            os.remove(caminho_json)
+
+
+

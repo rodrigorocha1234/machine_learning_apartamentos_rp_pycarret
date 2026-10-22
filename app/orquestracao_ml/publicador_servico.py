@@ -82,7 +82,8 @@ class PublicadorServico:
         tags: dict[str, str] | None = None,
         parametros: dict[str, str | int | float] | None = None,
         metricas: dict[str, float] | None = None,
-        caminho_artefato: str = "modelo_imoveis"
+        caminho_artefato: str = "modelo_imoveis",
+        artefatos_adicionais: list[str] | None = None,
     ) -> dict[str, str]:
         """Registra e publica o ModeloServico no MLflow e notifica todos os observadores cadastrados."""
         timestamp_atual = datetime.now(timezone.utc).isoformat()
@@ -114,6 +115,12 @@ class PublicadorServico:
                     python_model=modelo_servico,
                     registered_model_name=nome_modelo_registrado
                 )
+
+                # Log de artefatos complementares (ex: relatórios EDA em HTML e JSON)
+                if artefatos_adicionais:
+                    for artefato_path in artefatos_adicionais:
+                        if os.path.exists(artefato_path):
+                            mlflow.log_artifact(artefato_path, artifact_path="eda")
 
                 model_uri = f"models:/{nome_modelo_registrado}/latest"
                 resultado = {

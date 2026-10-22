@@ -3,6 +3,14 @@ from typing import final, override
 import pandas as pd
 from pycaret.regression import RegressionExperiment
 from app.contratos_dados.motor_treino import ModeloPreditor, MotorTreino, ValorMetricaParametro
+from app.tipos_enumerados import (
+    EstrategiaFold,
+    MetodoTransformacao,
+    MetodoTuning,
+    TipoCodificador,
+    TipoEscalonador,
+    TipoModelo,
+)
 
 
 class ErroMotorPycaret(Exception):
@@ -15,23 +23,23 @@ class MotorPycaret(MotorTreino):
     """Trilha EXCLUSIVAMENTE PyCaret usando API nativa pública com suporte aos 10 modelos configuráveis."""
 
     _DEFAULTS_MODELOS: list[dict[str, str | bool]] = [
-        {"nome": "regressao_linear", "pycaret_id": "lr", "ativo": True},
-        {"nome": "lasso", "pycaret_id": "lasso", "ativo": True},
-        {"nome": "ridge", "pycaret_id": "ridge", "ativo": True},
-        {"nome": "elasticnet", "pycaret_id": "en", "ativo": True},
-        {"nome": "arvore_decisao", "pycaret_id": "dt", "ativo": True},
-        {"nome": "random_forest", "pycaret_id": "rf", "ativo": True},
-        {"nome": "svr", "pycaret_id": "svm", "ativo": True},
-        {"nome": "rede_neural", "pycaret_id": "mlp", "ativo": True},
-        {"nome": "xgboost", "pycaret_id": "xgboost", "ativo": True},
-        {"nome": "lightgbm", "pycaret_id": "lightgbm", "ativo": True},
+        {"nome": TipoModelo.REGRESSAO_LINEAR.value, "pycaret_id": TipoModelo.REGRESSAO_LINEAR.obter_pycaret_id(), "ativo": True},
+        {"nome": TipoModelo.LASSO.value, "pycaret_id": TipoModelo.LASSO.obter_pycaret_id(), "ativo": True},
+        {"nome": TipoModelo.RIDGE.value, "pycaret_id": TipoModelo.RIDGE.obter_pycaret_id(), "ativo": True},
+        {"nome": TipoModelo.ELASTICNET.value, "pycaret_id": TipoModelo.ELASTICNET.obter_pycaret_id(), "ativo": True},
+        {"nome": TipoModelo.ARVORE_DECISAO.value, "pycaret_id": TipoModelo.ARVORE_DECISAO.obter_pycaret_id(), "ativo": True},
+        {"nome": TipoModelo.RANDOM_FOREST.value, "pycaret_id": TipoModelo.RANDOM_FOREST.obter_pycaret_id(), "ativo": True},
+        {"nome": TipoModelo.SVR.value, "pycaret_id": TipoModelo.SVR.obter_pycaret_id(), "ativo": True},
+        {"nome": TipoModelo.REDE_NEURAL.value, "pycaret_id": TipoModelo.REDE_NEURAL.obter_pycaret_id(), "ativo": True},
+        {"nome": TipoModelo.XGBOOST.value, "pycaret_id": TipoModelo.XGBOOST.obter_pycaret_id(), "ativo": True},
+        {"nome": TipoModelo.LIGHTGBM.value, "pycaret_id": TipoModelo.LIGHTGBM.obter_pycaret_id(), "ativo": True},
     ]
 
     def __init__(
         self,
         semente: int = 42,
         folds: int = 3,
-        metodo_folds: str = "kfold",
+        metodo_folds: str = EstrategiaFold.KFOLD.value,
         embaralhar_folds: bool = True,
         colunas_numericas: list[str] | None = None,
         colunas_categoricas: list[str] | None = None,
@@ -39,11 +47,11 @@ class MotorPycaret(MotorTreino):
         modelos_configurados: list[dict[str, str | bool]] | None = None,
         parametros_tuning: dict[str, dict[str,
                                           list[str | int | float | bool]]] | None = None,
-        metodo_tuning: str = "random",
+        metodo_tuning: str = MetodoTuning.RANDOM.value,
         transformar_alvo: bool = False,
-        metodo_transformacao_alvo: str = "yeo-johnson",
+        metodo_transformacao_alvo: str = MetodoTransformacao.YEO_JOHNSON.value,
         transformar_atributos: bool = False,
-        metodo_transformacao_atributos: str = "yeo-johnson",
+        metodo_transformacao_atributos: str = MetodoTransformacao.YEO_JOHNSON.value,
         colunas_transformacao_atributos: list[str] | None = None,
     ) -> None:
         self._semente = semente
@@ -63,7 +71,7 @@ class MotorPycaret(MotorTreino):
         self._colunas_transformacao_atributos = colunas_transformacao_atributos
         self._experimento = RegressionExperiment()
         self._modelo_campeao: ModeloPreditor | None = None
-        self._nome_modelo_campeao: str = "ridge"
+        self._nome_modelo_campeao: str = TipoModelo.RIDGE.value
 
 
     def preparar_experimento(
@@ -102,28 +110,39 @@ class MotorPycaret(MotorTreino):
                 cat_features = [
                     c for c in cat_features if c in colunas_disponiveis]
 
-            # 2. Configuração de pré-processamento por modelo (escalonador e One-Hot Encoder)
+            # 2. Configuração de pré-processamento por modelo (escalonador e One-Hot Encoder via Enums)
             config_modelo = self._preprocessamento_por_modelo.get(
                 modelo_nome or "", {})
 
-            tipo_escalonador = escalonador or config_modelo.get(
-                "escalonador", "standard")
-            tipo_codificador = codificador or config_modelo.get(
-                "codificador", "one_hot")
+            valor_escalonador_raw = escalonador or config_modelo.get(
+                "escalonador", TipoEscalonador.STANDARD.value)
+            escalonador_enum = TipoEscalonador.de_string(valor_escalonador_raw)
 
-            normalizar = tipo_escalonador.lower() in (
-                "standard", "zscore", "minmax", "robust")
-            metodo_normalizacao = "minmax" if tipo_escalonador.lower() == "minmax" else "zscore"
-            usar_one_hot = (tipo_codificador.lower() == "one_hot")
+            valor_codificador_raw = codificador or config_modelo.get(
+                "codificador", TipoCodificador.ONE_HOT.value)
+            codificador_enum = TipoCodificador.de_string(valor_codificador_raw)
 
-            # 3. Configuração do método e estratégia de folds
-            estrategia_fold = (
-                metodo_folds or self._metodo_folds).strip().lower()
+            normalizar = escalonador_enum in (
+                TipoEscalonador.STANDARD,
+                TipoEscalonador.ZSCORE,
+                TipoEscalonador.MINMAX,
+                TipoEscalonador.ROBUST,
+            )
+            metodo_normalizacao = "minmax" if escalonador_enum == TipoEscalonador.MINMAX else "zscore"
+            usar_one_hot = (codificador_enum == TipoCodificador.ONE_HOT)
+
+            # 3. Configuração do método e estratégia de folds via Enum
+            metodo_fold_raw = metodo_folds or self._metodo_folds
+            estrategia_fold = EstrategiaFold.de_string(metodo_fold_raw).value
             embaralhar = self._embaralhar_folds if embaralhar_folds is None else embaralhar_folds
 
             # 4. Setup nativo oficial do PyCaret com fold_strategy, One-Hot Encoding e Normalização
-            metodo_target = "box-cox" if self._metodo_transformacao_alvo in ("box-cox", "boxcox") else "yeo-johnson"
-            metodo_features = "box-cox" if self._metodo_transformacao_atributos in ("box-cox", "boxcox") else "yeo-johnson"
+            metodo_target_enum = MetodoTransformacao.de_string(self._metodo_transformacao_alvo)
+            metodo_target = "box-cox" if metodo_target_enum == MetodoTransformacao.BOX_COX else "yeo-johnson"
+
+            metodo_features_enum = MetodoTransformacao.de_string(self._metodo_transformacao_atributos)
+            metodo_features = "box-cox" if metodo_features_enum == MetodoTransformacao.BOX_COX else "yeo-johnson"
+
             self._experimento.setup(
                 data=dados,
                 target=alvo,
@@ -149,11 +168,15 @@ class MotorPycaret(MotorTreino):
             ) from erro
 
     def _obter_pycaret_id(self, item_modelo: dict[str, str | bool]) -> str:
-        pycaret_id = str(item_modelo.get(
-            "pycaret_id", item_modelo.get("nome", "ridge"))).lower()
-        if pycaret_id in ("svr", "svm_regressor"):
-            return "svm"
-        return pycaret_id
+        pycaret_id_raw = item_modelo.get("pycaret_id")
+        if pycaret_id_raw:
+            return str(pycaret_id_raw).lower()
+        nome_modelo_str = str(item_modelo.get("nome", TipoModelo.RIDGE.value))
+        try:
+            modelo_enum = TipoModelo.de_string(nome_modelo_str)
+            return modelo_enum.obter_pycaret_id()
+        except ValueError:
+            return nome_modelo_str.lower()
 
     @override
     def avaliar_modelos(self, dados: pd.DataFrame, alvo: str) -> pd.DataFrame:
