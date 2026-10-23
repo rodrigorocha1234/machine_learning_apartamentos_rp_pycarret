@@ -650,7 +650,51 @@ A `FabricaVotacao` oferece 7 técnicas desacopladas de combinação de regressor
 6. `media_aparada` (Trimmed Mean): Descarta a menor e a maior predição por amostra e calcula a média do intervalo central.
 7. `stacking`: Meta-aprendizado com `StackingRegressor` do Scikit-Learn utilizando validação cruzada interna e meta-regressor (ex: `RidgeCV`).
 
+### 6.1. Decisão Arquitetural: Métodos Nativos no PyCaret (`blend_models`) vs Camada Desacoplada (`FabricaVotacao`)
+
+Uma questão central de governança e arquitetura é: **"O PyCaret possui métodos nativos de votação? Eles foram utilizados no projeto?"**
+
+#### 1. Diagnóstico do PyCaret Nativo
+**Sim, o PyCaret possui funções nativas de ensemble**:
+- `blend_models()`: Combina múltiplos regressores ajustados na mesma sessão por média simples ou ponderada manual.
+- `stack_models()`: Constrói uma arquitetura de meta-aprendizado stacking com meta-regressor.
+
+#### 2. Por que o Projeto NÃO Utilizou o `blend_models()` Nativo do PyCaret?
+No projeto, **não utilizamos o `blend_models()` nativo do PyCaret**, optando deliberadamente por uma camada de ensemble desacoplada através dos padrões **GoF Composite** ([`RegressorVotacao`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/modelos_votacao/regressor_votacao.py)) e **Factory** ([`FabricaVotacao`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/modelos_votacao/fabrica_votacao.py)). As razões técnicas e de governança foram:
+
+1. **Isolamento de Frameworks e Interoperabilidade:**
+   - Se o ensemble estivesse ancorado na função `blend_models()` do PyCaret, a funcionalidade de votação estaria acoplada unicamente à trilha PyCaret.
+   - Ao alterar o YAML para `framework.motor: sklearn`, o pipeline falharia ou exigiria uma segunda implementação separada.
+   - Na arquitetura do projeto, os estimadores finalizados do PyCaret (obtidos nativamente por [`finalize_model()`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/motores_treino/motor_pycaret.py#L286)) e os pipelines do Scikit-Learn implementam o mesmo contrato [`ModeloPreditor`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/contratos_dados/modelo_preditor.py) (`.predict()`), permitindo que a [`FabricaVotacao`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/modelos_votacao/fabrica_votacao.py) combine estimadores de qualquer motor de treino sem distinção.
+
+2. **Integração com a Inferência Estatística de Friedman / Nemenyi:**
+   - O `blend_models()` do PyCaret opera às cegas em relação à validação estatística formal de hipóteses.
+   - Nossa `FabricaVotacao` recebe os resultados do [`AvaliadorEstatistico`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/camada_estatistica/avaliador_estatistico.py), viabilizando técnicas estatisticamente informadas como:
+     - `media_ponderada_postos`: Ponderação decrescente derivada estritamente dos postos médios do teste de Friedman.
+     - `media_ponderada_rmse`: Pesos inversamente proporcionais ao erro quadrático médio pareado ($w_i \propto \frac{1}{\text{RMSE}_i}$) de cada fold.
+
+3. **Técnicas Robustas Ausentes no PyCaret Nativo:**
+   - O `blend_models()` nativo restringe-se à média aritmética.
+   - Ele **não oferece** votação por **Mediana** (`mediana`) nem por **Média Aparada** (`media_aparada` / Trimmed Mean).
+   - No setor imobiliário de Ribeirão Preto, essas técnicas são críticas para neutralizar previsões aberrantes (outliers) geradas por certos estimadores em imóveis atípicos (ex: coberturas duplex de mais de R$ 3 milhões).
+
+4. **Conformidade Estrita com a Regra de Governança (`AGENTS.md` e `machine-learning.md`):**
+   - *"PyCaret usa suas próprias funções nativas para tuning/CV/finalização; sklearn possui trilha independente. Os testes Friedman/Nemenyi são camada estatística explicitamente separada; não inventar função nativa de PyCaret inexistente."*
+   - O PyCaret executa de forma 100% nativa o que é de sua competência (`setup`, `create_model`, `tune_model`, `pull` e `finalize_model`). A orquestração do comitê pós-inferência estatística é conduzida pelo [`OtimizadorCampeao`](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/app/orquestracao_ml/otimizador_campeao.py) através da `FabricaVotacao`.
+
+#### 3. Matriz Comparativa: PyCaret Nativo vs Arquitetura do Projeto
+
+| Critério / Recurso | PyCaret Nativo (`blend_models`) | Arquitetura do Projeto (`FabricaVotacao`) | Impacto Arquitetural |
+| :--- | :--- | :--- | :--- |
+| **Independência de Framework** | ❌ Acoplado à sessão do PyCaret | ✅ **Universal:** Aceita estimadores PyCaret e Sklearn | Permite alternar motores no YAML mantendo o mesmo ensemble. |
+| **Integração com Ranking de Friedman** | ❌ Não suportada | ✅ **Nativa:** Ponderação decrescente por postos médios | Estimadores estatisticamente superiores têm maior peso. |
+| **Ponderação pelo Inverso do RMSE** | ⚠️ Exige cálculo manual de pesos | ✅ **Automática:** Calculada sobre os folds pareados | Totalmente automatizado sem intervenção humana. |
+| **Votação por Mediana Robusta** | ❌ Não disponível | ✅ **Suporte Completo:** Imune a previsões aberrantes | Blindagem contra distorções em coberturas e imóveis de luxo. |
+| **Média Aparada (Trimmed Mean)** | ❌ Não disponível | ✅ **Suporte Completo:** Descarta extremos superior e inferior | Preserva a estabilidade da média filtrando ruído. |
+| **Contrato de Produção** | ⚠️ Retorna objeto interno PyCaret | ✅ Implementa `ModeloPreditor` e Scikit-Learn `BaseEstimator` | Compatibilidade 100% com empacotamento no MLflow Serving. |
+
 ---
+
 
 ## 7. Exemplos Completos de Expressões Python Seguras via AST
 

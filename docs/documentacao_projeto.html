@@ -3170,22 +3170,646 @@ xdg-open storage-data/relatorio_eda.html</code></pre>
 
       <!-- Tab Regras Negocio -->
       <div id="tab-regras" class="tab-content">
-        <div class="card">
-          <h3>Regras de Negócio de Pós-Inferência</h3>
-          <p>Executadas dinamicamente dentro do <code>ModeloServico</code> sobre a coluna predita <code>preco_predito</code>:</p>
+
+        <!-- CABEÇALHO DA SEÇÃO -->
+        <div class="card" style="border-left: 4px solid #6c63ff; margin-bottom: 1.5rem;">
+          <h3 style="margin-bottom: 0.5rem;">🔁 Ciclo de Vida do Valor Predito — Passo a Passo</h3>
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 0;">
+            Esta seção rastreia o <strong>caminho completo</strong> do valor predito (<code>preco_predito</code>) desde
+            a saída do estimador campeão até a resposta JSON entregue ao cliente da API REST, considerando
+            <strong>dois cenários</strong>: com as regras de negócio <em>ativadas</em> e <em>desativadas</em>.
+          </p>
+        </div>
+
+        <!-- SELETOR DE CENÁRIO -->
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+          <button id="btn-flag-on" onclick="showFlagScenario('on')"
+            style="padding: 0.6rem 1.4rem; border-radius: 8px; border: 2px solid #4ade80; background: #4ade8022;
+                   color: #4ade80; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+            ✅ Flag <code>ativo: true</code> (Regras Habilitadas)
+          </button>
+          <button id="btn-flag-off" onclick="showFlagScenario('off')"
+            style="padding: 0.6rem 1.4rem; border-radius: 8px; border: 2px solid #f87171; background: transparent;
+                   color: #f87171; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+            ❌ Flag <code>ativo: false</code> (Regras Desabilitadas)
+          </button>
+        </div>
+
+        <!-- ===== CENÁRIO: FLAG ATIVADA ===== -->
+        <div id="scenario-on">
+
+          <!-- PASSO 0: YAML de configuração -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #6c63ff; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">0</span>
+              <h4 style="margin: 0; color: #c4b5fd;">YAML — Declaração das Regras de Negócio</h4>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+              O arquivo <code>configuracoes/projeto.yaml</code> declara cada regra: nome, flag individual
+              <code>ativo</code>, coluna de destino e a expressão aritmética segura (interpretada por AST).
+            </p>
+            <div class="code-block">
+              <div class="code-header"><span>configuracoes/projeto.yaml</span><span>Seção regras_negocio</span></div>
+<pre><code><span class="hl-kw">regras_negocio</span>:
+  <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>                          <span class="hl-comment"># ← flag global: habilita todo o pipeline de regras</span>
+  <span class="hl-kw">coluna_alvo_predito</span>: preco_predito  <span class="hl-comment"># ← coluna gerada pelo modelo campeão</span>
+  <span class="hl-kw">regras</span>:
+    - <span class="hl-kw">nome</span>: margem_inferior_negociacao
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">descricao</span>: <span class="hl-str">"Piso de negociação (5% abaixo do predito)"</span>
+      <span class="hl-kw">destino</span>: preco_minimo_sugerido
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.95"</span>
+
+    - <span class="hl-kw">nome</span>: margem_superior_negociacao
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">descricao</span>: <span class="hl-str">"Teto de listagem (5% acima do predito)"</span>
+      <span class="hl-kw">destino</span>: preco_maximo_sugerido
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 1.05"</span>
+
+    - <span class="hl-kw">nome</span>: valor_metro_quadrado_predito
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">descricao</span>: <span class="hl-str">"Preço/m² calculado a partir do predito e Metragem"</span>
+      <span class="hl-kw">destino</span>: preco_m2_predito
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito / Metragem"</span>
+
+    - <span class="hl-kw">nome</span>: taxa_comissao_imobiliaria
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">descricao</span>: <span class="hl-str">"Comissão CRECI-SP (6% sobre o predito)"</span>
+      <span class="hl-kw">destino</span>: valor_comissao_estimada
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.06"</span></code></pre>
+            </div>
+          </div>
+
+          <!-- PASSO 1: Requisição chega na API -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #6c63ff; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">1</span>
+              <h4 style="margin: 0; color: #c4b5fd;">Cliente envia requisição para <code>POST /invocations</code></h4>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+              A equipe de negócios envia um payload JSON no formato padrão do MLflow Serving
+              com os atributos do imóvel a ser avaliado:
+            </p>
+            <div class="code-block">
+              <div class="code-header"><span>HTTP POST http://localhost:8080/invocations</span><span>Content-Type: application/json</span></div>
+<pre><code>{
+  <span class="hl-str">"dataframe_split"</span>: {
+    <span class="hl-str">"columns"</span>: [<span class="hl-str">"Quartos"</span>, <span class="hl-str">"Banheiros"</span>, <span class="hl-str">"Vagas"</span>, <span class="hl-str">"Metragem"</span>, <span class="hl-str">"Bairro"</span>],
+    <span class="hl-str">"data"</span>: [
+      [<span class="hl-num">3</span>, <span class="hl-num">2</span>, <span class="hl-num">1</span>, <span class="hl-num">85</span>, <span class="hl-str">"Pinheiros"</span>]
+    ]
+  }
+}</code></pre>
+            </div>
+          </div>
+
+          <!-- PASSO 2: ModeloServico.predict() -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #6c63ff; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">2</span>
+              <h4 style="margin: 0; color: #c4b5fd;">MLflow aciona <code>ModeloServico.predict()</code></h4>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+              O MLflow Serving deserializa o payload e chama o método <code>predict()</code> do
+              <code>ModeloServico</code> (wrapper <code>mlflow.pyfunc.PythonModel</code>).
+              O modelo campeão gera a predição bruta e a anexa como coluna <code>preco_predito</code>:
+            </p>
+            <div class="code-block">
+              <div class="code-header"><span>app/orquestracao_ml/modelo_servico.py</span><span>Passo 2 — Predição Bruta (arquivo completo)</span></div>
+<pre><code><span class="hl-comment"># linha 17 — nome do campo declarado com valor padrão</span>
+<span class="hl-kw">def</span> __init__(self, modelo_campeao, regras, coluna_alvo_predito: str = <span class="hl-str">"preco_predito"</span>) -> None:
+    self._coluna_alvo_predito = coluna_alvo_predito  <span class="hl-comment"># ← armazenado na instância</span>
+    self._avaliador = AvaliadorRegras()
+
+<span class="hl-comment"># linha 24 — predict() acionado pelo MLflow Serving</span>
+<span class="hl-kw">def</span> predict(self, context, model_input: pd.DataFrame) -> pd.DataFrame:
+    dados = model_input.copy()
+
+    <span class="hl-comment"># linha 28-29 — estimador campeão gera y_pred</span>
+    <span class="hl-kw">if</span> hasattr(self._modelo_campeao, <span class="hl-str">"predict"</span>):
+        predicoes = self._modelo_campeao.predict(dados)
+    <span class="hl-kw">else</span>:
+        <span class="hl-kw">raise</span> RuntimeError(<span class="hl-str">"Modelo campeão não possui método predict compatível."</span>)
+
+    <span class="hl-comment"># linha 33 — "preco_predito" é injetado como coluna no DataFrame ← AQUI NASCE</span>
+    dados[self._coluna_alvo_predito] = predicoes
+
+    <span class="hl-comment"># linha 36 — DataFrame (já com preco_predito) é passado ao AvaliadorRegras</span>
+    resultado = self._avaliador.aplicar_regra(dados, self._regras)
+    <span class="hl-kw">return</span> resultado</code></pre>
+            </div>
+
+            <!-- RASTREAMENTO DO CAMPO preco_predito -->
+            <div style="margin-top: 1rem;">
+              <p style="font-size: 0.9rem; font-weight: 700; color: #c4b5fd; margin-bottom: 0.6rem;">
+                🔍 Rastreamento completo do campo <code>preco_predito</code> — 5 pontos no código:
+              </p>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+
+                <div style="display: flex; gap: 0.75rem; align-items: flex-start; background: #1a1a2e; border-radius: 8px; padding: 0.75rem 1rem;">
+                  <span style="background: #6c63ff; color: #fff; border-radius: 50%; min-width: 24px; height: 24px;
+                               display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;">1</span>
+                  <div>
+                    <div style="font-size: 0.8rem; color: #a5b4fc; margin-bottom: 0.2rem;">
+                      <strong>Declarado no YAML</strong> — <code>configuracoes/projeto.yaml : 254</code>
+                    </div>
+                    <code style="font-size: 0.82rem; color: #e2e8f0;">coluna_alvo_predito: preco_predito</code>
+                    <span style="color: #64748b; font-size: 0.8rem;"> ← nome configurável pelo time de negócios</span>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; align-items: flex-start; background: #1a1a2e; border-radius: 8px; padding: 0.75rem 1rem;">
+                  <span style="background: #6c63ff; color: #fff; border-radius: 50%; min-width: 24px; height: 24px;
+                               display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;">2</span>
+                  <div>
+                    <div style="font-size: 0.8rem; color: #a5b4fc; margin-bottom: 0.2rem;">
+                      <strong>Recebido no construtor</strong> — <code>modelo_servico.py : 17</code>
+                    </div>
+                    <code style="font-size: 0.82rem; color: #e2e8f0;">coluna_alvo_predito: str = "preco_predito"</code>
+                    <span style="color: #64748b; font-size: 0.8rem;"> ← valor padrão/fallback se não vier do YAML</span>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; align-items: flex-start; background: #0d2a1a; border: 1px solid #4ade8066; border-radius: 8px; padding: 0.75rem 1rem;">
+                  <span style="background: #4ade80; color: #000; border-radius: 50%; min-width: 24px; height: 24px;
+                               display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;">3</span>
+                  <div>
+                    <div style="font-size: 0.8rem; color: #86efac; margin-bottom: 0.2rem;">
+                      <strong>⭐ Coluna criada no DataFrame</strong> — <code>modelo_servico.py : 33</code>
+                    </div>
+                    <code style="font-size: 0.82rem; color: #e2e8f0;">dados[self._coluna_alvo_predito] = predicoes</code>
+                    <span style="color: #4ade80; font-size: 0.8rem;"> ← <strong>aqui nasce o campo</strong> no DataFrame</span>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; align-items: flex-start; background: #1a1a2e; border-radius: 8px; padding: 0.75rem 1rem;">
+                  <span style="background: #6c63ff; color: #fff; border-radius: 50%; min-width: 24px; height: 24px;
+                               display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;">4</span>
+                  <div>
+                    <div style="font-size: 0.8rem; color: #a5b4fc; margin-bottom: 0.2rem;">
+                      <strong>Lido pelo motor AST</strong> — <code>avaliador_regras.py : 74</code>
+                    </div>
+                    <code style="font-size: 0.82rem; color: #e2e8f0;">coluna: pd.Series[float] = dados[no.id]</code>
+                    <span style="color: #64748b; font-size: 0.8rem;"> ← <code>no.id == "preco_predito"</code> resolvido via AST Name</span>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; align-items: flex-start; background: #1a1a2e; border-radius: 8px; padding: 0.75rem 1rem;">
+                  <span style="background: #6c63ff; color: #fff; border-radius: 50%; min-width: 24px; height: 24px;
+                               display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem;">5</span>
+                  <div>
+                    <div style="font-size: 0.8rem; color: #a5b4fc; margin-bottom: 0.2rem;">
+                      <strong>Referenciado nas expressões YAML</strong> — <code>projeto.yaml : 260</code>
+                    </div>
+                    <code style="font-size: 0.82rem; color: #e2e8f0;">expressao: "preco_predito * 0.95"</code>
+                    <span style="color: #64748b; font-size: 0.8rem;"> ← consumido como <code>ast.Name("preco_predito")</code></span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div style="background: #1e1b4b; border-radius: 8px; padding: 0.9rem 1.1rem; margin-top: 0.9rem; font-size: 0.88rem; color: #c4b5fd;">
+              💡 <strong>Separação de responsabilidades:</strong> O <code>AvaliadorRegras</code>
+              <strong>não conhece o modelo</strong> — ele apenas lê colunas do DataFrame recebido.
+              É o <code>ModeloServico</code> (linha 33) quem injeta o <code>preco_predito</code>
+              antes de chamar o avaliador. O avaliador poderia consumir qualquer coluna numérica.
+            </div>
+          </div>
+
+
+          <!-- PASSO 3: AvaliadorRegras AST -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #6c63ff; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">3</span>
+              <h4 style="margin: 0; color: #c4b5fd;"><code>AvaliadorRegras.aplicar_regra()</code> — Motor AST Seguro</h4>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+              Para cada regra do YAML com <code>ativo: true</code>, o avaliador:
+              <strong>(a)</strong> faz parse da expressão via <code>ast.parse()</code>;
+              <strong>(b)</strong> visita cada nó da árvore sintática através de uma lista positiva restrita;
+              <strong>(c)</strong> executa a operação vetorizada sobre o DataFrame via operadores Python nativos.
+            </p>
+            <div class="code-block">
+              <div class="code-header"><span>app/regras_negocio/avaliador_regras.py</span><span>Passo 3 — Avaliação Segura</span></div>
+<pre><code><span class="hl-kw">def</span> aplicar_regra(self, dados: pd.DataFrame, regras: list[DefinicaoRegra]) -> pd.DataFrame:
+    resultado = dados.copy()
+    <span class="hl-kw">for</span> regra <span class="hl-kw">in</span> regras:
+        <span class="hl-comment"># ← Pula regras individuais com ativo: false</span>
+        <span class="hl-kw">if not</span> regra.ativo:
+            <span class="hl-kw">continue</span>
+        <span class="hl-comment"># parse("preco_predito * 0.95") → árvore AST</span>
+        serie_calculada = self._avaliar_expressao(regra.expressao, resultado)
+        <span class="hl-comment"># assign cria nova coluna: preco_minimo_sugerido = preco_predito * 0.95</span>
+        resultado = resultado.assign(**{regra.destino: serie_calculada})
+    <span class="hl-kw">return</span> resultado</code></pre>
+            </div>
+            <div style="margin-top: 0.75rem;">
+              <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                <strong>Execução sequencial das 4 regras com o imóvel de exemplo (Metragem = 85 m², preco_predito = 500.000):</strong>
+              </p>
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Regra (nome)</th>
+                      <th>Expressão AST</th>
+                      <th>Coluna Destino</th>
+                      <th>Valor Calculado (R$)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>1</td>
+                      <td><code>margem_inferior_negociacao</code></td>
+                      <td><code>preco_predito * 0.95</code></td>
+                      <td><code>preco_minimo_sugerido</code></td>
+                      <td><strong>R$ 475.000,00</strong></td>
+                    </tr>
+                    <tr>
+                      <td>2</td>
+                      <td><code>margem_superior_negociacao</code></td>
+                      <td><code>preco_predito * 1.05</code></td>
+                      <td><code>preco_maximo_sugerido</code></td>
+                      <td><strong>R$ 525.000,00</strong></td>
+                    </tr>
+                    <tr>
+                      <td>3</td>
+                      <td><code>valor_metro_quadrado_predito</code></td>
+                      <td><code>preco_predito / Metragem</code></td>
+                      <td><code>preco_m2_predito</code></td>
+                      <td><strong>R$ 5.882,35/m²</strong></td>
+                    </tr>
+                    <tr>
+                      <td>4</td>
+                      <td><code>taxa_comissao_imobiliaria</code></td>
+                      <td><code>preco_predito * 0.06</code></td>
+                      <td><code>valor_comissao_estimada</code></td>
+                      <td><strong>R$ 30.000,00</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- PASSO 4: Resposta JSON enriquecida -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #6c63ff; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">4</span>
+              <h4 style="margin: 0; color: #c4b5fd;">Resposta JSON — Enriquecida com Regras de Negócio</h4>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+              O MLflow Serving serializa o DataFrame de retorno em JSON. A resposta inclui o valor
+              predito base <strong>e</strong> todas as colunas calculadas pelas regras de negócio:
+            </p>
+            <div class="code-block">
+              <div class="code-header"><span>HTTP 200 OK — Resposta da API (flag ativo: true)</span><span>application/json</span></div>
+<pre><code>{
+  <span class="hl-str">"predictions"</span>: [
+    {
+      <span class="hl-comment">// ── Atributos originais do imóvel ─────────────────────────────</span>
+      <span class="hl-str">"Quartos"</span>: <span class="hl-num">3</span>,
+      <span class="hl-str">"Banheiros"</span>: <span class="hl-num">2</span>,
+      <span class="hl-str">"Vagas"</span>: <span class="hl-num">1</span>,
+      <span class="hl-str">"Metragem"</span>: <span class="hl-num">85</span>,
+      <span class="hl-str">"Bairro"</span>: <span class="hl-str">"Pinheiros"</span>,
+
+      <span class="hl-comment">// ── Saída do estimador campeão ────────────────────────────────</span>
+      <span class="hl-str">"preco_predito"</span>: <span class="hl-num">500000.00</span>,       <span class="hl-comment">// ← R$ 500.000 (após expm1)</span>
+
+      <span class="hl-comment">// ── Regras de Negócio (AvaliadorRegras AST) ───────────────────</span>
+      <span class="hl-str">"preco_minimo_sugerido"</span>: <span class="hl-num">475000.00</span>,  <span class="hl-comment">// preco_predito * 0.95 → piso de negociação</span>
+      <span class="hl-str">"preco_maximo_sugerido"</span>: <span class="hl-num">525000.00</span>,  <span class="hl-comment">// preco_predito * 1.05 → teto de listagem</span>
+      <span class="hl-str">"preco_m2_predito"</span>: <span class="hl-num">5882.35</span>,        <span class="hl-comment">// preco_predito / Metragem → R$/m²</span>
+      <span class="hl-str">"valor_comissao_estimada"</span>: <span class="hl-num">30000.00</span>  <span class="hl-comment">// preco_predito * 0.06 → CRECI-SP (6%)</span>
+    }
+  ]
+}</code></pre>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 1rem;">
+              <div style="background: #0d2a1a; border: 1px solid #4ade80; border-radius: 8px; padding: 0.85rem; text-align: center;">
+                <div style="font-size: 0.75rem; color: #86efac; margin-bottom: 0.25rem;">💰 Valor Predito</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: #4ade80;">R$ 500.000</div>
+              </div>
+              <div style="background: #1a1a2e; border: 1px solid #818cf8; border-radius: 8px; padding: 0.85rem; text-align: center;">
+                <div style="font-size: 0.75rem; color: #a5b4fc; margin-bottom: 0.25rem;">📉 Piso (−5%)</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: #818cf8;">R$ 475.000</div>
+              </div>
+              <div style="background: #1a1a2e; border: 1px solid #818cf8; border-radius: 8px; padding: 0.85rem; text-align: center;">
+                <div style="font-size: 0.75rem; color: #a5b4fc; margin-bottom: 0.25rem;">📈 Teto (+5%)</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: #818cf8;">R$ 525.000</div>
+              </div>
+              <div style="background: #1a1a2e; border: 1px solid #f59e0b; border-radius: 8px; padding: 0.85rem; text-align: center;">
+                <div style="font-size: 0.75rem; color: #fcd34d; margin-bottom: 0.25rem;">📐 Preço/m²</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: #f59e0b;">R$ 5.882/m²</div>
+              </div>
+              <div style="background: #1a1a2e; border: 1px solid #f87171; border-radius: 8px; padding: 0.85rem; text-align: center;">
+                <div style="font-size: 0.75rem; color: #fca5a5; margin-bottom: 0.25rem;">🏛️ Comissão CRECI</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: #f87171;">R$ 30.000</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DIAGRAMA DE FLUXO ASCII -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #6c63ff; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">↻</span>
+              <h4 style="margin: 0; color: #c4b5fd;">Fluxo Completo — Requisição → Resposta (flag ativo: true)</h4>
+            </div>
+            <div class="code-block" style="font-family: monospace;">
+              <div class="code-header"><span>Diagrama de Fluxo</span><span>Ciclo Completo com Regras</span></div>
+<pre><code>  POST /invocations
+        │
+        ▼
+  ┌─────────────────────────────────────────────────┐
+  │           MLflow Serving (porta 8080)           │
+  │   Deserializa payload → pd.DataFrame           │
+  └────────────────────┬────────────────────────────┘
+                       │
+                       ▼
+  ┌─────────────────────────────────────────────────┐
+  │         ModeloServico.predict()                 │
+  │   dados = model_input.copy()                   │
+  │   predicoes = modelo_campeao.predict(dados)     │  ← RandomForest / XGBoost / etc.
+  │   dados["preco_predito"] = predicoes            │  ← y_pred anexado ao DataFrame
+  └────────────────────┬────────────────────────────┘
+                       │  regras_negocio.ativo = true
+                       ▼
+  ┌─────────────────────────────────────────────────┐
+  │       AvaliadorRegras.aplicar_regra()           │
+  │                                                 │
+  │   for regra in regras:                          │
+  │     if not regra.ativo: continue ──────────────── → pula regra individual desativada
+  │                                                 │
+  │     ① "preco_predito * 0.95"                   │
+  │        → ast.parse() → _visitar_no()            │
+  │        → preco_minimo_sugerido = 475.000        │
+  │                                                 │
+  │     ② "preco_predito * 1.05"                   │
+  │        → preco_maximo_sugerido = 525.000        │
+  │                                                 │
+  │     ③ "preco_predito / Metragem"               │
+  │        → preco_m2_predito = 5.882,35            │
+  │                                                 │
+  │     ④ "preco_predito * 0.06"                   │
+  │        → valor_comissao_estimada = 30.000       │
+  └────────────────────┬────────────────────────────┘
+                       │
+                       ▼
+  ┌─────────────────────────────────────────────────┐
+  │   DataFrame final (5 colunas de negócio)       │
+  │   Serializado em JSON e retornado ao cliente   │
+  └─────────────────────────────────────────────────┘</code></pre>
+            </div>
+          </div>
+        </div><!-- /scenario-on -->
+
+        <!-- ===== CENÁRIO: FLAG DESATIVADA ===== -->
+        <div id="scenario-off" style="display: none;">
+
+          <!-- PASSO 0: YAML desativado -->
+          <div class="card" style="margin-bottom: 1rem; border-left: 4px solid #f87171;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #f87171; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">0</span>
+              <h4 style="margin: 0; color: #fca5a5;">YAML — Flag Global Desativada</h4>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+              Quando <code>regras_negocio.ativo: false</code>, o <code>ModeloServico</code>
+              <strong>não chama</strong> o <code>AvaliadorRegras</code>. O DataFrame retorna
+              apenas com o valor predito bruto e os atributos originais.
+            </p>
+            <div class="code-block">
+              <div class="code-header"><span>configuracoes/projeto.yaml</span><span>Flag Global Desativada</span></div>
+<pre><code><span class="hl-kw">regras_negocio</span>:
+  <span class="hl-kw">ativo</span>: <span class="hl-num">false</span>   <span class="hl-comment"># ← TODA a camada de regras é ignorada</span>
+  <span class="hl-kw">coluna_alvo_predito</span>: preco_predito
+  <span class="hl-kw">regras</span>:
+    - <span class="hl-kw">nome</span>: margem_inferior_negociacao
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>    <span class="hl-comment"># ← ignorado, pois o bloco global está desativado</span>
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.95"</span>
+    <span class="hl-comment"># ... demais regras também ignoradas</span></code></pre>
+            </div>
+          </div>
+
+          <!-- PASSO 1: Requisição igual -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #f87171; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">1</span>
+              <h4 style="margin: 0; color: #fca5a5;">Requisição idêntica ao cenário anterior</h4>
+            </div>
+            <div class="code-block">
+              <div class="code-header"><span>HTTP POST http://localhost:8080/invocations</span><span>Mesma entrada</span></div>
+<pre><code>{
+  <span class="hl-str">"dataframe_split"</span>: {
+    <span class="hl-str">"columns"</span>: [<span class="hl-str">"Quartos"</span>, <span class="hl-str">"Banheiros"</span>, <span class="hl-str">"Vagas"</span>, <span class="hl-str">"Metragem"</span>, <span class="hl-str">"Bairro"</span>],
+    <span class="hl-str">"data"</span>: [[<span class="hl-num">3</span>, <span class="hl-num">2</span>, <span class="hl-num">1</span>, <span class="hl-num">85</span>, <span class="hl-str">"Pinheiros"</span>]]
+  }
+}</code></pre>
+            </div>
+          </div>
+
+          <!-- PASSO 2: Comportamento com flag desativada -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #f87171; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">2</span>
+              <h4 style="margin: 0; color: #fca5a5;"><code>ModeloServico.predict()</code> — Sem avaliação de regras</h4>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+              O orquestrador verifica a flag global antes de montar o <code>ModeloServico</code>.
+              Com <code>ativo: false</code>, a lista de regras passada ao serviço é <code>[]</code>
+              (lista vazia). O loop do <code>AvaliadorRegras</code> encerra imediatamente:
+            </p>
+            <div class="code-block">
+              <div class="code-header"><span>app/orquestracao_ml/modelo_servico.py</span><span>Lista de regras vazia</span></div>
+<pre><code><span class="hl-kw">def</span> predict(self, context, model_input: pd.DataFrame) -> pd.DataFrame:
+    dados = model_input.copy()
+    predicoes = self._modelo_campeao.predict(dados)
+    dados[self._coluna_alvo_predito] = predicoes
+    <span class="hl-comment"># self._regras = []  ← lista vazia quando ativo: false</span>
+    resultado = self._avaliador.aplicar_regra(dados, self._regras)
+    <span class="hl-comment"># → loop não executa nenhuma iteração; resultado = dados inalterado</span>
+    <span class="hl-kw">return</span> resultado</code></pre>
+            </div>
+          </div>
+
+          <!-- PASSO 3: Resposta simplificada -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #f87171; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">3</span>
+              <h4 style="margin: 0; color: #fca5a5;">Resposta JSON — Apenas Predição Bruta</h4>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+              A resposta contém somente os campos originais e o <code>preco_predito</code>.
+              Nenhuma coluna de regra de negócio é gerada:
+            </p>
+            <div class="code-block">
+              <div class="code-header"><span>HTTP 200 OK — Resposta da API (flag ativo: false)</span><span>application/json</span></div>
+<pre><code>{
+  <span class="hl-str">"predictions"</span>: [
+    {
+      <span class="hl-comment">// ── Atributos originais do imóvel ─────────────────────────────</span>
+      <span class="hl-str">"Quartos"</span>: <span class="hl-num">3</span>,
+      <span class="hl-str">"Banheiros"</span>: <span class="hl-num">2</span>,
+      <span class="hl-str">"Vagas"</span>: <span class="hl-num">1</span>,
+      <span class="hl-str">"Metragem"</span>: <span class="hl-num">85</span>,
+      <span class="hl-str">"Bairro"</span>: <span class="hl-str">"Pinheiros"</span>,
+
+      <span class="hl-comment">// ── Saída do estimador campeão ────────────────────────────────</span>
+      <span class="hl-str">"preco_predito"</span>: <span class="hl-num">500000.00</span>
+      <span class="hl-comment">// ← Sem preco_minimo_sugerido</span>
+      <span class="hl-comment">// ← Sem preco_maximo_sugerido</span>
+      <span class="hl-comment">// ← Sem preco_m2_predito</span>
+      <span class="hl-comment">// ← Sem valor_comissao_estimada</span>
+    }
+  ]
+}</code></pre>
+            </div>
+          </div>
+
+          <!-- DIAGRAMA FLAG OFF -->
+          <div class="card" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="background: #f87171; color: #fff; border-radius: 50%; width: 32px; height: 32px;
+                           display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">↻</span>
+              <h4 style="margin: 0; color: #fca5a5;">Fluxo Simplificado (flag ativo: false)</h4>
+            </div>
+            <div class="code-block" style="font-family: monospace;">
+              <div class="code-header"><span>Diagrama de Fluxo</span><span>Sem Camada de Regras</span></div>
+<pre><code>  POST /invocations
+        │
+        ▼
+  ┌─────────────────────────────────────────────────┐
+  │           MLflow Serving (porta 8080)           │
+  │   Deserializa payload → pd.DataFrame           │
+  └────────────────────┬────────────────────────────┘
+                       │
+                       ▼
+  ┌─────────────────────────────────────────────────┐
+  │         ModeloServico.predict()                 │
+  │   dados = model_input.copy()                   │
+  │   predicoes = modelo_campeao.predict(dados)     │
+  │   dados["preco_predito"] = predicoes            │
+  │   resultado = avaliador.aplicar_regra(dados,[]) │  ← lista vazia!
+  │                                                 │
+  │   ┌── AvaliadorRegras.aplicar_regra ──────────┐ │
+  │   │  for regra in []:   ← loop não executa   │ │
+  │   │      pass                                 │ │
+  │   └───────────────────────────────────────────┘ │
+  │                                                 │
+  │   return dados  ← inalterado, sem novas colunas│
+  └────────────────────┬────────────────────────────┘
+                       │
+                       ▼
+  ┌─────────────────────────────────────────────────┐
+  │  DataFrame: apenas preco_predito + originais   │
+  │  Serializado em JSON e retornado ao cliente    │
+  └─────────────────────────────────────────────────┘</code></pre>
+            </div>
+          </div>
+
+          <!-- AVISO flag off -->
+          <div style="background: #2a1515; border: 1px solid #f87171; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem;">
+            <p style="color: #fca5a5; margin: 0; font-size: 0.9rem;">
+              ⚠️ <strong>Quando usar <code>ativo: false</code>?</strong>
+              Em ambientes de staging para teste isolado do modelo preditivo puro, sem interferência
+              de regras de negócio — útil para depurar discrepâncias entre o valor bruto do estimador
+              e o valor final entregue ao cliente.
+            </p>
+          </div>
+        </div><!-- /scenario-off -->
+
+        <!-- REGRA INDIVIDUAL vs. GLOBAL -->
+        <div class="card" style="margin-top: 0.5rem; border-left: 4px solid #f59e0b;">
+          <h4 style="margin: 0 0 0.75rem; color: #fcd34d;">⚡ Granularidade: Flag Global vs. Flag Individual</h4>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+            Existem <strong>dois níveis</strong> de controle — o global bloqueia toda a camada,
+            o individual filtra cada regra dentro do loop:
+          </p>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>regras_negocio.ativo</th>
+                  <th>regra[N].ativo</th>
+                  <th>Comportamento</th>
+                  <th>Colunas geradas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="background: #0d2a1a22;">
+                  <td><code style="color:#4ade80;">true</code></td>
+                  <td><code style="color:#4ade80;">true</code></td>
+                  <td>Regra avaliada normalmente</td>
+                  <td>✅ Coluna destino criada</td>
+                </tr>
+                <tr>
+                  <td><code style="color:#4ade80;">true</code></td>
+                  <td><code style="color:#f87171;">false</code></td>
+                  <td>Regra individual pulada (<code>continue</code>)</td>
+                  <td>❌ Coluna omitida</td>
+                </tr>
+                <tr>
+                  <td><code style="color:#f87171;">false</code></td>
+                  <td><code style="color:#4ade80;">true</code></td>
+                  <td>Lista de regras enviada como <code>[]</code></td>
+                  <td>❌ Nenhuma coluna gerada</td>
+                </tr>
+                <tr>
+                  <td><code style="color:#f87171;">false</code></td>
+                  <td><code style="color:#f87171;">false</code></td>
+                  <td>Lista vazia + loop não executa</td>
+                  <td>❌ Nenhuma coluna gerada</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- YAML original resumido -->
+        <div class="card" style="margin-top: 1.5rem;">
+          <h4 style="margin-bottom: 0.75rem; color: var(--accent);">📄 Configuração Completa das Regras de Negócio</h4>
           <div class="code-block">
-            <div class="code-header"><span>configuracoes/projeto.yaml</span><span>Regras de Negócio AST</span></div>
+            <div class="code-header"><span>configuracoes/projeto.yaml</span><span>Regras de Negócio AST — Completo</span></div>
 <pre><code><span class="hl-kw">regras_negocio</span>:
   <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
   <span class="hl-kw">coluna_alvo_predito</span>: preco_predito
   <span class="hl-kw">regras</span>:
     - <span class="hl-kw">nome</span>: margem_inferior_negociacao
       <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">descricao</span>: <span class="hl-str">"Faixa mínima de negociação (5% abaixo do predito)"</span>
       <span class="hl-kw">destino</span>: preco_minimo_sugerido
-      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.95"</span></code></pre>
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.95"</span>
+    - <span class="hl-kw">nome</span>: margem_superior_negociacao
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">descricao</span>: <span class="hl-str">"Faixa máxima de negociação (5% acima do predito)"</span>
+      <span class="hl-kw">destino</span>: preco_maximo_sugerido
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 1.05"</span>
+    - <span class="hl-kw">nome</span>: valor_metro_quadrado_predito
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">descricao</span>: <span class="hl-str">"Preço por m² calculado a partir do predito e da Metragem"</span>
+      <span class="hl-kw">destino</span>: preco_m2_predito
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito / Metragem"</span>
+    - <span class="hl-kw">nome</span>: taxa_comissao_imobiliaria
+      <span class="hl-kw">ativo</span>: <span class="hl-num">true</span>
+      <span class="hl-kw">descricao</span>: <span class="hl-str">"Comissão estimada de corretagem (6% sobre o predito)"</span>
+      <span class="hl-kw">destino</span>: valor_comissao_estimada
+      <span class="hl-kw">expressao</span>: <span class="hl-str">"preco_predito * 0.06"</span></code></pre>
           </div>
         </div>
-      </div>
+
+      </div><!-- /tab-regras -->
 
       <!-- Tab Dicionario Rapido -->
       <div id="tab-dicionario" class="tab-content">
@@ -3929,6 +4553,101 @@ xdg-open storage-data/relatorio_eda.html</code></pre>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Subseção sobre Métodos Nativos de Votação no PyCaret -->
+      <div class="card" style="margin-top: 1.5rem; border-left: 4px solid var(--accent);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🏛️</span>
+            <span>Decisão Arquitetural: Métodos Nativos no PyCaret (<code>blend_models</code>) vs Camada Desacoplada (<code>FabricaVotacao</code>)</span>
+          </h3>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span class="badge secondary">PyCaret blend_models</span>
+            <span class="badge primary">GoF Composite & Factory</span>
+            <span class="badge success">Independente de Framework</span>
+          </div>
+        </div>
+
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.7;">
+          Uma dúvida recorrente de engenharia e governança é: <strong>"O PyCaret possui métodos nativos de votação? Eles foram utilizados no projeto?"</strong>
+        </p>
+
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.7;">
+          <strong>Sim, o PyCaret possui funções nativas de ensemble</strong> — notadamente <code>blend_models()</code> (para média aritmética/ponderada de regressores) e <code>stack_models()</code> (para meta-aprendizado stacking). No entanto, <strong>o projeto NÃO utilizou o <code>blend_models()</code> nativo do PyCaret</strong>, optando deliberadamente por uma camada de ensemble desacoplada via <strong>GoF Composite</strong> (<code>RegressorVotacao</code>) e <strong>Factory</strong> (<code>FabricaVotacao</code>).
+        </p>
+
+        <h4 style="color: #fff; margin-top: 1.25rem; margin-bottom: 0.5rem; font-size: 0.95rem;">🎯 Por que a Votação foi Desacoplada da API do PyCaret?</h4>
+        <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.8;">
+          <li>
+            <strong>1. Paridade Estrita e Isolamento entre Trilhas (PyCaret vs Scikit-Learn):</strong>
+            Se o ensemble dependesse de <code>blend_models()</code>, a funcionalidade de votação estaria acoplada unicamente ao PyCaret. Caso o usuário alternasse a chave declarativa para <code>framework.motor: sklearn</code> no YAML, o sistema não teria como executar o ensemble sob a mesma interface. Ao isolar a votação em <code>app/modelos_votacao/</code>, qualquer estimador finalizado (seja do PyCaret via <code>finalize_model()</code> ou do Scikit-Learn via Pipeline) pode ser combinado de forma 100% intercambiável.
+          </li>
+          <li>
+            <strong>2. Integração Direta com a Inferência Estatística de Friedman / Nemenyi:</strong>
+            O <code>blend_models()</code> nativo do PyCaret não tem conhecimento dos testes não-paramétricos de hipótese executados na camada estatística. A nossa <code>FabricaVotacao</code> consome a matriz de perdas pareadas por fold e o vetor de postos médios de Friedman gerados pelo <code>AvaliadorEstatistico</code>, viabilizando técnicas estatisticamente informadas como <code>media_ponderada_postos</code> e <code>media_ponderada_rmse</code>.
+          </li>
+          <li>
+            <strong>3. Técnicas Robustas Inexistentes no PyCaret Nativo:</strong>
+            O <code>blend_models()</code> padrão do PyCaret limita-se à média aritmética simples ou com pesos manuais. Ele <strong>não disponibiliza</strong> votação por <strong>Mediana</strong> (<code>mediana</code>) nem por <strong>Média Aparada</strong> (<code>media_aparada</code> / Trimmed Mean). No mercado imobiliário de Ribeirão Preto, essas duas técnicas são indispensáveis para proteger o ensemble contra estimadores que produzam previsões aberrantes (outliers) em apartamentos de altíssimo padrão.
+          </li>
+          <li>
+            <strong>4. Conformidade Rigorosa com a Regra de Governança do Projeto:</strong>
+            A diretriz arquitetural estipula: <em>"PyCaret usa suas próprias funções nativas para tuning/CV/finalização; sklearn possui trilha independente. Os testes Friedman/Nemenyi são camada estatística explicitamente separada; não inventar função nativa de PyCaret inexistente."</em> O PyCaret é utilizado para o que faz com perfeição nativa (<code>setup</code>, <code>create_model</code>, <code>tune_model</code>, <code>pull</code> e <code>finalize_model</code>); a orquestração do comitê pós-inferência estatística cabe ao <code>OtimizadorCampeao</code> com a <code>FabricaVotacao</code>.
+          </li>
+        </ul>
+
+        <h4 style="color: #fff; margin-top: 1.25rem; margin-bottom: 0.5rem; font-size: 0.95rem;">⚖️ Matriz Comparativa: PyCaret Nativo vs Arquitetura do Projeto</h4>
+        <div class="table-container" style="margin-top: 0.5rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Critério / Recurso</th>
+                <th>PyCaret Nativo (<code>blend_models</code>)</th>
+                <th>Arquitetura do Projeto (<code>FabricaVotacao</code>)</th>
+                <th>Veredito e Impacto Arquitetural</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Independência de Framework</strong></td>
+                <td>❌ Preso à sessão interna do PyCaret</td>
+                <td>✅ <strong>Universal:</strong> Aceita estimadores PyCaret e Sklearn</td>
+                <td>Permite chavear motores no YAML sem quebrar a votação.</td>
+              </tr>
+              <tr>
+                <td><strong>Integração com Ranking de Friedman</strong></td>
+                <td>❌ Inexistente (cega a testes não-paramétricos)</td>
+                <td>✅ <strong>Nativa:</strong> Ponderação decrescente por postos médios</td>
+                <td>Modelos estatisticamente superiores recebem maior peso no comitê.</td>
+              </tr>
+              <tr>
+                <td><strong>Ponderação pelo Inverso do RMSE ($1/\text{RMSE}_i$)</strong></td>
+                <td>⚠️ Exige cálculo manual externo de pesos</td>
+                <td>✅ <strong>Automática:</strong> Calculada sobre os folds pareados</td>
+                <td>Automação sem intervenção humana no YAML.</td>
+              </tr>
+              <tr>
+                <td><strong>Votação por Mediana Robusta</strong></td>
+                <td>❌ Não suportada nativamente</td>
+                <td>✅ <strong>Suporte Completo:</strong> Imune a previsões aberrantes</td>
+                <td>Blindagem contra distorções em coberturas e imóveis de luxo.</td>
+              </tr>
+              <tr>
+                <td><strong>Média Aparada (Trimmed Mean)</strong></td>
+                <td>❌ Não suportada nativamente</td>
+                <td>✅ <strong>Suporte Completo:</strong> Corta extremos superior e inferior</td>
+                <td>Filtra ruído preservando a estabilidade da média.</td>
+              </tr>
+              <tr>
+                <td><strong>Contrato de Produção</strong></td>
+                <td>⚠️ Retorna objeto interno do PyCaret</td>
+                <td>✅ Implementa <code>ModeloPreditor</code> e Scikit-Learn BaseEstimator</td>
+                <td>Compatibilidade 100% garantida com o MLflow Serving (<code>pyfunc</code>).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -5381,6 +6100,28 @@ publicador.publicar_modelo_servico(
       parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
       evt.target.classList.add('active');
+    }
+
+    function showFlagScenario(scenario) {
+      const on = document.getElementById('scenario-on');
+      const off = document.getElementById('scenario-off');
+      const btnOn = document.getElementById('btn-flag-on');
+      const btnOff = document.getElementById('btn-flag-off');
+      if (scenario === 'on') {
+        on.style.display = 'block';
+        off.style.display = 'none';
+        btnOn.style.background = '#4ade8033';
+        btnOn.style.boxShadow = '0 0 0 2px #4ade80';
+        btnOff.style.background = 'transparent';
+        btnOff.style.boxShadow = 'none';
+      } else {
+        on.style.display = 'none';
+        off.style.display = 'block';
+        btnOff.style.background = '#f8717133';
+        btnOff.style.boxShadow = '0 0 0 2px #f87171';
+        btnOn.style.background = 'transparent';
+        btnOn.style.boxShadow = 'none';
+      }
     }
 
     // Scroll spy for sidebar links

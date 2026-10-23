@@ -3930,6 +3930,101 @@ xdg-open storage-data/relatorio_eda.html</code></pre>
           </tbody>
         </table>
       </div>
+
+      <!-- Subseção sobre Métodos Nativos de Votação no PyCaret -->
+      <div class="card" style="margin-top: 1.5rem; border-left: 4px solid var(--accent);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🏛️</span>
+            <span>Decisão Arquitetural: Métodos Nativos no PyCaret (<code>blend_models</code>) vs Camada Desacoplada (<code>FabricaVotacao</code>)</span>
+          </h3>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span class="badge secondary">PyCaret blend_models</span>
+            <span class="badge primary">GoF Composite & Factory</span>
+            <span class="badge success">Independente de Framework</span>
+          </div>
+        </div>
+
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.7;">
+          Uma dúvida recorrente de engenharia e governança é: <strong>"O PyCaret possui métodos nativos de votação? Eles foram utilizados no projeto?"</strong>
+        </p>
+
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.7;">
+          <strong>Sim, o PyCaret possui funções nativas de ensemble</strong> — notadamente <code>blend_models()</code> (para média aritmética/ponderada de regressores) e <code>stack_models()</code> (para meta-aprendizado stacking). No entanto, <strong>o projeto NÃO utilizou o <code>blend_models()</code> nativo do PyCaret</strong>, optando deliberadamente por uma camada de ensemble desacoplada via <strong>GoF Composite</strong> (<code>RegressorVotacao</code>) e <strong>Factory</strong> (<code>FabricaVotacao</code>).
+        </p>
+
+        <h4 style="color: #fff; margin-top: 1.25rem; margin-bottom: 0.5rem; font-size: 0.95rem;">🎯 Por que a Votação foi Desacoplada da API do PyCaret?</h4>
+        <ul style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.8;">
+          <li>
+            <strong>1. Paridade Estrita e Isolamento entre Trilhas (PyCaret vs Scikit-Learn):</strong>
+            Se o ensemble dependesse de <code>blend_models()</code>, a funcionalidade de votação estaria acoplada unicamente ao PyCaret. Caso o usuário alternasse a chave declarativa para <code>framework.motor: sklearn</code> no YAML, o sistema não teria como executar o ensemble sob a mesma interface. Ao isolar a votação em <code>app/modelos_votacao/</code>, qualquer estimador finalizado (seja do PyCaret via <code>finalize_model()</code> ou do Scikit-Learn via Pipeline) pode ser combinado de forma 100% intercambiável.
+          </li>
+          <li>
+            <strong>2. Integração Direta com a Inferência Estatística de Friedman / Nemenyi:</strong>
+            O <code>blend_models()</code> nativo do PyCaret não tem conhecimento dos testes não-paramétricos de hipótese executados na camada estatística. A nossa <code>FabricaVotacao</code> consome a matriz de perdas pareadas por fold e o vetor de postos médios de Friedman gerados pelo <code>AvaliadorEstatistico</code>, viabilizando técnicas estatisticamente informadas como <code>media_ponderada_postos</code> e <code>media_ponderada_rmse</code>.
+          </li>
+          <li>
+            <strong>3. Técnicas Robustas Inexistentes no PyCaret Nativo:</strong>
+            O <code>blend_models()</code> padrão do PyCaret limita-se à média aritmética simples ou com pesos manuais. Ele <strong>não disponibiliza</strong> votação por <strong>Mediana</strong> (<code>mediana</code>) nem por <strong>Média Aparada</strong> (<code>media_aparada</code> / Trimmed Mean). No mercado imobiliário de Ribeirão Preto, essas duas técnicas são indispensáveis para proteger o ensemble contra estimadores que produzam previsões aberrantes (outliers) em apartamentos de altíssimo padrão.
+          </li>
+          <li>
+            <strong>4. Conformidade Rigorosa com a Regra de Governança do Projeto:</strong>
+            A diretriz arquitetural estipula: <em>"PyCaret usa suas próprias funções nativas para tuning/CV/finalização; sklearn possui trilha independente. Os testes Friedman/Nemenyi são camada estatística explicitamente separada; não inventar função nativa de PyCaret inexistente."</em> O PyCaret é utilizado para o que faz com perfeição nativa (<code>setup</code>, <code>create_model</code>, <code>tune_model</code>, <code>pull</code> e <code>finalize_model</code>); a orquestração do comitê pós-inferência estatística cabe ao <code>OtimizadorCampeao</code> com a <code>FabricaVotacao</code>.
+          </li>
+        </ul>
+
+        <h4 style="color: #fff; margin-top: 1.25rem; margin-bottom: 0.5rem; font-size: 0.95rem;">⚖️ Matriz Comparativa: PyCaret Nativo vs Arquitetura do Projeto</h4>
+        <div class="table-container" style="margin-top: 0.5rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Critério / Recurso</th>
+                <th>PyCaret Nativo (<code>blend_models</code>)</th>
+                <th>Arquitetura do Projeto (<code>FabricaVotacao</code>)</th>
+                <th>Veredito e Impacto Arquitetural</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Independência de Framework</strong></td>
+                <td>❌ Preso à sessão interna do PyCaret</td>
+                <td>✅ <strong>Universal:</strong> Aceita estimadores PyCaret e Sklearn</td>
+                <td>Permite chavear motores no YAML sem quebrar a votação.</td>
+              </tr>
+              <tr>
+                <td><strong>Integração com Ranking de Friedman</strong></td>
+                <td>❌ Inexistente (cega a testes não-paramétricos)</td>
+                <td>✅ <strong>Nativa:</strong> Ponderação decrescente por postos médios</td>
+                <td>Modelos estatisticamente superiores recebem maior peso no comitê.</td>
+              </tr>
+              <tr>
+                <td><strong>Ponderação pelo Inverso do RMSE ($1/\text{RMSE}_i$)</strong></td>
+                <td>⚠️ Exige cálculo manual externo de pesos</td>
+                <td>✅ <strong>Automática:</strong> Calculada sobre os folds pareados</td>
+                <td>Automação sem intervenção humana no YAML.</td>
+              </tr>
+              <tr>
+                <td><strong>Votação por Mediana Robusta</strong></td>
+                <td>❌ Não suportada nativamente</td>
+                <td>✅ <strong>Suporte Completo:</strong> Imune a previsões aberrantes</td>
+                <td>Blindagem contra distorções em coberturas e imóveis de luxo.</td>
+              </tr>
+              <tr>
+                <td><strong>Média Aparada (Trimmed Mean)</strong></td>
+                <td>❌ Não suportada nativamente</td>
+                <td>✅ <strong>Suporte Completo:</strong> Corta extremos superior e inferior</td>
+                <td>Filtra ruído preservando a estabilidade da média.</td>
+              </tr>
+              <tr>
+                <td><strong>Contrato de Produção</strong></td>
+                <td>⚠️ Retorna objeto interno do PyCaret</td>
+                <td>✅ Implementa <code>ModeloPreditor</code> e Scikit-Learn BaseEstimator</td>
+                <td>Compatibilidade 100% garantida com o MLflow Serving (<code>pyfunc</code>).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- 9. Estratégias de Validação Cruzada (Folds) -->
