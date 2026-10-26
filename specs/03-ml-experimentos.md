@@ -1,4 +1,0 @@
-# Experimentos e estatística
-1. Fixar holdout intocado. 2. Dentro do conjunto de desenvolvimento, executar tuning e avaliação sem reutilizar folds de seleção como estimativa não enviesada (preferir nested CV). 3. Garantir mesma partição, métrica e previsões pareadas entre candidatos. 4. Recuperar melhores hiperparâmetros e registrar MLflow por experimento. 5. Calcular Friedman e, quando apropriado, pós-hoc Nemenyi, com alpha ajustável e documentação de hipóteses. 6. Selecionar campeão (ou ensemble de n primeiros quando habilitado); método e desempates YAML. 7. Avaliar holdout uma vez; somente depois promover/treinar final conforme política aprovada.
-O PyCaret possui avaliação/tuning/cross-validation nativas; Friedman e Nemenyi são análises estatísticas externas, com SciPy e scikit-posthocs, e NÃO devem ser atribuídos a uma suposta função nativa padrão do PyCaret.
-O desempenho esperado depende do XLSX real; nenhuma métrica é presumida.
