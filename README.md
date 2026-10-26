@@ -1,81 +1,24 @@
-# Previsão de Preços de Imóveis (Ribeirão Preto) — Machine Learning & Governança
+# Skills Google Antigravity — Previsão de preço de apartamentos
 
-Sistema corporativo de previsão imobiliária com suporte multi-framework (PyCaret & Scikit-Learn isolados fisicamente), seleção estatística por testes de Friedman/Nemenyi, ensemble com 7 técnicas de votação, processamento tabular duplo (Pandas & Polars vetorizados) e deploy nativo via MLflow Serving com avaliação segura de regras de negócio via AST.
+Este pacote usa o padrão atual de Agent Skills (`SKILL.md`) e o diretório atual `.agents/skills/`.
+Não usa workflows legados nem `.agent/skills`.
 
----
+## Instalação no workspace
+Extraia o ZIP na raiz do projeto. A estrutura `.agents/skills/<nome>/SKILL.md` será descoberta pelo Antigravity.
 
-## 🚀 Destaques da Arquitetura
+## Skills incluídas
+- `/arquitetura-python`
+- `/coleta-persistencia`
+- `/preparacao-dados`
+- `/eda-visualizacao`
+- `/modelagem-regressao`
+- `/avaliacao-selecao`
+- `/implantacao-regras`
+- `/monitoramento-drift`
+- `/configuracao-yaml`
 
-1. **Tipagem Estática Estrita (Python 3.12+)**: 100% livre de `typing.Any` e `object`, aderente ao Pyright strict com protocolos semânticos (`ModeloPreditor`, `MotorTreino`, `MotorTabela`, `FonteDados`).
-2. **Isolamento de Trilhas ML**: Trilha PyCaret nativa e Trilha Scikit-Learn desacopladas, configuráveis via YAML.
-3. **Seleção Estatística Rigorosa**: Teste de Friedman pareado e pós-teste de Nemenyi com cálculo da Diferença Crítica (CD) para eleger o modelo campeão.
-4. **7 Técnicas de Votação (Ensemble)**:
-   - `media_simples`
-   - `voting_regressor` (Scikit-Learn nativo)
-   - `media_ponderada_rmse`
-   - `media_ponderada_postos` (pesos pelo ranking de Friedman)
-   - `mediana`
-   - `media_aparada` (Trimmed Mean)
-   - `stacking` (StackingRegressor com meta-modelo)
-5. **Expressões Python Seguras via AST**: Suporte a expressões declarativas em `configuracoes/projeto.yaml` para filtros, transformações, features e regras de negócio com as sintaxes `df['coluna']` (Pandas) e `pl.col('coluna')` (Polars).
-6. **Observabilidade Total**: Dashboard Grafana provisionado cobrindo EDA, latência p50/p95/p99, throughput, postos de Friedman, drift de modelo e logs Loki.
+## Fonte de requisitos
+`resources/requisitos-projeto.md` contém o texto de requisitos fornecido para este projeto.
 
----
-
-## 📂 Estrutura do Projeto
-
-```
-├── app/
-│   ├── analises_eda/            # Geração de EDA a partir do Staging SQLite
-│   ├── analises_estatisticas/   # Testes não-paramétricos de Friedman e Nemenyi
-│   ├── configuracao_projeto/    # Leitor de YAML com interpolação de variáveis de ambiente
-│   ├── contratos_dados/         # Protocols de interface (SOLID)
-│   ├── fontes_dados/            # Adaptadores polimórficos de ingestão (Excel, SQL, API)
-│   ├── modelos_votacao/         # RegressorVotacao e FabricaVotacao
-│   ├── motores_tabela/          # Motores tabulares vetorizados (Pandas e Polars)
-│   ├── motores_treino/          # MotorPycaret e MotorSklearn
-│   ├── orquestracao_ml/         # MainPipeline (Facade) e ModeloServico (MLflow PyFunc)
-│   ├── regras_negocio/          # Interpretador restrito AST de regras
-│   └── repositorios_dados/      # Staging em SQLite
-├── config_ob/
-│   └── dashboards/              # Dashboard Grafana JSON provisionado
-├── configuracoes/
-│   └── projeto.yaml             # Configuração centralizada do experimento
-├── docs/
-│   └── documentacao_projeto.md  # Documentação técnica e estatística detalhada
-└── tests/                       # Suíte completa com 48 testes automatizados
-```
-
----
-
-## 🚀 Executando o Treinamento
-
-O projeto conta com o script shell pronto e configurado para orquestrar o pipeline completo:
-
-```bash
-# Execução com a configuração padrão (configuracoes/projeto.yaml)
-./executar_treinamento.sh
-
-# Ou especificando um arquivo de configuração alternativo:
-./executar_treinamento.sh --config caminho/para/custom_config.yaml
-```
-
----
-
-## 🧪 Executando os Testes
-
-```bash
-# Testes rápidos (exclui PyCaret demorado)
-.venv/bin/pytest tests/ -v -m "not pycaret"
-
-# Testes completos (incluindo PyCaret e Pipeline end-to-end)
-.venv/bin/pytest tests/ -v
-```
-
----
-
-## 📖 Documentação Completa
-
-A documentação detalhada do projeto está disponível tanto em formato HTML interativo quanto em Markdown:
-* 🌐 **Documentação Interativa (HTML)**: [docs/documentacao_projeto.html](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/docs/documentacao_projeto.html) (ou [docs/index.html](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/docs/index.html))
-* 📝 **Documentação Markdown**: [docs/documentacao_projeto.md](file:///home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/docs/documentacao_projeto.md)
+## Observação sobre "agentes"
+A documentação atual descreve estes pacotes como Agent Skills: instruções especializadas carregadas sob demanda. Eles orientam o agente do Antigravity, mas não criam por si só agentes autônomos separados na interface. Use a skill pertinente pelo comando `/nome-da-skill` ou deixe o Antigravity selecioná-la automaticamente.

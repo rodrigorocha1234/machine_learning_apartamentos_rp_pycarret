@@ -1,0 +1,68 @@
+# ==============================================================================
+# Etapa 3: Análise Exploratória de Dados (EDA) e Visualização
+# ==============================================================================
+# Define o motor de visualização e as análises a serem geradas e exportadas.
+# Os dados são lidos exclusivamente a partir do repositório de staging.
+# ==============================================================================
+
+eda:
+  motor_grafico: "grafana" # grafana | seaborn | plotly | altair
+  caminho_relatorio_html: "storage-data/relatorio_eda.html"
+  caminho_relatorio_json: "storage-data/relatorio_eda.json"
+  analises:
+    - nome: "distribuicao_preco_venda"
+      descricao: "Análise da dispersão univariada e assimetria do valor de venda dos apartamentos."
+      ativo: true
+      tipo_grafico: "histograma"
+      coluna: "Valor_da_Venda"
+      titulo: "Distribuição do Preço de Venda (R$)"
+      nbins: 35
+      escala: "linear"
+
+    - nome: "distribuicao_preco_metro_quadrado"
+      descricao: "Cálculo e distribuição do preço por metro quadrado derivado dinamicamente via expressão segura."
+      ativo: true
+      tipo_grafico: "histograma"
+      coluna: "Preco_M2"
+      expressao: "df['Valor_da_Venda'] / df['Metragem']"
+      titulo: "Distribuição do Preço por Metro Quadrado (R$/m²)"
+      nbins: 30
+      escala: "linear"
+
+    - nome: "dispersao_precos_por_bairro"
+      ativo: true
+      tipo_grafico: "boxplot"
+      coluna_x: "Bairro"
+      coluna_y: "Valor_da_Venda"
+      titulo: "Dispersão e Quartis de Preço por Bairro"
+
+    - nome: "dispersao_precos_por_zona"
+      ativo: true
+      tipo_grafico: "boxplot"
+      coluna_x: "Zona"
+      coluna_y: "Valor_da_Venda"
+      titulo: "Dispersão de Preços por Zona"
+
+    - nome: "relacao_metragem_preco"
+      ativo: true
+      tipo_grafico: "dispersao"
+      coluna_x: "Metragem"
+      coluna_y: "Valor_da_Venda"
+      cor: "Quartos"
+      titulo: "Metragem (m²) vs Preço de Venda"
+
+    - nome: "correlacao_features_numericas"
+      ativo: true
+      tipo_grafico: "correlacao"
+      titulo: "Matriz de Correlação Linear (Pearson)"
+
+    - nome: "tabela_resumo_por_bairro"
+      ativo: true
+      tipo_grafico: "tabela"
+      agrupar_por: "Bairro"
+      coluna: "Valor_da_Venda"
+      metricas: ["contagem", "media", "mediana", "min", "max"]
+      ordenar_por: "contagem"
+      direcao_ordenacao: "desc"
+      limite: 15
+      titulo: "Resumo Estatístico por Bairro"

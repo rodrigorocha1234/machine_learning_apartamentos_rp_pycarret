@@ -1,0 +1,113 @@
+# ==============================================================================
+# Etapa 4: Modelagem de Regressão, Pré-processamento e Tuning
+# ==============================================================================
+# Define o framework de treinamento (pycaret ou sklearn), estratégias de
+# imputação, pré-processamento, catálogo de modelos e hiperparâmetros de tuning.
+# ==============================================================================
+
+modelagem:
+  motor_treino: "pycaret" # pycaret | sklearn
+
+  imputacao:
+    ativo: true
+    estrategia_numerica: "mediana" # mediana | media | mais_frequente | constante
+    estrategia_categorica: "mais_frequente" # mais_frequente | constante
+    valor_constante_numerico: 0.0
+    valor_constante_categorico: "Ausente"
+    adicionar_indicador: false
+    por_atributo:
+      Metragem:
+        ativo: true
+        estrategia: "mediana"
+      Bairro:
+        ativo: true
+        estrategia: "mais_frequente"
+
+  preprocessamento:
+    transformar_alvo: true
+    metodo_transformacao_alvo: "log1p" # log1p | log | yeo-johnson | box-cox
+    transformar_atributos:
+      ativo: true
+      metodo: "log1p"
+      colunas:
+        - "Metragem"
+        - "Area_Privativa"
+        - "Valor_Condominio"
+        - "Valor_Iptu"
+
+  modelos:
+    - {nome: "regressao_linear", ativo: true, pycaret_id: "lr", sklearn_class: "LinearRegression"}
+    - {nome: "lasso", ativo: true, pycaret_id: "lasso", sklearn_class: "Lasso"}
+    - {nome: "ridge", ativo: true, pycaret_id: "ridge", sklearn_class: "Ridge"}
+    - {nome: "elasticnet", ativo: true, pycaret_id: "en", sklearn_class: "ElasticNet"}
+    - {nome: "arvore_decisao", ativo: true, pycaret_id: "dt", sklearn_class: "DecisionTreeRegressor"}
+    - {nome: "random_forest", ativo: true, pycaret_id: "rf", sklearn_class: "RandomForestRegressor"}
+    - {nome: "svr", ativo: true, pycaret_id: "svm", sklearn_class: "SVR"}
+    - {nome: "rede_neural", ativo: true, pycaret_id: "mlp", sklearn_class: "MLPRegressor"}
+    - {nome: "xgboost", ativo: true, pycaret_id: "xgboost", sklearn_class: "XGBRegressor"}
+    - {nome: "lightgbm", ativo: true, pycaret_id: "lightgbm", sklearn_class: "LGBMRegressor"}
+
+  validacao_cruzada:
+    ativo: true
+    tecnica: "kfold" # kfold | repeated_kfold | shuffle_split | time_series_split
+    parametros:
+      kfold:
+        n_splits: 3
+        shuffle: true
+        random_state: 42
+      repeated_kfold:
+        n_splits: 5
+        n_repeats: 3
+        random_state: 42
+      shuffle_split:
+        n_splits: 5
+        test_size: 0.2
+        random_state: 42
+      time_series_split:
+        n_splits: 3
+        max_train_size: null
+
+  tuning:
+    ativo: true
+    metodo: "random" # random | grid | bayesian | optuna
+    otimizar_metrica: "RMSE" # RMSE | MAE | R2 | RMSLE
+    iteracoes: 10
+    manter_melhor: true # Mantém modelo baseline se o tuning degradar performance
+    early_stopping: false # Parada antecipada em buscas iterativas
+    parametros:
+      regressao_linear:
+        fit_intercept: [true, false]
+      lasso:
+        alpha: [0.01, 0.1, 1.0, 10.0]
+      ridge:
+        alpha: [0.01, 0.1, 1.0, 10.0]
+      elasticnet:
+        alpha: [0.01, 0.1, 1.0]
+        l1_ratio: [0.2, 0.5, 0.8]
+      arvore_decisao:
+        max_depth: [3, 5, 10]
+        min_samples_split: [2, 5]
+      random_forest:
+        n_estimators: [50, 100]
+        max_depth: [5, 10]
+      svr:
+        C: [0.1, 1.0, 10.0]
+        kernel: ["rbf", "linear"]
+      rede_neural:
+        hidden_layer_sizes: [[50], [100]]
+        max_iter: [200]
+      xgboost:
+        n_estimators: [50, 100]
+        max_depth: [3, 6]
+        learning_rate: [0.05, 0.1]
+      lightgbm:
+        n_estimators: [50, 100]
+        max_depth: [3, 6]
+        learning_rate: [0.05, 0.1]
+
+  mlflow:
+    tracking_uri: "${MLFLOW_TRACKING_URI:http://localhost:5000}"
+    experimento: "imoveis_regressao"
+    modelo_registrado: "previsao_preco_imoveis"
+    modelo_campeao: "random_forest"
+    registrar_modelo_campeao: true

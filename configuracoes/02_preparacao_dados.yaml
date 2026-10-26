@@ -1,0 +1,58 @@
+# ==============================================================================
+# Etapa 2: Preparação de Dados e Engenharia de Atributos
+# ==============================================================================
+# Define o motor tabular de processamento, seleção e tipagem de colunas,
+# filtros condicionais (where), transformações e novos atributos derivados.
+# Expressões são restritas a operações seguras analisadas via parser AST.
+# ==============================================================================
+
+tabular:
+  motor: "pandas" # pandas | polars
+
+selecao:
+  ativo: true
+  colunas:
+    - {nome: "Valor_da_Venda", ativo: true, tipo: "quantitativa_continua", papel: "alvo"}
+    - {nome: "Metragem", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
+    - {nome: "Quartos", ativo: true, tipo: "quantitativa_discreta", papel: "numerica"}
+    - {nome: "Banheiros", ativo: true, tipo: "quantitativa_discreta", papel: "numerica"}
+    - {nome: "Vagas", ativo: true, tipo: "quantitativa_discreta", papel: "numerica"}
+    - {nome: "Bairro", ativo: true, tipo: "qualitativa_nominal", papel: "categorica"}
+    - {nome: "Zona", ativo: true, tipo: "qualitativa_nominal", papel: "categorica"}
+    - {nome: "Valor_Condominio", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
+    - {nome: "Valor_Iptu", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
+    - {nome: "Area_Privativa", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
+
+filtros:
+  ativo: true
+  expressoes:
+    - nome: "metragem_positiva"
+      ativo: true
+      expressao:
+        pandas: "df['Metragem'] > 0"
+        polars: "df['Metragem'] > 0"
+    - nome: "preco_positivo"
+      ativo: true
+      expressao:
+        pandas: "df['Valor_da_Venda'] > 0"
+        polars: "df['Valor_da_Venda'] > 0"
+
+transformacoes:
+  ativo: true
+  expressoes:
+    - nome: "metragem_ajustada"
+      ativo: false
+      destino: "Metragem"
+      expressao:
+        pandas: "df['Metragem'].clip(lower=1)"
+        polars: "df['Metragem'].clip(lower_bound=1)"
+
+atributos_novos:
+  ativo: false
+  expressoes:
+    - nome: "razao_banheiro_quarto"
+      ativo: false
+      destino: "Razao_Banheiro_Quarto"
+      expressao:
+        pandas: "df['Banheiros'] / df['Quartos']"
+        polars: "df['Banheiros'] / df['Quartos']"

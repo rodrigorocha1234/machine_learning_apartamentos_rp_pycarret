@@ -1,0 +1,36 @@
+# ==============================================================================
+# Etapa 7: Monitoramento, Observabilidade e Detecção de Drift
+# ==============================================================================
+# Define destinos de métricas no Grafana, monitoramento de saúde do modelo,
+# latências de serviço, erros e limiares de detecção estatística de drift.
+# ==============================================================================
+
+monitoramento:
+  observabilidade:
+    grafana_url: "${GRAFANA_URL:http://localhost:3000}"
+    dashboards:
+      - "eda"
+      - "modelos"
+      - "estatistica"
+      - "servico"
+    metricas:
+      - "rmse"
+      - "mae"
+      - "r2"
+      - "latencia_p50"
+      - "latencia_p95"
+      - "latencia_p99"
+      - "taxa_erro"
+      - "drift"
+
+  drift:
+    ativo: true
+    tipos_monitorados:
+      - "covariate_drift"
+      - "concept_drift"
+      - "label_drift"
+      - "prediction_drift"
+    limiares:
+      covariate_drift_pvalor: 0.05
+      prediction_drift_ks: 0.10
+      rmse_degradacao_maxima: 0.15

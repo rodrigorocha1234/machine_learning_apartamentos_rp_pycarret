@@ -1,0 +1,30 @@
+# ==============================================================================
+# Etapa 1: Coleta e Persistência de Dados (Ingestão / Staging)
+# ==============================================================================
+# Define a identificação do projeto, fonte de dados original e staging intermediário.
+# Nenhuma credencial ou caminho absoluto rígido deve ser versionado diretamente.
+# ==============================================================================
+
+projeto:
+  nome: "previsao_imoveis_rp"
+  alvo: "Valor_da_Venda"
+  semente: 42
+
+fonte:
+  tipo: "xlsx" # xlsx | csv | sql | api
+  caminho: "${IMOVEIS_XLSX_PATH:storage-data/imoveis_apartamentos_rp.xlsx}"
+  aba: 0
+
+repositorio_staging:
+  tipo: "sqlite" # sqlite | postgres | mysql
+  caminho: "${STAGING_SQLITE_PATH:storage-data/staging_imoveis.db}"
+  tabela: "imoveis_preparados"
+
+coleta:
+  nome_alvo: "${ALVO:Valor_da_Venda}"
+  colunas_obrigatorias:
+    - "Valor_da_Venda"
+    - "Metragem"
+    - "Bairro"
+  validar_nulos_alvo: false
+  substituir_staging: true

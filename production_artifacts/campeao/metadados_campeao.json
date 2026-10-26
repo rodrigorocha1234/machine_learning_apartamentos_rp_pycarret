@@ -1,0 +1,10 @@
+{
+  "nome_modelo": "lightgbm",
+  "versao": "1.0.0-champion",
+  "algoritmo": "LGBMRegressor(log1p_target)",
+  "transformacao_alvo": "log1p_embutida",
+  "rmse_cv": 84599.21,
+  "rmse_holdout": 123590.32,
+  "r2_holdout": 0.913,
+  "data_promocao": "2026-10-26T18:44:50.768343+00:00"
+}

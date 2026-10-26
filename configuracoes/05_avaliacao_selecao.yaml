@@ -1,0 +1,31 @@
+# ==============================================================================
+# Etapa 5: Avaliação, Validação Cruzada, Testes Estatísticos e Votação
+# ==============================================================================
+# Define o esquema de particionamento (holdout e CV externa/interna), métricas,
+# testes não-paramétricos (Friedman e Nemenyi) e ensemble/votação opcional.
+# ==============================================================================
+
+avaliacao:
+  validacao:
+    holdout: 0.2
+    cv_externa:
+      metodo: "repeated_kfold" # repeated_kfold | kfold
+      splits: 5
+      repeticoes: 3
+    cv_interna:
+      metodo: "kfold"
+      splits: 3
+      embaralhar: true
+    metrica: "RMSE"
+
+  estatistica:
+    teste: "friedman"
+    pos_teste: "nemenyi"
+    alpha: 0.05
+    desempate: "menor_rmse"
+
+  votacao:
+    ativo: false
+    tecnica: "media_simples" # media_simples | voting_regressor | media_ponderada_rmse | stacking
+    melhores_n: 3
+    meta_modelo: "ridge"

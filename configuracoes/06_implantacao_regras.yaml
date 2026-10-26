@@ -1,0 +1,39 @@
+# ==============================================================================
+# Etapa 6: Implantação e Regras de Negócio Dinâmicas
+# ==============================================================================
+# Define as fórmulas das regras de negócio aplicadas sobre a predição do modelo
+# campeão e parâmetros de disponibilização da inferência via MLflow Serving.
+# ==============================================================================
+
+implantacao:
+  ativo: true
+  coluna_alvo_predito: "preco_predito"
+  regras:
+    - nome: "margem_inferior_negociacao"
+      ativo: true
+      descricao: "Faixa mínima de negociação (5% abaixo do preço previsto)"
+      destino: "preco_minimo_sugerido"
+      expressao: "preco_predito * 0.95"
+
+    - nome: "margem_superior_negociacao"
+      ativo: true
+      descricao: "Faixa máxima de negociação (5% acima do preço previsto)"
+      destino: "preco_maximo_sugerido"
+      expressao: "preco_predito * 1.05"
+
+    - nome: "valor_metro_quadrado_predito"
+      ativo: true
+      descricao: "Preço por m² calculado a partir da metragem"
+      destino: "preco_m2_predito"
+      expressao: "preco_predito / Metragem"
+
+    - nome: "taxa_comissao_imobiliaria"
+      ativo: true
+      descricao: "Comissão estimada de corretagem imobiliária (6%)"
+      destino: "valor_comissao_estimada"
+      expressao: "preco_predito * 0.06"
+
+  serving:
+    host: "0.0.0.0"
+    porta: 8080
+    endpoint: "/invocations"
