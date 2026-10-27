@@ -365,12 +365,25 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      overflow: auto;
+      overflow: hidden;
       max-height: 750px;
+      min-height: 480px;
       padding: 16px;
       background: rgba(15, 23, 42, 0.6);
       border-radius: 12px;
       border: 1px solid var(--border-color);
+      position: relative;
+      cursor: default;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .diagram-viewport.panning {
+      cursor: grab;
+    }
+
+    .diagram-viewport.is-dragging {
+      cursor: grabbing !important;
     }
 
     .svg-diagram {
@@ -378,20 +391,90 @@
       height: auto;
       filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
       border-radius: 8px;
+      transition: transform 0.08s ease-out;
+      transform-origin: center center;
+      will-change: transform;
+      pointer-events: none;
     }
 
     #tab-atividades .svg-diagram {
-      max-width: 640px;
+      max-width: 980px;
       width: 100%;
       height: auto;
     }
 
     .diagram-controls {
       display: flex;
-      justify-content: flex-end;
-      padding: 8px 16px;
-      background: rgba(0, 0, 0, 0.25);
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 10px 18px;
+      background: rgba(0, 0, 0, 0.35);
       border-top: 1px solid var(--border-color);
+      gap: 12px;
+    }
+
+    .zoom-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.7);
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .zoom-level-badge {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary);
+      min-width: 48px;
+      text-align: center;
+      padding: 3px 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .zoom-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .zoom-btn:hover {
+      background: var(--primary);
+      color: #0f172a;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .zoom-btn:active {
+      transform: translateY(0);
+    }
+
+    .zoom-hint {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .actions-toolbar {
+      display: flex;
+      align-items: center;
       gap: 8px;
     }
 
@@ -399,17 +482,21 @@
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border-color);
       color: var(--text-muted);
-      padding: 6px 12px;
+      padding: 6px 14px;
       border-radius: 6px;
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       transition: all 0.2s;
     }
 
     .ctrl-btn:hover {
       color: #fff;
       background: rgba(255, 255, 255, 0.1);
+      border-color: var(--primary);
     }
 
     /* Cards & Components */
@@ -515,6 +602,104 @@
       align-items: center;
     }
 
+    /* Tags & Dicionário de Transformações */
+    .tag-pandas {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      display: inline-block;
+    }
+
+    .tag-polars {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      display: inline-block;
+    }
+
+    .tag-cat {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .code-pill {
+      font-family: var(--font-mono);
+      background: rgba(0, 0, 0, 0.4);
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: #f1f5f9;
+      font-size: 0.8rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .filter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .pill-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .pill-btn.active {
+      background: var(--primary);
+      color: #040812;
+      border-color: var(--primary);
+      font-weight: 700;
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    .dict-search {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .dict-search:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
     @media (max-width: 1024px) {
       body { flex-direction: column; }
       aside.sidebar { width: 100%; height: auto; position: relative; }
@@ -540,8 +725,14 @@
       <a href="#diagrama-uml" class="nav-item">Diagrama UML de Classes</a>
       <a href="#diagrama-atividades" class="nav-item">Diagrama de Atividades</a>
       <a href="#diagrama-fluxo" class="nav-item">Diagrama de Fluxo & Sequência</a>
+      <a href="#explicacao-multiplicidades" class="nav-item">Guia de Multiplicidades UML</a>
       <div class="nav-label">Componentes</div>
       <a href="#etapas-pipeline" class="nav-item">7 Etapas do Pipeline</a>
+      <a href="#dicionario-transformacoes" class="nav-item">Dicionário Pandas & Polars</a>
+      <a href="#modelos-regressao" class="nav-item">Modelos de Regressão</a>
+      <a href="#tuning-validacao-cruzada" class="nav-item">Tuning & Validação Cruzada</a>
+      <a href="#pydantic-validacao" class="nav-item">Pydantic & Contratos</a>
+      <a href="#guia-arquivos-yaml" class="nav-item">Instrução dos Arquivos YAML</a>
       <a href="#goverranca-mlflow" class="nav-item">MLflow & Folds Hierárquicos</a>
       <a href="#api-inferencia" class="nav-item">API FastAPI & Regras</a>
       <a href="#monitoramento-drift" class="nav-item">Drift & Observabilidade</a>
@@ -611,75 +802,298 @@
               <img src="diagramas/diagrama_classes.svg" alt="Diagrama UML de Classes do Projeto" class="svg-diagram">
             </div>
             <textarea id="code-tab-uml" style="display: none;">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "darkMode": true,
+    "background": "transparent",
+    "mainBkg": "#1e293b",
+    "primaryColor": "#1e293b",
+    "primaryTextColor": "#f8fafc",
+    "primaryBorderColor": "#38bdf8",
+    "lineColor": "#38bdf8",
+    "secondaryColor": "#0f172a",
+    "tertiaryColor": "#1e1b4b",
+    "fontFamily": "Plus Jakarta Sans, sans-serif",
+    "fontSize": "13px"
+  }
+}}%%
 classDiagram
-    class ConfYAML {
-        +obter_fonte()
-        +obter_staging()
-        +obter_coleta()
-        +obter_modelagem()
-        +obter_avaliacao()
+    direction TB
+
+    %% =========================================================================
+    %% Camada de Orquestração do Pipeline (GoF Chain of Responsibility & Builder)
+    %% =========================================================================
+    class ExecutarPipelineCLI:::cadeia {
+        <<módulo executar_pipeline.py>>
+        +main() void
     }
-    class FonteDados {
-        <<interface>>
-        +carregar_dados()
-        +obter_origem()
+
+    class ConstrutorCadeiaPipeline:::cadeia {
+        <<GoF Builder / Factory>>
+        +construir_cadeia_completa() EloCadeiaPipeline
     }
-    class FonteExcel {
-        +carregar_dados()
-    }
-    FonteDados <|.. FonteExcel
-    class RepositorioDados {
-        <<interface>>
-        +gravar_dados()
-        +ler_dados()
-    }
-    class RepositorioSqlite {
-        +gravar_dados()
-        +ler_dados()
-    }
-    RepositorioDados <|.. RepositorioSqlite
-    class ColetorDados {
-        +executar_coleta()
-    }
-    ColetorDados --> FonteDados
-    ColetorDados --> RepositorioDados
-    class MotorTreinador {
-        <<interface>>
-        +obter_nome_motor()
-        +treinar_e_ajustar()
-    }
-    class TreinadorSklearn {
-        +treinar_e_ajustar()
-    }
-    class TreinadorPycaret {
-        +treinar_e_ajustar()
-    }
-    MotorTreinador <|.. TreinadorSklearn
-    MotorTreinador <|.. TreinadorPycaret
-    class ContextoPipeline {
+
+    class ContextoPipeline:::contexto {
+        +ConfYAML conf
         +str etapa_alvo
+        +list etapas_executadas
+        +dict tempos_etapas
     }
-    class EloCadeiaPipeline {
+
+    class EloCadeiaPipeline:::cadeia {
         <<abstract>>
-        +definir_proximo(proximo)
-        +processar(contexto)
+        -EloCadeiaPipeline _proximo
+        +definir_proximo(proximo) EloCadeiaPipeline
+        +processar(contexto) ContextoPipeline
     }
-    class EloColetaDados
-    class EloPreparacaoDados
-    class EloAnaliseEda
-    class EloModelagemRegressao
-    class EloAvaliacaoSelecao
-    class EloImplantacaoRegras
-    class EloObservabilidadeDrift
-    EloCadeiaPipeline <|-- EloColetaDados
-    EloCadeiaPipeline <|-- EloPreparacaoDados
-    EloCadeiaPipeline <|-- EloAnaliseEda
-    EloCadeiaPipeline <|-- EloModelagemRegressao
-    EloCadeiaPipeline <|-- EloAvaliacaoSelecao
-    EloCadeiaPipeline <|-- EloImplantacaoRegras
-    EloCadeiaPipeline <|-- EloObservabilidadeDrift
-    EloCadeiaPipeline --> EloCadeiaPipeline
-    EloCadeiaPipeline ..> ContextoPipeline
+
+    class ElosConcretosEtapas1a7:::cadeia {
+        <<GoF Chain>>
+        +EloColetaDados (Etapa 1)
+        +EloPreparacaoDados (Etapa 2)
+        +EloAnaliseEda (Etapa 3)
+        +EloModelagemRegressao (Etapa 4)
+        +EloAvaliacaoSelecao (Etapa 5)
+        +EloImplantacaoRegras (Etapa 6)
+        +EloObservabilidadeDrift (Etapa 7)
+    }
+
+    ExecutarPipelineCLI "1" ..> "1" ConstrutorCadeiaPipeline : dispara
+    ExecutarPipelineCLI "1" ..> "1" ContextoPipeline : instancia
+    ConstrutorCadeiaPipeline "1" ..> "1" EloCadeiaPipeline : retorna cabeca
+    ConstrutorCadeiaPipeline "1" ..> "7" ElosConcretosEtapas1a7 : encadeia elos
+    EloCadeiaPipeline <|-- ElosConcretosEtapas1a7 : estende
+    EloCadeiaPipeline "1" --> "0..1" EloCadeiaPipeline : _proximo
+    EloCadeiaPipeline "1..*" ..> "1" ContextoPipeline : manipula
+    ContextoPipeline "1" o-- "1" ConfYAML : agrega
+
+    %% =========================================================================
+    %% Camada de Configuração Centralizada & Segurança AST
+    %% =========================================================================
+    class ConfYAML:::config {
+        -ConfiguracaoCompleta _config
+        -ValidadorAst _validador_ast
+        +obter_fonte() ConfiguracaoFonte
+        +obter_staging() ConfiguracaoStaging
+        +obter_coleta() ConfiguracaoColeta
+        +obter_modelagem() ConfiguracaoModelagem
+        +obter_avaliacao() ConfiguracaoAvaliacao
+        +obter_implantacao() ConfiguracaoImplantacao
+        +obter_monitoramento() ConfiguracaoMonitoramento
+    }
+
+    class ValidadorAst:::config {
+        -set _nos_permitidos
+        +validar_expressao(codigo) bool
+    }
+    ConfYAML "1" *-- "1" ValidadorAst : valida expressoes
+
+    %% =========================================================================
+    %% Etapa 1: Ingestão de Dados & Staging Intermediário
+    %% =========================================================================
+    class FonteDados:::interface {
+        <<interface>>
+        +carregar_dados() DataFrame
+        +obter_origem() str
+    }
+    class FonteExcel:::servico {
+        -Path _caminho
+        +carregar_dados() DataFrame
+    }
+    FonteDados <|.. FonteExcel : implementa
+
+    class RepositorioDados:::interface {
+        <<interface>>
+        +gravar_dados(df) int
+        +ler_dados() DataFrame
+        +verificar_existencia() bool
+    }
+    class RepositorioSqlite:::servico {
+        -str _tabela
+        +gravar_dados(df) int
+        +ler_dados() DataFrame
+    }
+    RepositorioDados <|.. RepositorioSqlite : implementa
+
+    class ColetorDados:::servico {
+        -FonteDados _fonte
+        -RepositorioDados _repositorio
+        +executar_coleta() ResultadoColeta
+    }
+    ColetorDados "1" --> "1" FonteDados : consome
+    ColetorDados "1" --> "1" RepositorioDados : persiste
+
+    %% =========================================================================
+    %% Etapa 2: Preparação de Dados & Engenharia Tabular
+    %% =========================================================================
+    class MotorTabela:::interface {
+        <<interface>>
+        +aplicar_filtro(df, expr) DataFrame
+        +criar_coluna(df, nome, expr) DataFrame
+        +selecionar_colunas(df, cols) DataFrame
+    }
+    class MotorPandas:::servico {
+        +aplicar_filtro(df, expr) DataFrame
+    }
+    class MotorPolars:::servico {
+        +aplicar_filtro(df, expr) DataFrame
+    }
+    MotorTabela <|.. MotorPandas : Strategy Pandas
+    MotorTabela <|.. MotorPolars : Strategy Polars
+
+    class PreparadorDados:::servico {
+        -MotorTabela _motor
+        +executar_preparacao(df) ResultadoPreparacao
+    }
+    PreparadorDados "1" --> "1" MotorTabela : delega computacao
+
+    %% =========================================================================
+    %% Etapa 3: Análise Exploratória (EDA) & Visualização
+    %% =========================================================================
+    class AdaptadorVisualizacao:::interface {
+        <<interface>>
+        +gerar_histograma(df, col) ResultadoVisualizacao
+        +gerar_boxplot(df, x, y) ResultadoVisualizacao
+        +gerar_matriz_correlacao(df) ResultadoVisualizacao
+    }
+    class AdaptadorGrafana:::servico {
+        +publicar_metricas(dados) bool
+    }
+    class AdaptadorSeaborn:::servico {
+        +salvar_graficos(caminho) list
+    }
+    AdaptadorVisualizacao <|.. AdaptadorGrafana : Adapter Grafana
+    AdaptadorVisualizacao <|.. AdaptadorSeaborn : Adapter Seaborn
+
+    class AnalisadorEda:::servico {
+        -AdaptadorVisualizacao _adaptador
+        +executar_analises(df) ResultadoEda
+    }
+    AnalisadorEda "1" --> "1" AdaptadorVisualizacao : renderiza
+
+    %% =========================================================================
+    %% Etapa 4: Modelagem de Regressão & Tuning de Hiperparâmetros
+    %% =========================================================================
+    class FabricaFolds:::motor {
+        +criar_divisor(config, fallback) GeradorFolds
+    }
+
+    class MotorTreinador:::interface {
+        <<interface>>
+        +obter_nome_motor() str
+        +treinar_e_ajustar(df, alvo, cfg) ResultadoTuning
+    }
+    class TreinadorSklearn:::motor {
+        -FabricaFolds _fabrica_folds
+        +treinar_e_ajustar(df, alvo, cfg) ResultadoTuning
+    }
+    class TreinadorPycaret:::motor {
+        -FabricaFolds _fabrica_folds
+        +treinar_e_ajustar(df, alvo, cfg) ResultadoTuning
+    }
+    MotorTreinador <|.. TreinadorSklearn : Strategy Sklearn
+    MotorTreinador <|.. TreinadorPycaret : Strategy PyCaret
+    TreinadorSklearn "1" --> "1" FabricaFolds : gera folds
+    TreinadorPycaret "1" --> "1" FabricaFolds : gera folds
+
+    class OrquestradorModelagem:::motor {
+        -MotorTreinador _motor
+        +executar_treinamento() ResultadoModelagem
+    }
+    OrquestradorModelagem "1" --> "1" MotorTreinador : orquestra
+
+    %% =========================================================================
+    %% Etapa 5: Validação Cruzada, Testes Estatísticos & MLflow
+    %% =========================================================================
+    class RastreadorMlflow:::avaliacao {
+        -ConfiguracaoMlflow _config
+        +iniciar_run_pai_cv() str
+        +registrar_run_filho_fold(mod, fold, metrics) str
+        +finalizar_run_pai_cv(matriz, id_pai) void
+    }
+
+    class TestadorFriedman:::avaliacao {
+        +executar_teste(matriz_scores) ResultadoFriedman
+        +calcular_pos_teste_nemenyi(matriz) ResultadoNemenyi
+    }
+
+    class ValidadorCruzado:::avaliacao {
+        -RastreadorMlflow _rastreador
+        +executar_cv_pareada(df, modelos) tuple
+    }
+    ValidadorCruzado "1" --> "1" RastreadorMlflow : nested tracking
+
+    class OrquestradorAvaliacao:::avaliacao {
+        -ValidadorCruzado _validador
+        -TestadorFriedman _testador_estatistico
+        +executar_avaliacao_e_selecao() ResultadoEtapaAvaliacao
+    }
+    OrquestradorAvaliacao "1" --> "1" ValidadorCruzado : executa CV
+    OrquestradorAvaliacao "1" --> "1" TestadorFriedman : compara modelos
+
+    %% =========================================================================
+    %% Etapa 6: Serving REST & Regras de Negócio Pós-Predição
+    %% =========================================================================
+    class CarregadorCampeao:::implantacao {
+        -Path _caminho_modelo
+        +prever(X) list
+        +obter_metadados() MetadadosModelo
+    }
+
+    class ServicoInferencia:::implantacao {
+        -CarregadorCampeao _carregador
+        -ValidadorAst _validador_ast
+        +executar_predicao_e_regras(imovel) RespostaInferencia
+    }
+    ServicoInferencia "1" --> "1" CarregadorCampeao : inferencia
+    ServicoInferencia "1" ..> "1" ValidadorAst : seguranca regras
+
+    class AplicacaoFastAPI:::implantacao {
+        <<FastAPI Framework>>
+        +health() dict
+        +predict(requisicao) RespostaInferencia
+        +invocations(lote) dict
+    }
+    AplicacaoFastAPI "1" --> "1" ServicoInferencia : endpoint REST
+
+    %% =========================================================================
+    %% Etapa 7: Detecção de Drift & Observabilidade
+    %% =========================================================================
+    class DetectorDrift:::interface {
+        <<interface>>
+        +analisar_drift(ref, prod, y_ref, y_prod) ResultadoRelatorioDrift
+    }
+    class CalculadorDrift:::observabilidade {
+        +analisar_drift(ref, prod, y_ref, y_prod) ResultadoRelatorioDrift
+        -calcular_psi_categorico(s_ref, s_prod) float
+    }
+    DetectorDrift <|.. CalculadorDrift : implementa
+
+    class PublicadorGrafana:::observabilidade {
+        +publicar_relatorio_drift(relatorio) bool
+    }
+
+    class OrquestradorDrift:::observabilidade {
+        -DetectorDrift _detector
+        -PublicadorGrafana _publicador
+        +executar_monitoramento() ResultadoRelatorioDrift
+    }
+    OrquestradorDrift "1" --> "1" DetectorDrift : detecta KS / PSI
+    OrquestradorDrift "1" --> "1" PublicadorGrafana : publica dashboards
+
+    %% =========================================================================
+    %% Definições de Estilos Modernos
+    %% =========================================================================
+    classDef config fill:#0f172a,stroke:#38bdf8,stroke-width:2.5px,color:#f8fafc
+    classDef interface fill:#0b132b,stroke:#818cf8,stroke-width:2px,stroke-dasharray: 4 4,color:#f8fafc
+    classDef servico fill:#1e293b,stroke:#0ea5e9,stroke-width:2px,color:#f8fafc
+    classDef motor fill:#1e293b,stroke:#f59e0b,stroke-width:2px,color:#f8fafc
+    classDef avaliacao fill:#1e293b,stroke:#10b981,stroke-width:2px,color:#f8fafc
+    classDef implantacao fill:#1e293b,stroke:#f97316,stroke-width:2px,color:#f8fafc
+    classDef observabilidade fill:#1e293b,stroke:#ef4444,stroke-width:2px,color:#f8fafc
+    classDef cadeia fill:#1e1b4b,stroke:#a855f7,stroke-width:2.5px,color:#f8fafc
+    classDef contexto fill:#1f132b,stroke:#ec4899,stroke-width:2px,color:#f8fafc
             </textarea>
           </div>
 
@@ -689,41 +1103,114 @@ classDiagram
               <img src="diagramas/diagrama_atividades.svg" alt="Diagrama de Atividades do Pipeline" class="svg-diagram">
             </div>
             <textarea id="code-tab-atividades" style="display: none;">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "darkMode": true,
+    "background": "transparent",
+    "mainBkg": "#1e293b",
+    "primaryColor": "#1e293b",
+    "primaryTextColor": "#f8fafc",
+    "primaryBorderColor": "#38bdf8",
+    "lineColor": "#38bdf8",
+    "secondaryColor": "#0f172a",
+    "tertiaryColor": "#1e1b4b",
+    "fontFamily": "Plus Jakarta Sans, sans-serif",
+    "fontSize": "13px"
+  }
+}}%%
 flowchart TD
-    Start([Inicio do Pipeline]) --> Ingestao[Etapa 1: Ingestao com ColetorDados]
-    Ingestao --> ValidaFonte{Fonte e Alvo Validos?}
-    ValidaFonte -- Nao --> ErroCarga[Lancar ErroColetaDados e Abortar]
-    ValidaFonte -- Sim --> SalvaStaging[Gravar dados brutos no Staging SQLite]
-    SalvaStaging --> Prep[Etapa 2: Preparacao de Dados]
-    Prep --> ASTFiltros[Filtragem de Outliers via AST]
-    ASTFiltros --> Imputacao[Imputacao Numerica e Categorica]
-    Imputacao --> ASTEngenharia[Criacao de Features via AST]
-    ASTEngenharia --> SalvaPrep[Materializar imoveis_preparados]
-    SalvaPrep --> Modelagem[Etapa 4: Modelagem e Tuning]
-    Modelagem --> DivisorFolds[Instanciar Folds via FabricaFolds]
-    DivisorFolds --> MLflowPai1[Iniciar Run Pai MLflow: Tuning]
-    MLflowPai1 --> TreinaModelos[Treinar Catalogo de Regressores]
-    TreinaModelos --> MLflowFilhos1[Registrar Runs Filhos]
-    MLflowFilhos1 --> FimPai1[Extrair Campeao Inicial]
-    FimPai1 --> Avaliacao[Etapa 5: Validacao Cruzada Externa]
-    Avaliacao --> MLflowPai2[Iniciar Run Pai MLflow: validacao_cruzada]
-    MLflowPai2 --> LoopFolds[Loop Pareado de Folds 1 a K]
-    LoopFolds --> MLflowFilhos2[Registrar Run Filho por Fold]
-    MLflowFilhos2 --> Friedman[Executar Teste de Friedman]
-    Friedman --> PValor{p-valor menor que alfa?}
-    PValor -- Sim --> Nemenyi[Pos-teste de Nemenyi]
-    PValor -- Nao --> RankBase[Selecionar Campeao por RMSE]
-    Nemenyi --> Comite[Construir Ensemble de Votacao]
-    RankBase --> Comite
-    Comite --> HoldoutCego[Avaliar no Holdout Cego]
-    HoldoutCego --> MLflowFinal[Finalizar Run Pai CV]
-    MLflowFinal --> Implantacao[Etapa 6: Implantacao do Modelo]
-    Implantacao --> ExportArtifacts[Exportar Artefatos do Campeao]
-    ExportArtifacts --> Serving[Inicializar Servico FastAPI]
-    Serving --> Observabilidade[Etapa 7: Monitoramento e Drift]
-    Observabilidade --> TesteDrift[Calcular Testes de Drift]
-    TesteDrift --> PublicaGrafana[Publicar Metricas no Grafana]
-    PublicaGrafana --> End([Fim do Ciclo Operacional])
+    Start([● Início: Disparo do Pipeline]) --> InitContext[Inicializar ContextoPipeline & ConfYAML]
+    InitContext --> ChainStart[Construir Cadeia de Responsabilidade 1 a 7]
+
+    %% ETAPA 1
+    subgraph S1 ["Etapa 1: Ingestão de Dados & Staging"]
+        ChainStart --> Elo1[Elo 1: EloColetaDados]
+        Elo1 --> LerFonte[Carregar Planilha XLSX via FonteExcel]
+        LerFonte --> ValidarColunas{Colunas e Alvo Válidos?}
+        ValidarColunas -- Não --> AbortarColeta[Lançar ErroColetaDados & Abortar]
+        ValidarColunas -- Sim --> PersistirSQLite[Gravar Dados Brutos no Staging SQLite]
+    end
+
+    %% ETAPA 2
+    subgraph S2 ["Etapa 2: Preparação & Motores Tabulares"]
+        PersistirSQLite --> Elo2[Elo 2: EloPreparacaoDados]
+        Elo2 --> EscolherMotorTabular{Motor Tabular no YAML?}
+        EscolherMotorTabular -- "pandas" --> MotorPandas[MotorPandas: Series & AST Seguro]
+        EscolherMotorTabular -- "polars" --> MotorPolars[MotorPolars: LazyFrame & Expressões]
+        MotorPandas --> AplicarFiltros[Executar Filtros Condicionais Where via AST]
+        MotorPolars --> AplicarFiltros
+        AplicarFiltros --> ImputarNulos[Imputação Numérica Mediana & Categórica Moda]
+        ImputarNulos --> CriarAtributos[Criar Atributos Derivados via AST Seguro]
+        CriarAtributos --> SalvarPrep[Materializar Tabela imoveis_preparados]
+    end
+
+    %% ETAPA 3
+    subgraph S3 ["Etapa 3: Análise Exploratória de Dados EDA"]
+        SalvarPrep --> Elo3[Elo 3: EloAnaliseEda]
+        Elo3 --> CalcDescritivas[Calcular Estatísticas Descritivas e Assimetria]
+        CalcDescritivas --> MatrizCorr[Gerar Matriz de Correlação Pearson e Spearman]
+        MatrizCorr --> AnaliseOutliers[Detectar Outliers via Boxplots e Intervalo IQR]
+        AnaliseOutliers --> RelatorioEDA[Exportar Relatório e Gráficos da EDA]
+    end
+
+    %% ETAPA 4
+    subgraph S4 ["Etapa 4: Modelagem de Regressão & Tuning"]
+        RelatorioEDA --> Elo4[Elo 4: EloModelagemRegressao]
+        Elo4 --> TransfAlvo[Aplicar log1p na Variável Alvo Valor_da_Venda]
+        TransfAlvo --> DivisaoFoldsInterna[Instanciar Divisor de Folds via FabricaFolds]
+        DivisaoFoldsInterna --> EscolherMotorTreino{Motor de Treinamento?}
+        EscolherMotorTreino -- "sklearn" --> TreinoSklearn[TreinadorSklearn: Pipelines Nativos]
+        EscolherMotorTreino -- "pycaret" --> TreinoPycaret[TreinadorPycaret: setup e create_model]
+        TreinoSklearn --> MLflowTuningPai[Iniciar Run Pai MLflow: Tuning]
+        TreinoPycaret --> MLflowTuningPai
+        MLflowTuningPai --> ExecutarTuning[Busca de Hiperparâmetros: Random, Grid ou Optuna]
+        ExecutarTuning --> ChecarManterMelhor{Tuning superou Baseline?}
+        ChecarManterMelhor -- Não --> ManterBaseline[Reverter para Estimador Padrão]
+        ChecarManterMelhor -- Sim --> SalvarOtimizado[Adotar Estimador com Melhores Hiperparâmetros]
+        ManterBaseline --> SalvarArtefatosTreino[Salvar Modelos e Registrar Métricas no MLflow]
+        SalvarOtimizado --> SalvarArtefatosTreino
+    end
+
+    %% ETAPA 5
+    subgraph S5 ["Etapa 5: Validação Cruzada Externa & Protocolo Estatístico"]
+        SalvarArtefatosTreino --> Elo5[Elo 5: EloAvaliacaoSelecao]
+        Elo5 --> MLflowCVPai[Iniciar Run Pai MLflow: validacao_cruzada]
+        MLflowCVPai --> LoopCV[Loop Pareado de Folds 1 a 10 para todos os Modelos]
+        LoopCV --> RegistrarFolds[Registrar Run Filho por Fold no MLflow]
+        RegistrarFolds --> TesteFriedman[Executar Teste Não-Paramétrico de Friedman]
+        TesteFriedman --> HipoteseNula{Diferença Estatística Relevante p < 0.05?}
+        HipoteseNula -- Sim --> PosTesteNemenyi[Executar Pós-teste de Nemenyi e Distância Crítica CD]
+        HipoteseNula -- Não --> CriterioRMSE[Desempate Direto por Menor RMSE Médio]
+        PosTesteNemenyi --> SelecionarCampeao[Promover Modelo Campeão: LightGBM]
+        CriterioRMSE --> SelecionarCampeao
+        SelecionarCampeao --> ValidarHoldout[Avaliação no Holdout Cego Final 20%]
+        ValidarHoldout --> FinalizarCVPai[Finalizar Run Pai validacao_cruzada no MLflow]
+    end
+
+    %% ETAPA 6
+    subgraph S6 ["Etapa 6: Implantação, API REST & Regras de Negócio"]
+        FinalizarCVPai --> Elo6[Elo 6: EloImplantacaoRegras]
+        Elo6 --> ExportarCampeao[Serializar Modelo Campeão e Metadados Pydantic]
+        ExportarCampeao --> SubirFastAPI[Inicializar Aplicação FastAPI com Rotas health e predict]
+        SubirFastAPI --> InferenciaReq[Receber RequisicaoImovel validada via Pydantic]
+        InferenciaReq --> DestransfPreco[Calcular Predição e Inverter expm1 para Reais]
+        DestransfPreco --> AvaliarRegrasAST[Avaliar Regras Dinâmicas de Financiamento e Comissões]
+        AvaliarRegrasAST --> RespostaAPI[Retornar RespostaPredicao Estruturada]
+    end
+
+    %% ETAPA 7
+    subgraph S7 ["Etapa 7: Monitoramento de Data Drift & Observabilidade"]
+        RespostaAPI --> Elo7[Elo 7: EloObservabilidadeDrift]
+        Elo7 --> ColetarAmostras[Amostragem de Inferências de Produção]
+        ColetarAmostras --> TesteKS[Calcular Teste Kolmogorov-Smirnov e PSI para Deriva]
+        TesteKS --> AlertaDrift{Drift Significativo Detectado?}
+        AlertaDrift -- Sim --> NotificarAlerta[Disparar Log de Alerta de Degradação]
+        AlertaDrift -- Não --> RegistrarDriftOk[Registrar Estabilidade Distribucional]
+        NotificarAlerta --> PublicarGrafana[Publicar Métricas no Dashboard Grafana]
+        RegistrarDriftOk --> PublicarGrafana
+        PublicarGrafana --> End([★ Fim do Ciclo Operacional])
+    end
             </textarea>
           </div>
 
@@ -733,52 +1220,358 @@ flowchart TD
               <img src="diagramas/diagrama_sequencia.svg" alt="Diagrama de Fluxo e Sequência" class="svg-diagram">
             </div>
             <textarea id="code-tab-fluxo" style="display: none;">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "darkMode": true,
+    "background": "transparent",
+    "mainBkg": "#1e293b",
+    "primaryColor": "#1e293b",
+    "primaryTextColor": "#f8fafc",
+    "primaryBorderColor": "#38bdf8",
+    "lineColor": "#38bdf8",
+    "secondaryColor": "#0f172a",
+    "tertiaryColor": "#1e1b4b",
+    "fontFamily": "Plus Jakarta Sans, sans-serif",
+    "fontSize": "13px"
+  }
+}}%%
 sequenceDiagram
     autonumber
-    actor Dev as Engenheiro de ML / QA
+    actor Dev as Usuário / Engenheiro ML
+    participant CLI as executar_pipeline.py (CLI)
+    participant Chain as ConstrutorCadeiaPipeline (GoF Chain)
+    participant Ctx as ContextoPipeline
     participant Conf as ConfYAML (Configurações)
-    participant Coleta as ColetorDados (Etapa 1)
-    participant Mod as Treinador & FabricaFolds (Etapa 4)
+    participant Coleta as Elo 1: ColetorDados
+    participant Prep as Elo 2: PreparadorDados
+    participant EDA as Elo 3: AnalisadorEda
+    participant Mod as Elo 4: Treinador & Tuning
     participant MLflow as Servidor MLflow (:5000)
-    participant Eval as ValidadorCruzado & Friedman (Etapa 5)
-    participant API as FastAPI Serving & Regras (Etapa 6)
-    participant Graf as Grafana Dashboard (:3000)
+    participant Eval as Elo 5: ValidadorCruzado & Friedman
+    participant API as Elo 6: FastAPI & Regras AST
+    participant Graf as Elo 7: DetectorDrift & Grafana
 
-    Dev->>Conf: Carregar 01..07 YAML com validacao AST
-    Conf-->>Dev: ConfiguracaoCompleta (Tipagem Estrita)
+    Dev->>CLI: python -m app.executar_pipeline --etapa todas
+    CLI->>Conf: Carregar 01..07 YAML com validação Pydantic
+    Conf-->>CLI: ConfiguracaoCompleta tipada
+    CLI->>Ctx: Instanciar ContextoPipeline(conf, etapa_alvo)
+    CLI->>Chain: ConstrutorCadeiaPipeline.construir_cadeia_completa()
+    Chain-->>CLI: Elo 1 (Cabeça da Cadeia de Responsabilidade)
+    CLI->>Coleta: elo1.processar(contexto)
 
-    Dev->>Coleta: executar_coleta()
-    Coleta->>Coleta: Validar colunas de negocio & nulos
-    Coleta-->>Dev: 3.424 registros salvos no Staging SQLite
-
-    Dev->>Mod: treinar_e_ajustar(dados_treino)
-    Mod->>MLflow: Iniciar Run Pai ("tuning_de_parametros_random")
-    Mod->>MLflow: Registrar Runs Filhos ("modelo_X_log1p")
-    MLflow-->>Mod: Runs e Hiperparametros persistidos
-
-    Dev->>Eval: executar_avaliacao_e_selecao()
-    Eval->>MLflow: Iniciar Run Pai ("validacao_cruzada")
-    loop Para cada Modelo e Fold (1..K)
-        Eval->>MLflow: Registrar Run Filho ("metodo_X_prepocessamento_log1p_fold_K")
+    rect rgb(30, 41, 59)
+        note over Coleta,Prep: Etapas 1 e 2: Ingestão e Preparação Tabular
+        Coleta->>Coleta: Ingerir XLSX e persistir Staging SQLite
+        Coleta->>Prep: definir_proximo -> elo2.processar(contexto)
+        Prep->>Prep: Executar Filtros Where e Features via AST
     end
-    Eval->>Eval: Teste de Friedman (p < 0.05) & Nemenyi CD
-    Eval->>Eval: Avaliacao no Holdout Cego (20%)
-    Eval->>MLflow: Finalizar Run Pai ("validacao_cruzada")
-    Eval-->>Dev: Modelo Campeao Promovido: LightGBM
 
-    Dev->>API: POST /predict (Apartamento Novo)
-    API->>API: Inferencia LightGBM + Regras de Negocio AST
-    API-->>Dev: Preco Previsto, Comissoes e Financiamento
+    rect rgb(30, 41, 59)
+        note over EDA,Mod: Etapas 3 e 4: EDA e Modelagem de Regressão
+        Prep->>EDA: elo3.processar(contexto)
+        EDA->>EDA: Gerar estatísticas descritivas e matriz de correlação
+        EDA->>Mod: elo4.processar(contexto)
+        Mod->>MLflow: Iniciar Run Pai ("tuning_de_parametros_random")
+        Mod->>MLflow: Registrar Runs Filhos por Estimador
+        MLflow-->>Mod: Hiperparâmetros e Métricas persistidos
+    end
 
-    Dev->>Graf: Calcular e Publicar Metricas de Drift
-    Graf-->>Dev: Dashboard "Monitoramento de Data Drift e Qualidade" Ativo
+    rect rgb(30, 41, 59)
+        note over Eval,MLflow: Etapa 5: Validação Cruzada Pareada & Testes Estatísticos
+        Mod->>Eval: elo5.processar(contexto)
+        Eval->>MLflow: Iniciar Run Pai ("validacao_cruzada")
+        loop Para cada Modelo e Fold (1 a 10)
+            Eval->>MLflow: Registrar Run Filho ("metodo_X_prepocessamento_log1p_fold_K")
+        end
+        Eval->>Eval: Teste de Friedman (p < 0.05) e Pós-teste de Nemenyi (CD)
+        Eval->>Eval: Avaliação no Holdout Cego (20%)
+        Eval->>MLflow: Finalizar Run Pai ("validacao_cruzada")
+        Eval-->>Ctx: Modelo Campeão Promovido (LightGBM)
+    end
+
+    rect rgb(30, 41, 59)
+        note over API,Graf: Etapas 6 e 7: Serving REST e Observabilidade
+        Eval->>API: elo6.processar(contexto)
+        API->>API: Exportar artefatos e subir FastAPI (/health, /predict)
+        API->>Graf: elo7.processar(contexto)
+        Graf->>Graf: Teste Kolmogorov-Smirnov (KS-Test) e PSI
+        Graf->>Graf: Publicar métricas no painel Grafana (:3000)
+    end
+
+    Graf-->>CLI: ContextoPipeline final com tempos_etapas
+    CLI-->>Dev: Pipeline Concluído com Sucesso em N segundos
             </textarea>
           </div>
         </div>
 
         <div class="diagram-controls">
-          <button class="ctrl-btn" onclick="copiarMermaid()">Copiar Código Mermaid</button>
-          <button class="ctrl-btn" onclick="alternarTelaCheia()">Tela Cheia</button>
+          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <div class="zoom-toolbar" title="Controles de Zoom dos Diagramas">
+              <button class="zoom-btn" onclick="zoomOut()" title="Diminuir Zoom (-25%)">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M2 8a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11A.5.5 0 0 1 2 8z"/></svg>
+              </button>
+              <span class="zoom-level-badge" id="badge-zoom-nivel" title="Nível de zoom atual">100%</span>
+              <button class="zoom-btn" onclick="zoomIn()" title="Aumentar Zoom (+25%)">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/></svg>
+              </button>
+              <button class="zoom-btn" onclick="resetarZoom()" title="Redefinir Zoom para 100%">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
+              </button>
+            </div>
+            <div class="zoom-hint">
+              <span>💡 Dica: Role a roda do mouse sobre o diagrama ou dê duplo clique para zoom. Arraste para navegar livremente.</span>
+            </div>
+          </div>
+
+          <div class="actions-toolbar">
+            <button class="ctrl-btn" onclick="copiarMermaid()">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>
+              Copiar Código Mermaid
+            </button>
+            <button class="ctrl-btn" onclick="alternarTelaCheia()">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z"/></svg>
+              Tela Cheia
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guia Completo de Multiplicidades e Notação UML -->
+      <div id="explicacao-multiplicidades" class="info-card" style="margin-top: 32px; border-left: 4px solid var(--accent-cyan);">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>📐</span>
+          <span>Guia de Multiplicidades & Notação de Relacionamentos UML no Projeto</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Em modelagem orientada a objetos pela <strong>UML (Unified Modeling Language)</strong>, a <strong>multiplicidade</strong> é a especificação formal da <strong>cardinalidade permitida</strong> para instâncias de uma classe que podem se relacionar com uma instância de outra classe. No ecossistema deste projeto (desenvolvido em <strong>Python 3.12+ com tipagem estrita</strong> e validado pelo <strong>Pyright</strong> e <strong>Pydantic</strong>), cada multiplicidade reflete diretamente na estrutura de atributos, assinaturas de métodos e coleções.
+          </p>
+
+          <!-- Tabela de Notações Universais UML e Equivalência Python -->
+          <h4 style="color: var(--accent-cyan); font-size: 1.1rem; margin: 24px 0 12px;">1. Notações Universais de Multiplicidade & Equivalência em Python</h4>
+          <div class="table-responsive" style="margin-bottom: 24px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 140px;">Símbolo UML</th>
+                  <th style="width: 180px;">Nome da Multiplicidade</th>
+                  <th>Definição Formal</th>
+                  <th style="width: 280px;">Equivalência em Python Estrito (PEP 484)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>1</code> (ou <code>1..1</code>)</td>
+                  <td><strong>Exatamente Um</strong></td>
+                  <td>Relacionamento obrigatório e unívoco. A referência não pode ser nula (<em>non-nullable</em>) e deve existir exatamente uma instância associada.</td>
+                  <td><code>atributo: Tipo</code> (sem <code>None</code>)<br><code>ContextoPipeline.conf: ConfYAML</code></td>
+                </tr>
+                <tr>
+                  <td><code>0..1</code></td>
+                  <td><strong>Zero ou Um</strong></td>
+                  <td>Relacionamento opcional. A referência pode estar ausente (valor nulo) ou apontar para no máximo uma única instância.</td>
+                  <td><code>atributo: Tipo | None = None</code><br><code>EloCadeiaPipeline._proximo: EloCadeiaPipeline | None</code></td>
+                </tr>
+                <tr>
+                  <td><code>*</code> (ou <code>0..*</code>)</td>
+                  <td><strong>Zero ou Muitos</strong></td>
+                  <td>Coleção de cardinalidade arbitrária. A instância pode se relacionar com zero, um ou infinitos objetos do tipo alvo.</td>
+                  <td><code>atributo: list[Tipo] = []</code><br><code>regras: list[RegraNegocio]</code></td>
+                </tr>
+                <tr>
+                  <td><code>1..*</code></td>
+                  <td><strong>Um ou Muitos</strong></td>
+                  <td>Coleção obrigatória não-vazia. Exige que exista pelo menos uma instância associada, permitindo múltiplas.</td>
+                  <td><code>modelos: list[Modelo] = Field(min_length=1)</code><br>Validação Pydantic com pelo menos 1 item</td>
+                </tr>
+                <tr>
+                  <td><code>N</code> (ex: <code>7</code>)</td>
+                  <td><strong>Número Fixo</strong></td>
+                  <td>Contrato determinístico com quantidade exata e imutável de instâncias encadeadas.</td>
+                  <td>Encadeamento fixo dos 7 elos concretos pelo <code>ConstrutorCadeiaPipeline</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Tabela de Conectores e Relacionamentos no Diagrama -->
+          <h4 style="color: var(--accent-cyan); font-size: 1.1rem; margin: 24px 0 12px;">2. Semântica dos Conectores UML Utilizados no Diagrama</h4>
+          <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 24px;">
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--primary); font-weight: 700; font-family: monospace;">&lt;|-- Generalização (Herança)</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                Relação <em>"É-um"</em>. A subclasse herda atributos e métodos da superclasse abstrata (ex: <code>EloCadeiaPipeline &lt;|-- ElosConcretosEtapas1a7</code>).
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--secondary); font-weight: 700; font-family: monospace;">&lt;|.. Realização (Interface)</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                Relação de polimorfismo. A classe implementa o contrato definido por um <code>Protocol</code> ou classe abstrata (ex: <code>FonteDados &lt;|.. FonteExcel</code>).
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--accent-amber); font-weight: 700; font-family: monospace;">*-- Composição Forte</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                Relação todo-parte com ciclo de vida dependente: a parte só existe enquanto o todo existir (ex: <code>ConfYAML *-- ValidadorAst</code>).
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--success); font-weight: 700; font-family: monospace;">o-- Agregação Fraca</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                Relação todo-parte com ciclo de vida independente: o objeto agregado existe independentemente do agregador (ex: <code>ContextoPipeline o-- ConfYAML</code>).
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--accent); font-weight: 700; font-family: monospace;">--> Associação Dirigida</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                Navegabilidade unívoca: a classe de origem mantém uma referência para a classe de destino via atributo de instância (ex: <code>ColetorDados "1" --> "1" FonteDados</code>).
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--text-muted); font-weight: 700; font-family: monospace;">..> Dependência / Uso</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                A classe de origem instancia, recebe por parâmetro ou chama temporariamente a classe de destino sem retê-la em atributo (ex: <code>ExecutarPipelineCLI "1" ..> "1" ContextoPipeline</code>).
+              </div>
+            </div>
+          </div>
+
+          <!-- Mapeamento Detalhado das Multiplicidades do Projeto -->
+          <h4 style="color: var(--accent-cyan); font-size: 1.1rem; margin: 24px 0 12px;">3. Tabela Analítica das Multiplicidades Presentes no Diagrama do Projeto</h4>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 320px;">Relacionamento no Diagrama</th>
+                  <th style="width: 130px;">Multiplicidade</th>
+                  <th>Regra Arquitetural e Significado no Domínio</th>
+                  <th style="width: 260px;">Implementação em Código Python</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>ExecutarPipelineCLI ..> ConstrutorCadeiaPipeline</code></td>
+                  <td><code>"1" ..> "1"</code></td>
+                  <td>O ponto de entrada CLI dispara exatamente uma fábrica responsável pela montagem de toda a cadeia do pipeline.</td>
+                  <td><code>builder = ConstrutorCadeiaPipeline()</code></td>
+                </tr>
+                <tr>
+                  <td><code>ExecutarPipelineCLI ..> ContextoPipeline</code></td>
+                  <td><code>"1" ..> "1"</code></td>
+                  <td>A execução instancia um único objeto de contexto de estado com tempos, flags e dados transitados.</td>
+                  <td><code>contexto = ContextoPipeline(conf, etapa_alvo)</code></td>
+                </tr>
+                <tr>
+                  <td><code>ConstrutorCadeiaPipeline ..> EloCadeiaPipeline</code></td>
+                  <td><code>"1" ..> "1"</code></td>
+                  <td>O método <code>construir_cadeia_completa()</code> retorna exatamente a cabeça (<em>head</em>) da lista encadeada (o primeiro elo).</td>
+                  <td><code>return elo_coleta</code></td>
+                </tr>
+                <tr>
+                  <td><code>ConstrutorCadeiaPipeline ..> ElosConcretosEtapas1a7</code></td>
+                  <td><code>"1" ..> "7"</code></td>
+                  <td>O construtor instancia e interliga sequencialmente exatamente os 7 elos concretos das 7 etapas de Machine Learning.</td>
+                  <td>Instancia <code>EloColeta</code> até <code>EloDrift</code> e encadeia via <code>definir_proximo()</code></td>
+                </tr>
+                <tr>
+                  <td><code>EloCadeiaPipeline --> EloCadeiaPipeline</code></td>
+                  <td><code>"1" --> "0..1"</code></td>
+                  <td>Padrão GoF Chain of Responsibility: cada elo conhece no máximo um sucessor (ou <code>None</code> no caso do último elo de observabilidade).</td>
+                  <td><code>self._proximo: EloCadeiaPipeline | None = None</code></td>
+                </tr>
+                <tr>
+                  <td><code>EloCadeiaPipeline ..> ContextoPipeline</code></td>
+                  <td><code>"1..*" ..> "1"</code></td>
+                  <td>Um ou múltiplos elos da cadeia manipulam e enriquecem concorrencialmente a mesma instância compartilhada de contexto.</td>
+                  <td><code>def processar(self, ctx: ContextoPipeline) -> ContextoPipeline</code></td>
+                </tr>
+                <tr>
+                  <td><code>ContextoPipeline o-- ConfYAML</code></td>
+                  <td><code>"1" o-- "1"</code></td>
+                  <td>O contexto agrega exatamente uma instância da configuração centralizada tipada, sem acoplar seu ciclo de vida.</td>
+                  <td><code>conf: ConfYAML</code> na dataclass</td>
+                </tr>
+                <tr>
+                  <td><code>ConfYAML *-- ValidadorAst</code></td>
+                  <td><code>"1" *-- "1"</code></td>
+                  <td>Composição forte: o módulo <code>ConfYAML</code> cria e detém exclusivamente seu próprio parser de validação sintática AST.</td>
+                  <td><code>self._validador_ast = ValidadorAst()</code> no <code>__init__</code></td>
+                </tr>
+                <tr>
+                  <td><code>ColetorDados --> FonteDados</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>O serviço de coleta consome exatamente uma fonte de dados ativa por execução (ex: Excel ou SQL).</td>
+                  <td><code>self._fonte: FonteDados</code></td>
+                </tr>
+                <tr>
+                  <td><code>ColetorDados --> RepositorioDados</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>O serviço de coleta grava os registros ingeridos em exatamente um repositório de staging SQLite.</td>
+                  <td><code>self._repositorio: RepositorioDados</code></td>
+                </tr>
+                <tr>
+                  <td><code>PreparadorDados --> MotorTabela</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>Padrão GoF Strategy: o preparador delega as transformações e filtros para exatamente uma engine ativa (Pandas ou Polars).</td>
+                  <td><code>self._motor: MotorTabela</code></td>
+                </tr>
+                <tr>
+                  <td><code>AnalisadorEda --> AdaptadorVisualizacao</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>Padrão GoF Adapter: o serviço exploratório renderiza análises através de um adaptador gráfico desacoplado (Grafana ou Seaborn).</td>
+                  <td><code>self._adaptador: AdaptadorVisualizacao</code></td>
+                </tr>
+                <tr>
+                  <td><code>Treinadores --> FabricaFolds</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>Os motores de treinamento consultam a fábrica para instanciar a estratégia correta de divisão dos dados (K-Fold, Repeated, etc.).</td>
+                  <td><code>self._fabrica_folds: FabricaFolds</code></td>
+                </tr>
+                <tr>
+                  <td><code>OrquestradorModelagem --> MotorTreinador</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>O orquestrador coordena o ciclo de treinamento sobre exatamente um motor configurado (PyCaret ou Sklearn).</td>
+                  <td><code>self._motor: MotorTreinador</code></td>
+                </tr>
+                <tr>
+                  <td><code>ValidadorCruzado --> RastreadorMlflow</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>A validação cruzada externa mantém uma conexão unívoca para publicação de runs aninhadas no servidor MLflow.</td>
+                  <td><code>self._rastreador: RastreadorMlflow</code></td>
+                </tr>
+                <tr>
+                  <td><code>OrquestradorAvaliacao --> ValidadorCruzado</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>O orquestrador comanda o validador cruzado pareado entre todos os modelos ativos.</td>
+                  <td><code>self._validador: ValidadorCruzado</code></td>
+                </tr>
+                <tr>
+                  <td><code>OrquestradorAvaliacao --> TestadorFriedman</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>O orquestrador submete a matriz de escores de CV para o módulo estatístico de Friedman e pós-teste de Nemenyi.</td>
+                  <td><code>self._testador_estatistico: TestadorFriedman</code></td>
+                </tr>
+                <tr>
+                  <td><code>ServicoInferencia --> CarregadorCampeao</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>O serviço de inferência em produção referencia o artefato serializado do modelo campeão promovido (LightGBM).</td>
+                  <td><code>self._carregador: CarregadorCampeao</code></td>
+                </tr>
+                <tr>
+                  <td><code>OrquestradorDrift --> DetectorDrift</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>A rotina de observabilidade comanda a execução dos testes estatísticos de Kolmogorov-Smirnov e PSI.</td>
+                  <td><code>self._detector: DetectorDrift</code></td>
+                </tr>
+                <tr>
+                  <td><code>OrquestradorDrift --> PublicadorGrafana</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>O orquestrador envia os resultados de drift e qualidade para publicação nos painéis do Grafana.</td>
+                  <td><code>self._publicador: PublicadorGrafana</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
@@ -926,6 +1719,1833 @@ sequenceDiagram
       </table>
     </section>
 
+    <!-- Dicionário de Transformações e Criação de Colunas (Pandas & Polars) -->
+    <section id="dicionario-transformacoes" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">Dicionário de Transformações & Expressões (Pandas & Polars)</h2>
+        <p class="section-desc">
+          Guia de referência para engenharia de atributos, limpeza, truncamento de outliers e filtros condicionais no arquivo <code>configuracoes/02_preparacao_dados.yaml</code>.
+          O sistema executa as expressões por meio dos motores intercambiáveis <code>MotorPandas</code> ou <code>MotorPolars</code> validados via <strong>AST Seguro</strong> (sem eval/exec arbitrário).
+        </p>
+      </div>
+
+      <!-- Alerta de Segurança e Boas Práticas -->
+      <div class="info-card" style="margin-bottom: 24px; border-left: 4px solid var(--accent-cyan);">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>🛡️</span>
+          <span>Regras de Execução Segura via Validador AST</span>
+        </div>
+        <div class="card-body">
+          <ul style="margin: 0; padding-left: 20px; line-height: 1.7;">
+            <li><strong>Whitelisting Rigoroso:</strong> Apenas métodos homologados são permitidos (<code>clip</code>, <code>abs</code>, <code>round</code>). Qualquer chamada a módulos externos, <code>eval()</code>, <code>exec()</code>, funções do sistema operacional ou I/O resulta em bloqueio imediato com <code>ErroValidacaoAst</code>.</li>
+            <li><strong>Intercambialidade Transparente:</strong> É possível alternar o pipeline entre Pandas e Polars alterando unicamente a chave <code>tabular.motor</code> no arquivo <code>02_preparacao_dados.yaml</code>.</li>
+            <li><strong>Sintaxe Bilateral:</strong> O dicionário abaixo apresenta a sintaxe nativa de cada motor e a expressão pronta para inclusão no arquivo YAML.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Barra Interativa de Filtros e Busca Rápida -->
+      <div style="background: var(--bg-surface); padding: 16px 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center;">
+        <div class="filter-pills" id="filtro-categoria-container">
+          <button class="pill-btn active" onclick="filtrarCategoria('todas', this)">Todas as Categorias</button>
+          <button class="pill-btn" onclick="filtrarCategoria('engenharia', this)">Engenharia de Atributos</button>
+          <button class="pill-btn" onclick="filtrarCategoria('clipping', this)">Limpeza & Clipping</button>
+          <button class="pill-btn" onclick="filtrarCategoria('filtros', this)">Filtros & Máscaras (Where)</button>
+          <button class="pill-btn" onclick="filtrarCategoria('matematica', this)">Matemática & Não-Linearidades</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-grow: 1; max-width: 380px;">
+          <input type="text" id="busca-dicionario" class="dict-search" placeholder="🔍 Filtrar por coluna, operador ou fórmula..." oninput="filtrarPorTexto(this.value)" />
+          <span id="contador-exemplos" style="font-size: 0.85rem; color: var(--text-muted); white-space: nowrap;">25 exemplos</span>
+        </div>
+      </div>
+
+      <!-- Tabela Comparativa de Alta Densidade -->
+      <div class="table-container" style="margin-bottom: 30px;">
+        <table class="doc-table" id="tabela-dicionario">
+          <thead>
+            <tr>
+              <th style="width: 130px;">Categoria</th>
+              <th style="width: 170px;">Coluna / Alvo</th>
+              <th style="min-width: 250px;">Sintaxe Pandas (<code>motor_pandas.py</code>)</th>
+              <th style="min-width: 250px;">Sintaxe Polars (<code>motor_polars.py</code>)</th>
+              <th style="width: 110px;">YAML Destino</th>
+              <th style="min-width: 220px;">Descrição de Negócio & Estatística</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 1. Preço por m² -->
+            <tr data-category="engenharia">
+              <td><span class="tag-cat cat-eng">Engenharia</span></td>
+              <td><code>Preco_M2</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Valor_da_Venda'] / df['Metragem']</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Valor_da_Venda'] / df['Metragem']</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Métrica primordial de liquidez e precificação por metro quadrado na cidade de Ribeirão Preto.</td>
+            </tr>
+
+            <!-- 2. Razão Banheiros por Quarto -->
+            <tr data-category="engenharia">
+              <td><span class="tag-cat cat-eng">Engenharia</span></td>
+              <td><code>Razao_Banheiro_Quarto</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Banheiros'] / df['Quartos']</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Banheiros'] / df['Quartos']</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Mede conforto sanitário por dormitório. Índices &ge; 1.0 indicam padrão alto ou suítes completas.</td>
+            </tr>
+
+            <!-- 3. Área Privativa por Quarto -->
+            <tr data-category="engenharia">
+              <td><span class="tag-cat cat-eng">Engenharia</span></td>
+              <td><code>Area_Por_Quarto</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Area_Privativa'] / df['Quartos']</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Area_Privativa'] / df['Quartos']</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Média de espaço privativo útil disponível para cada dormitório da unidade.</td>
+            </tr>
+
+            <!-- 4. Vagas por Quarto -->
+            <tr data-category="engenharia">
+              <td><span class="tag-cat cat-eng">Engenharia</span></td>
+              <td><code>Vagas_Por_Quarto</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Vagas'] / df['Quartos']</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Vagas'] / df['Quartos']</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Razão de capacidade de estacionamento por dormitório, diferencial em bairros nobres como Zona Sul.</td>
+            </tr>
+
+            <!-- 5. Custo Mensal Total de Manutenção -->
+            <tr data-category="engenharia">
+              <td><span class="tag-cat cat-eng">Engenharia</span></td>
+              <td><code>Custo_Manutencao_Mensal</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Valor_Condominio'] + (df['Valor_Iptu'] / 12)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Valor_Condominio'] + (df['Valor_Iptu'] / 12)</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Encargo fixo mensal real do proprietário (condomínio mensal + cota proporcional de IPTU).</td>
+            </tr>
+
+            <!-- 6. Condomínio por m² -->
+            <tr data-category="engenharia">
+              <td><span class="tag-cat cat-eng">Engenharia</span></td>
+              <td><code>Condominio_M2</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Valor_Condominio'] / df['Metragem']</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Valor_Condominio'] / df['Metragem']</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Eficiência de taxa condominial por metro quadrado construído (detecta condomínios onerosos).</td>
+            </tr>
+
+            <!-- 7. Custo Anual de Manutenção vs Preço de Venda -->
+            <tr data-category="engenharia">
+              <td><span class="tag-cat cat-eng">Engenharia</span></td>
+              <td><code>Razao_Manutencao_Preco</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">((df['Valor_Condominio'] * 12) + df['Valor_Iptu']) / df['Valor_da_Venda']</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">((df['Valor_Condominio'] * 12) + df['Valor_Iptu']) / df['Valor_da_Venda']</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Percentual do valor do imóvel consumido anualmente em despesas tributárias e condominiais.</td>
+            </tr>
+
+            <!-- 8. Razão Área Privativa vs Metragem Total -->
+            <tr data-category="engenharia">
+              <td><span class="tag-cat cat-eng">Engenharia</span></td>
+              <td><code>Aproveitamento_Area</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Area_Privativa'] / df['Metragem']</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Area_Privativa'] / df['Metragem']</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Fração de área privativa efetiva vs metragem total registrada.</td>
+            </tr>
+
+            <!-- 9. Estimativa de Suítes via Divisão Inteira -->
+            <tr data-category="matematica">
+              <td><span class="tag-cat cat-math">Matemática</span></td>
+              <td><code>Suites_Estimadas</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Banheiros'] // 2</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Banheiros'] // 2</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Divisão inteira como aproximação heurística de dormitórios suíte quando ausente na base.</td>
+            </tr>
+
+            <!-- 10. Indicador Paridade de Quartos via Módulo -->
+            <tr data-category="matematica">
+              <td><span class="tag-cat cat-math">Matemática</span></td>
+              <td><code>Paridade_Quartos</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Quartos'] % 2</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Quartos'] % 2</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Operador módulo seguro via AST indicando se o número de dormitórios é par ou ímpar.</td>
+            </tr>
+
+            <!-- 11. Escala Raiz Quadrada da Metragem -->
+            <tr data-category="matematica">
+              <td><span class="tag-cat cat-math">Matemática</span></td>
+              <td><code>Raiz_Metragem</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Metragem'] ** 0.5</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Metragem'] ** 0.5</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Linearização sub-linear de áreas grandes para modelos sensíveis à assimetria distributiva.</td>
+            </tr>
+
+            <!-- 12. Escala Sub-linear de Preço -->
+            <tr data-category="matematica">
+              <td><span class="tag-cat cat-math">Matemática</span></td>
+              <td><code>Potencia_Quartos_Banheiros</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Quartos'] * df['Banheiros']</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Quartos'] * df['Banheiros']</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Termo de interação multiplicativo que captura o efeito sinérgico entre cômodos essenciais.</td>
+            </tr>
+
+            <!-- 13. Truncamento Inferior de Metragem -->
+            <tr data-category="clipping">
+              <td><span class="tag-cat cat-clip">Clipping</span></td>
+              <td><code>Metragem</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Metragem'].clip(lower=1)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Metragem'].clip(lower_bound=1)</div>
+              </td>
+              <td><span style="color: var(--accent-purple); font-weight: 600;">transformacoes</span></td>
+              <td>Evita metragens zeradas ou negativas, impedindo divisões por zero em razões derivadas.</td>
+            </tr>
+
+            <!-- 14. Truncamento Bilateral de Preço de Venda -->
+            <tr data-category="clipping">
+              <td><span class="tag-cat cat-clip">Clipping</span></td>
+              <td><code>Valor_da_Venda</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Valor_da_Venda'].clip(lower=50000, upper=5000000)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Valor_da_Venda'].clip(lower_bound=50000, upper_bound=5000000)</div>
+              </td>
+              <td><span style="color: var(--accent-purple); font-weight: 600;">transformacoes</span></td>
+              <td>Remove a influência deletéria de outliers extremos no treinamento de regressores lineares.</td>
+            </tr>
+
+            <!-- 15. Truncamento Superior de Taxa de Condomínio -->
+            <tr data-category="clipping">
+              <td><span class="tag-cat cat-clip">Clipping</span></td>
+              <td><code>Valor_Condominio</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Valor_Condominio'].clip(upper=15000)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Valor_Condominio'].clip(upper_bound=15000)</div>
+              </td>
+              <td><span style="color: var(--accent-purple); font-weight: 600;">transformacoes</span></td>
+              <td>Poda valores digitados com erro de escala (ex: digitação de 150.000 em vez de 1.500).</td>
+            </tr>
+
+            <!-- 16. Truncamento Superior de Vagas -->
+            <tr data-category="clipping">
+              <td><span class="tag-cat cat-clip">Clipping</span></td>
+              <td><code>Vagas</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Vagas'].clip(lower=0, upper=6)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Vagas'].clip(lower_bound=0, upper_bound=6)</div>
+              </td>
+              <td><span style="color: var(--accent-purple); font-weight: 600;">transformacoes</span></td>
+              <td>Normaliza vagas entre 0 e 6, eliminando erros de cadastro pontuais.</td>
+            </tr>
+
+            <!-- 17. Desvio Absoluto de Condomínio (abs) -->
+            <tr data-category="clipping">
+              <td><span class="tag-cat cat-clip">Clipping</span></td>
+              <td><code>Desvio_Condominio_Medio</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">(df['Valor_Condominio'] - 550).abs()</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">(df['Valor_Condominio'] - 550).abs()</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Calcula distância euclidiana da taxa condominial em relação à mediana estimada de Ribeirão Preto.</td>
+            </tr>
+
+            <!-- 18. Arredondamento de Preço Médio (round) -->
+            <tr data-category="clipping">
+              <td><span class="tag-cat cat-clip">Clipping</span></td>
+              <td><code>Preco_M2_Arredondado</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">(df['Valor_da_Venda'] / df['Metragem']).round(decimals=2)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">(df['Valor_da_Venda'] / df['Metragem']).round(decimals=2)</div>
+              </td>
+              <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
+              <td>Formata e padroniza casas decimais monetárias via método AST <code>round</code>.</td>
+            </tr>
+
+            <!-- 19. Filtro Metragem Positiva -->
+            <tr data-category="filtros">
+              <td><span class="tag-cat cat-filt">Filtro Where</span></td>
+              <td><code>metragem_positiva</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Metragem'] > 0</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Metragem'] > 0</div>
+              </td>
+              <td><span style="color: var(--accent-amber); font-weight: 600;">filtros</span></td>
+              <td>Garante sanidade de integridade física, descartando imóveis sem metragem informada.</td>
+            </tr>
+
+            <!-- 20. Filtro Preço de Venda Positivo -->
+            <tr data-category="filtros">
+              <td><span class="tag-cat cat-filt">Filtro Where</span></td>
+              <td><code>preco_positivo</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Valor_da_Venda'] > 0</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Valor_da_Venda'] > 0</div>
+              </td>
+              <td><span style="color: var(--accent-amber); font-weight: 600;">filtros</span></td>
+              <td>Descarte compulsório de anúncios com preço sob consulta ou zerados no dataset bruto.</td>
+            </tr>
+
+            <!-- 21. Filtro Faixa Comercial Realista -->
+            <tr data-category="filtros">
+              <td><span class="tag-cat cat-filt">Filtro Where</span></td>
+              <td><code>faixa_preco_comercial</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">(df['Valor_da_Venda'] >= 50000) & (df['Valor_da_Venda'] <= 10000000)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">(df['Valor_da_Venda'] >= 50000) & (df['Valor_da_Venda'] <= 10000000)</div>
+              </td>
+              <td><span style="color: var(--accent-amber); font-weight: 600;">filtros</span></td>
+              <td>Limita a amostra ao escopo de apartamentos residenciais urbanos reais no município.</td>
+            </tr>
+
+            <!-- 22. Filtro Consistência Área Privativa -->
+            <tr data-category="filtros">
+              <td><span class="tag-cat cat-filt">Filtro Where</span></td>
+              <td><code>area_privativa_valida</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">df['Area_Privativa'] <= df['Metragem']</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">df['Area_Privativa'] <= df['Metragem']</div>
+              </td>
+              <td><span style="color: var(--accent-amber); font-weight: 600;">filtros</span></td>
+              <td>Regra física de consistência cadastral (área privativa nunca pode exceder a metragem total).</td>
+            </tr>
+
+            <!-- 23. Filtro Faixa Habitacional de Quartos -->
+            <tr data-category="filtros">
+              <td><span class="tag-cat cat-filt">Filtro Where</span></td>
+              <td><code>quartos_validos</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">(df['Quartos'] >= 1) & (df['Quartos'] <= 8)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">(df['Quartos'] >= 1) & (df['Quartos'] <= 8)</div>
+              </td>
+              <td><span style="color: var(--accent-amber); font-weight: 600;">filtros</span></td>
+              <td>Filtra erros tipográficos de quantidade de dormitórios (ex: 22 quartos).</td>
+            </tr>
+
+            <!-- 24. Filtro Taxa de Condomínio Válida -->
+            <tr data-category="filtros">
+              <td><span class="tag-cat cat-filt">Filtro Where</span></td>
+              <td><code>condominio_valido</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">(df['Valor_Condominio'] >= 0) & (df['Valor_Condominio'] <= 25000)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">(df['Valor_Condominio'] >= 0) & (df['Valor_Condominio'] <= 25000)</div>
+              </td>
+              <td><span style="color: var(--accent-amber); font-weight: 600;">filtros</span></td>
+              <td>Elimina registros com taxas de condomínio espúrias antes do treinamento.</td>
+            </tr>
+
+            <!-- 25. Filtro Exclusivo de Studios / Compactos -->
+            <tr data-category="filtros">
+              <td><span class="tag-cat cat-filt">Filtro Where</span></td>
+              <td><code>somente_studios</code></td>
+              <td>
+                <span class="tag-pandas">Pandas</span>
+                <div class="code-pill">(df['Metragem'] <= 45) & (df['Quartos'] <= 1)</div>
+              </td>
+              <td>
+                <span class="tag-polars">Polars</span>
+                <div class="code-pill">(df['Metragem'] <= 45) & (df['Quartos'] <= 1)</div>
+              </td>
+              <td><span style="color: var(--accent-amber); font-weight: 600;">filtros</span></td>
+              <td>Filtro de segmentação de nicho específico para modelos dedicados a micro-apartamentos.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Card Exemplo Prático de Configuração YAML -->
+      <div class="info-card">
+        <div class="card-title">
+          Exemplo de Configuração Completa em <code>configuracoes/02_preparacao_dados.yaml</code>
+        </div>
+        <div class="card-body">
+          Veja como ativar qualquer uma das expressões acima no arquivo de configuração do projeto:
+          <pre class="code-block">
+# ==============================================================================
+# configuracoes/02_preparacao_dados.yaml
+# ==============================================================================
+tabular:
+  motor: "pandas" # Alternar para "polars" sem alterar nenhuma linha de código!
+
+filtros:
+  ativo: true
+  expressoes:
+    - nome: "metragem_positiva"
+      ativo: true
+      expressao:
+        pandas: "df['Metragem'] > 0"
+        polars: "df['Metragem'] > 0"
+    - nome: "preco_positivo"
+      ativo: true
+      expressao:
+        pandas: "df['Valor_da_Venda'] > 0"
+        polars: "df['Valor_da_Venda'] > 0"
+    - nome: "consistencia_area"
+      ativo: true
+      expressao:
+        pandas: "df['Area_Privativa'] <= df['Metragem']"
+        polars: "df['Area_Privativa'] <= df['Metragem']"
+
+transformacoes:
+  ativo: true
+  expressoes:
+    - nome: "metragem_ajustada"
+      ativo: true
+      destino: "Metragem"
+      expressao:
+        pandas: "df['Metragem'].clip(lower=1)"
+        polars: "df['Metragem'].clip(lower_bound=1)"
+
+atributos_novos:
+  ativo: true
+  expressoes:
+    - nome: "preco_por_metro_quadrado"
+      ativo: true
+      destino: "Preco_M2"
+      expressao:
+        pandas: "df['Valor_da_Venda'] / df['Metragem']"
+        polars: "df['Valor_da_Venda'] / df['Metragem']"
+    - nome: "razao_banheiro_quarto"
+      ativo: true
+      destino: "Razao_Banheiro_Quarto"
+      expressao:
+        pandas: "df['Banheiros'] / df['Quartos']"
+        polars: "df['Banheiros'] / df['Quartos']"
+    - nome: "custo_manutencao_mensal"
+      ativo: true
+      destino: "Custo_Manutencao_Mensal"
+      expressao:
+        pandas: "df['Valor_Condominio'] + (df['Valor_Iptu'] / 12)"
+        polars: "df['Valor_Condominio'] + (df['Valor_Iptu'] / 12)"</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de Modelos de Regressão e Algoritmos de Machine Learning -->
+    <section id="modelos-regressao" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">Modelos de Regressão & Catálogo de Algoritmos</h2>
+        <p class="section-desc">
+          Fundamentos matemáticos, vantagens, trade-offs e estratégias de hiperparâmetros dos <strong>10 modelos de regressão</strong> configuráveis em <code>configuracoes/04_modelagem_regressao.yaml</code>, integrados sob a arquitetura GoF <em>Strategy</em> com isolamento estrito entre <strong>Scikit-Learn</strong> e <strong>PyCaret</strong> nativo.
+        </p>
+      </div>
+
+      <!-- Card de Arquitetura dos Motores de Treinamento -->
+      <div class="info-card" style="margin-bottom: 24px; border-left: 4px solid var(--accent-amber);">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>⚡</span>
+          <span>Segregação dos Motores de Treino: PyCaret vs Scikit-Learn</span>
+        </div>
+        <div class="card-body">
+          <ul style="margin: 0; padding-left: 20px; line-height: 1.7;">
+            <li><strong>Regra de Ouro da Governança:</strong> O PyCaret utiliza exclusivamente suas rotinas nativas (<code>setup</code>, <code>create_model</code>, <code>tune_model</code>, <code>finalize_model</code>). Jamais são inventadas funções nativas inexistentes.</li>
+            <li><strong>Trilha Independente Sklearn:</strong> Quando <code>modelagem.motor_treino: "sklearn"</code>, os modelos são instanciados diretamente via classes canônicas, orquestrados por pipelines puros com <code>RandomizedSearchCV</code>.</li>
+            <li><strong>Transformação do Alvo (log1p / expm1):</strong> Os preços imobiliários em Ribeirão Preto possuem forte assimetria positiva à direita. O pipeline aplica a transformação $y' = \ln(1 + y)$ durante o treinamento para estabilizar a variância residual e normalizar resíduos, revertendo via $y = \exp(y') - 1$ na inferência da API.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Tabela Resumo do Catálogo dos 10 Modelos -->
+      <div class="table-container" style="margin-bottom: 30px;">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th style="width: 150px;">Modelo</th>
+              <th style="width: 140px;">Família</th>
+              <th style="width: 100px;">PyCaret ID</th>
+              <th style="width: 180px;">Classe Scikit-Learn</th>
+              <th style="min-width: 200px;">Complexidade & Interpretabilidade</th>
+              <th style="min-width: 250px;">Vantagens & Quando Usar em Imóveis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Regressão Linear</strong></td>
+              <td><span class="badge primary">Linear / OLS</span></td>
+              <td><code>lr</code></td>
+              <td><code>LinearRegression</code></td>
+              <td>Treino: $O(p^2 n)$ | Alta Interpretabilidade</td>
+              <td>Linha de base interpretável. Avalia o impacto marginal direto de cada cômodo ou m² no preço sem penalização.</td>
+            </tr>
+            <tr>
+              <td><strong>Ridge</strong></td>
+              <td><span class="badge primary">Regularizado L2</span></td>
+              <td><code>ridge</code></td>
+              <td><code>Ridge</code></td>
+              <td>Treino: $O(p^2 n)$ | Alta Interpretabilidade</td>
+              <td>Resolve multicolinearidade severa entre metragem total, área privativa e número de cômodos encolhendo coeficientes.</td>
+            </tr>
+            <tr>
+              <td><strong>Lasso</strong></td>
+              <td><span class="badge primary">Regularizado L1</span></td>
+              <td><code>lasso</code></td>
+              <td><code>Lasso</code></td>
+              <td>Treino: Iterativo Coord. Descent | Alta</td>
+              <td>Seleção intrínseca de variáveis: zera coeficientes irrelevantes, descartando ruídos cadastrais de anúncios.</td>
+            </tr>
+            <tr>
+              <td><strong>ElasticNet</strong></td>
+              <td><span class="badge primary">Híbrido L1+L2</span></td>
+              <td><code>en</code></td>
+              <td><code>ElasticNet</code></td>
+              <td>Treino: Iterativo | Alta Interpretabilidade</td>
+              <td>Combina seleção de atributos com agrupamento de preditores correlacionados (ex: suítes + banheiros + vagas).</td>
+            </tr>
+            <tr>
+              <td><strong>Árvore de Decisão</strong></td>
+              <td><span class="badge accent">Árvore Única</span></td>
+              <td><code>dt</code></td>
+              <td><code>DecisionTreeRegressor</code></td>
+              <td>Treino: $O(n \cdot p \log n)$ | Muito Alta</td>
+              <td>Captura regras de negócio não-lineares intuitivas (ex: se Bairro == Zona Sul e Metragem > 120 então Preço X).</td>
+            </tr>
+            <tr>
+              <td><strong>Random Forest</strong></td>
+              <td><span class="badge success">Bagging Ensemble</span></td>
+              <td><code>rf</code></td>
+              <td><code>RandomForestRegressor</code></td>
+              <td>Treino: $O(B \cdot n \cdot p \log n)$ | Média</td>
+              <td>Reduz variância drástica através de centenas de árvores amostradas por bootstrap; imune a overfitting pontual.</td>
+            </tr>
+            <tr>
+              <td><strong>XGBoost</strong></td>
+              <td><span class="badge success">Gradient Boosting</span></td>
+              <td><code>xgboost</code></td>
+              <td><code>XGBRegressor</code></td>
+              <td>Treino: Rápido Paralelo | Baixa a Média</td>
+              <td>Boosting de alta fidelidade com aproximação de Taylor de 2ª ordem e regularização formal $\gamma$ e $\lambda$.</td>
+            </tr>
+            <tr>
+              <td><strong>LightGBM</strong></td>
+              <td><span class="badge success" style="border-color: #f59e0b; color: #fbbf24;">★ Campeão Pipeline</span></td>
+              <td><code>lightgbm</code></td>
+              <td><code>LGBMRegressor</code></td>
+              <td>Treino: Ultrarrápido (GOSS/EFB) | Baixa</td>
+              <td>Menor erro quadrático (RMSE) do projeto. Crescimento Leaf-wise captura micro-padrões urbanos complexos de bairros.</td>
+            </tr>
+            <tr>
+              <td><strong>SVR (Support Vector)</strong></td>
+              <td><span class="badge secondary">Kernel Não-Linear</span></td>
+              <td><code>svm</code></td>
+              <td><code>SVR</code></td>
+              <td>Treino: $O(n^2 \text{ a } n^3)$ | Baixa</td>
+              <td>Tubo $\varepsilon$-insensível robusto a outliers moderados de preços exorbitantes via Kernel RBF.</td>
+            </tr>
+            <tr>
+              <td><strong>Rede Neural (MLP)</strong></td>
+              <td><span class="badge secondary">Deep Learning / Densa</span></td>
+              <td><code>mlp</code></td>
+              <td><code>MLPRegressor</code></td>
+              <td>Treino: Iterativo Adam | Caixa-preta</td>
+              <td>Aprende interações de ordens superiores entre localização geográfica, metragem e encargos condominiais.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Cards Detalhados por Família de Algoritmos -->
+      <h3 style="color: var(--accent-cyan); font-size: 1.25rem; margin: 30px 0 16px;">1. Família Linear & Regularizada (OLS, Ridge, Lasso, ElasticNet)</h3>
+      <div class="cards-grid" style="margin-bottom: 28px;">
+        <!-- Card Linear OLS -->
+        <div class="info-card">
+          <div class="card-title">Regressão Linear Múltipla (Ordinary Least Squares)</div>
+          <div class="card-body">
+            <p><strong>Formulação:</strong> $\min_{\beta} \|y - X\beta\|_2^2$</p>
+            <p>Minimiza a soma dos quadrados dos resíduos sem qualquer termo de penalização sobre os coeficientes.</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Coeficientes possuem interpretação direta em reais (R$) por unidade de área ou cômodo.</li>
+              <li><strong>Ponto Fraco:</strong> Altamente sensível a multicolinearidade e a valores atípicos (outliers).</li>
+              <li><strong>Tuning no YAML:</strong> <code>fit_intercept: [true, false]</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card Ridge -->
+        <div class="info-card">
+          <div class="card-title">Regressão Ridge (Regularização $L_2$ - Tikhonov)</div>
+          <div class="card-body">
+            <p><strong>Formulação:</strong> $\min_{\beta} \|y - X\beta\|_2^2 + \alpha \|\beta\|_2^2$</p>
+            <p>Adiciona uma penalidade proporcional ao quadrado dos coeficientes, forçando-os a valores pequenos mas estritamente não nulos.</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Estabiliza a matriz $(X^T X + \alpha I)^{-1}$ quando há variáveis redundantes no imóvel.</li>
+              <li><strong>Ponto Fraco:</strong> Não zera coeficientes; mantém todas as variáveis no modelo final.</li>
+              <li><strong>Tuning no YAML:</strong> $\alpha \in [0.01, 0.1, 1.0, 10.0]$.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card Lasso -->
+        <div class="info-card">
+          <div class="card-title">Regressão Lasso (Regularização $L_1$ - Shrinkage)</div>
+          <div class="card-body">
+            <p><strong>Formulação:</strong> $\min_{\beta} \frac{1}{2n} \|y - X\beta\|_2^2 + \alpha \|\beta\|_1$</p>
+            <p>A geometria em diamante da restrição $L_1$ induz esparsidade estrita, forçando coeficientes irrelevantes a zero exato.</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Realiza seleção automática de variáveis, descartando colunas redundantes do cadastro imobiliário.</li>
+              <li><strong>Ponto Fraco:</strong> Seleciona arbitrariamente apenas uma variável entre preditores altamente correlacionados.</li>
+              <li><strong>Tuning no YAML:</strong> $\alpha \in [0.01, 0.1, 1.0, 10.0]$.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card ElasticNet -->
+        <div class="info-card">
+          <div class="card-title">ElasticNet (Regularização Convexa Híbrida)</div>
+          <div class="card-body">
+            <p><strong>Formulação:</strong> $\min_{\beta} \frac{1}{2n} \|y - X\beta\|_2^2 + \alpha \rho \|\beta\|_1 + \frac{\alpha(1-\rho)}{2} \|\beta\|_2^2$</p>
+            <p>Combina a esparsidade do Lasso com o efeito estabilizador do Ridge através do parâmetro de balanço $\rho$ (<code>l1_ratio</code>).</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Ideal para dados imobiliários onde atributos formam grupos correlacionados (vagas, quartos, área privativa).</li>
+              <li><strong>Ponto Fraco:</strong> Custo computacional de tuning ligeiramente superior por exigir busca em grid bidimensional $(\alpha, \rho)$.</li>
+              <li><strong>Tuning no YAML:</strong> $\alpha \in [0.01, 0.1, 1.0]$, $\text{l1\_ratio} \in [0.2, 0.5, 0.8]$.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="color: var(--accent-cyan); font-size: 1.25rem; margin: 30px 0 16px;">2. Família Baseada em Árvores & Gradient Boosting (CART, RF, XGBoost, LightGBM)</h3>
+      <div class="cards-grid" style="margin-bottom: 28px;">
+        <!-- Card Decision Tree -->
+        <div class="info-card">
+          <div class="card-title">Árvore de Decisão Única (CART)</div>
+          <div class="card-body">
+            <p><strong>Critério de Divisão:</strong> Minimização de Impureza / Erro Quadrático Médio (MSE).</p>
+            <p>Divide o espaço de características em hiper-retângulos ortogonais previsíveis por valores médios constantes por folha.</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Não requer escalonamento de variáveis e é totalmente transparente para auditoria jurídica/comercial.</li>
+              <li><strong>Ponto Fraco:</strong> Alta variância e propensa a sobreajuste (overfitting) se não houver poda rigorosa.</li>
+              <li><strong>Tuning no YAML:</strong> <code>max_depth: [3, 5, 10]</code>, <code>min_samples_split: [2, 5]</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card Random Forest -->
+        <div class="info-card">
+          <div class="card-title">Random Forest Regressor (Ensemble Bagging)</div>
+          <div class="card-body">
+            <p><strong>Mecanismo:</strong> Bootstrap Aggregating com seleção aleatória de $\sqrt{p}$ atributos por nó.</p>
+            <p>Constrói dezenas ou centenas de árvores não correlacionadas e calcula a média aritmética de suas previsões individuais.</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Excelente taxa de generalização sem necessitar de ajustes finos complexos.</li>
+              <li><strong>Ponto Fraco:</strong> Modelos pesados para serialização em disco e inferência mais lenta que árvores únicas.</li>
+              <li><strong>Tuning no YAML:</strong> <code>n_estimators: [50, 100]</code>, <code>max_depth: [5, 10]</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card XGBoost -->
+        <div class="info-card">
+          <div class="card-title">XGBoost (Extreme Gradient Boosting)</div>
+          <div class="card-body">
+            <p><strong>Função Objetivo:</strong> $\mathcal{L}^{(t)} \approx \sum_{i} \left[ g_i f_t(x_i) + \frac{1}{2} h_i f_t^2(x_i) \right] + \Omega(f_t)$</p>
+            <p>Aplica expansão de Taylor de segunda ordem para gradientes ($g_i$) e hessianos ($h_i$), com poda baseada em ganho mínimo $\gamma$.</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Controle formal anti-overfitting via penalidade explícita sobre número de folhas e pesos $\lambda$.</li>
+              <li><strong>Ponto Fraco:</strong> Sensível à escolha da taxa de aprendizado (<code>learning_rate</code>) e número de estimadores.</li>
+              <li><strong>Tuning no YAML:</strong> <code>n_estimators: [50, 100]</code>, <code>max_depth: [3, 6]</code>, <code>learning_rate: [0.05, 0.1]</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card LightGBM (Campeão) -->
+        <div class="info-card" style="border: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.04);">
+          <div class="card-title" style="color: #fbbf24;">
+            ★ LightGBM (Modelo Campeão do Pipeline)
+          </div>
+          <div class="card-body">
+            <p><strong>Inovação Tecnológica:</strong> Crescimento <em>Leaf-wise</em> (por folha de maior perda) + Amostragem <em>GOSS</em> + Empacotamento <em>EFB</em>.</p>
+            <p>Constrói árvores mais profundas e assimétricas nos ramos que concentram maiores gradientes residuais de erro, convergindo com maior precisão.</p>
+            <ul class="feature-list">
+              <li><strong>Por que venceu no projeto:</strong> Menor RMSE e MAE em validação cruzada estratificada; capturou perfeitamente as descontinuidades de preço entre bairros nobres e periféricos de Ribeirão Preto.</li>
+              <li><strong>Performance:</strong> Treinamento 10x mais veloz que Random Forest e consumo ínfimo de memória RAM.</li>
+              <li><strong>Tuning no YAML:</strong> <code>n_estimators: [50, 100]</code>, <code>max_depth: [3, 6]</code>, <code>learning_rate: [0.05, 0.1]</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="color: var(--accent-cyan); font-size: 1.25rem; margin: 30px 0 16px;">3. Família Não-Linear & Redes Neurais (SVR, MLP Regressor)</h3>
+      <div class="cards-grid" style="margin-bottom: 28px;">
+        <!-- Card SVR -->
+        <div class="info-card">
+          <div class="card-title">Support Vector Regression (SVR com Kernel RBF)</div>
+          <div class="card-body">
+            <p><strong>Conceito do Tubo $\varepsilon$:</strong> Erros residuais dentro de um tubo de tolerância $\pm \varepsilon$ não geram penalidade na função de perda.</p>
+            <p>Aplica o truque do kernel radial $K(x, x') = \exp(-\gamma \|x - x'\|^2)$ para projetar os atributos em um espaço dimensional infinito.</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Altamente imune a ruídos moderados e flexível para curvas de valorização não lineares.</li>
+              <li><strong>Ponto Fraco:</strong> Complexidade de tempo de treino cresce quadraticamente com o número de instâncias $O(n^2)$.</li>
+              <li><strong>Tuning no YAML:</strong> <code>C: [0.1, 1.0, 10.0]</code>, <code>kernel: ["rbf", "linear"]</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card MLP -->
+        <div class="info-card">
+          <div class="card-title">Perceptron Multicamadas (MLP Neural Regressor)</div>
+          <div class="card-body">
+            <p><strong>Arquitetura Feedforward:</strong> $f(x) = W_2 \cdot \text{ReLU}(W_1 x + b_1) + b_2$</p>
+            <p>Aprende representações latentes profundas das variáveis tabulares através de otimização retropropagada com Adam.</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Modela relações intrincadas de alta complexidade sem exigir engenharia manual exaustiva de atributos.</li>
+              <li><strong>Ponto Fraco:</strong> Caixa-preta opaca; exige normalização minuciosa de escala e parada antecipada para evitar divergência.</li>
+              <li><strong>Tuning no YAML:</strong> <code>hidden_layer_sizes: [[50], [100]]</code>, <code>max_iter: [200]</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guia & Dicionário Detalhado dos Parâmetros de Regressão e Hiperparâmetros de Tuning -->
+      <h3 style="color: var(--accent-cyan); font-size: 1.25rem; margin: 34px 0 16px;">
+        ⚙️ Guia Completo dos Parâmetros de Regressão & Hiperparâmetros de Tuning
+      </h3>
+      <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: 20px;">
+        Os parâmetros de regressão do projeto dividem-se em duas categorias cruciais: <strong>Parâmetros Estruturais do Pipeline</strong> (que governam imputação, normalização de variância e validação cruzada em <code>04_modelagem_regressao.yaml</code>) e <strong>Hiperparâmetros Algorítmicos</strong> (que modulam a complexidade, capacidade de generalização e penalizações matemáticas de cada regressor).
+      </p>
+
+      <!-- Tabela Completa dos Hiperparâmetros Algorítmicos -->
+      <div class="table-container" style="margin-bottom: 30px;">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th style="width: 170px;">Parâmetro</th>
+              <th style="width: 180px;">Modelos Afetados</th>
+              <th style="width: 150px;">Valores no YAML</th>
+              <th style="min-width: 250px;">Efeito Matemático / Algorítmico</th>
+              <th style="min-width: 260px;">Impacto Prático na Avaliação de Imóveis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>fit_intercept</code></td>
+              <td>Regressão Linear (OLS)</td>
+              <td><code>[true, false]</code></td>
+              <td>Controla a estimação do termo independente $\beta_0$. Se <code>false</code>, força o hiperplano a cruzar a origem $(0,0)$.</td>
+              <td>Imóveis possuem custos fixos de infraestrutura urbana independente da área construída; <code>true</code> captura o preço base de entrada no município.</td>
+            </tr>
+            <tr>
+              <td><code>alpha</code> ($\lambda$)</td>
+              <td>Ridge, Lasso, ElasticNet</td>
+              <td><code>[0.01, 0.1, 1.0, 10.0]</code></td>
+              <td>Constante multiplicativa de penalização ($L_1$ ou $L_2$). Quanto maior, mais severo o encolhimento dos coeficientes $\beta$.</td>
+              <td>Controla o trade-off viés-variância. Valores maiores de $\alpha$ evitam que apartamentos com preços discrepantes distorçam a precificação do bairro.</td>
+            </tr>
+            <tr>
+              <td><code>l1_ratio</code> ($\rho$)</td>
+              <td>ElasticNet</td>
+              <td><code>[0.2, 0.5, 0.8]</code></td>
+              <td>Balanço convexo entre penalidade Lasso ($\rho=1.0$) e Ridge ($\rho=0.0$): $\rho \|\beta\|_1 + \frac{1-\rho}{2} \|\beta\|_2^2$.</td>
+              <td>Permite manter grupos correlacionados (como metragem total e área privativa) enquanto zera atributos cadastrais irrelevantes.</td>
+            </tr>
+            <tr>
+              <td><code>max_depth</code></td>
+              <td>Árvore de Decisão, Random Forest, XGBoost, LightGBM</td>
+              <td><code>[3, 5, 6, 10]</code></td>
+              <td>Limite de divisões sucessivas da raiz até as folhas da árvore. Delimita o número máximo de regras condicionais encadeadas.</td>
+              <td>Profundidade 3 a 6 impede memorização excessiva; captura faixas realistas de mercado (ex: "Se Bairro Nobre E Metragem > 100m² E Vagas >= 2").</td>
+            </tr>
+            <tr>
+              <td><code>min_samples_split</code></td>
+              <td>Árvore de Decisão</td>
+              <td><code>[2, 5]</code></td>
+              <td>Quantidade mínima de apartamentos necessária em um nó para autorizar uma nova bifurcação condicional.</td>
+              <td>Impede a criação de ramificações espúrias baseadas em casos isolados (ex: 1 apartamento duplex com valor atípico).</td>
+            </tr>
+            <tr>
+              <td><code>n_estimators</code></td>
+              <td>Random Forest, XGBoost, LightGBM</td>
+              <td><code>[50, 100]</code></td>
+              <td>Número total de árvores geradas no comitê ensemble (via bagging paralelo ou boosting sequencial).</td>
+              <td>No Random Forest, estabiliza a variância sem perigo de overfit. No Boosting, gera convergência precisa em resíduos de preços difíceis.</td>
+            </tr>
+            <tr>
+              <td><code>learning_rate</code> ($\eta$)</td>
+              <td>XGBoost, LightGBM</td>
+              <td><code>[0.05, 0.1]</code></td>
+              <td>Fator de encolhimento aplicado aos pesos das folhas de cada nova árvore: $f_m(x) = f_{m-1}(x) + \eta \cdot h_m(x)$.</td>
+              <td>Taxas moderadas ($\eta \le 0.1$) forçam o aprendizado conservador, evitando saltos bruscos na precificação de bairros heterogêneos.</td>
+            </tr>
+            <tr>
+              <td><code>C</code></td>
+              <td>Support Vector Regression (SVR)</td>
+              <td><code>[0.1, 1.0, 10.0]</code></td>
+              <td>Constante de regularização do SVR. Penaliza desvios que ultrapassam a margem do tubo $\varepsilon$-insensível.</td>
+              <td>Valores moderados de <code>C</code> tornam a fronteira de preços suave e resistente a anúncios com valores inflacionados por proprietários.</td>
+            </tr>
+            <tr>
+              <td><code>kernel</code></td>
+              <td>Support Vector Regression (SVR)</td>
+              <td><code>["rbf", "linear"]</code></td>
+              <td>Função de mapeamento não-linear para o espaço de Hilbert: Kernel Gaussiano (RBF) $K(x,x') = \exp(-\gamma \|x-x'\|^2)$.</td>
+              <td>O kernel RBF modela a desvalorização não-linear da distância aos polos econômicos e comerciais de Ribeirão Preto.</td>
+            </tr>
+            <tr>
+              <td><code>hidden_layer_sizes</code></td>
+              <td>Rede Neural (MLP Regressor)</td>
+              <td><code>[[50], [100]]</code></td>
+              <td>Topologia das camadas ocultas densas (número de neurônios intermediários com ativação não-linear ReLU).</td>
+              <td>Determina a capacidade da rede de combinar características complexas (interação entre taxa de condomínio, metragem e localização).</td>
+            </tr>
+            <tr>
+              <td><code>max_iter</code></td>
+              <td>Rede Neural (MLP Regressor)</td>
+              <td><code>[200]</code></td>
+              <td>Número máximo de épocas de ajuste de pesos sinápticos via retropropagação do gradiente com o otimizador Adam.</td>
+              <td>Garante convergência estável da função de perda sem consumir tempo excessivo de CPU durante a validação cruzada.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Cards dos Parâmetros Globais de Regressão do Pipeline -->
+      <h4 style="color: var(--accent-cyan); font-size: 1.1rem; margin: 24px 0 14px;">
+        🌐 Parâmetros Estruturais de Pré-processamento & Otimização do YAML
+      </h4>
+      <div class="cards-grid" style="margin-bottom: 28px;">
+        <!-- Imputação -->
+        <div class="info-card">
+          <div class="card-title">1. Estratégias de Imputação de Valores Ausentes</div>
+          <div class="card-body">
+            <p><strong>Configuração:</strong> <code>imputacao.estrategia_numerica: "mediana"</code>, <code>estrategia_categorica: "mais_frequente"</code></p>
+            <ul class="feature-list">
+              <li><strong>Por que Mediana:</strong> Ao contrário da média aritmética, a mediana é imune a condomínios ou metragens extremas registradas incorretamente.</li>
+              <li><strong>Por Atributo:</strong> O YAML permite fixar regras customizadas por coluna (ex: <code>Bairro</code> com moda local).</li>
+              <li><strong>Indicador de Nulos:</strong> <code>adicionar_indicador: false</code> evita expansão desnecessária da dimensionalidade.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Transformação de Alvo -->
+        <div class="info-card">
+          <div class="card-title">2. Transformação Não-Linear do Alvo (log1p)</div>
+          <div class="card-body">
+            <p><strong>Configuração:</strong> <code>transformar_alvo: true</code>, <code>metodo_transformacao_alvo: "log1p"</code></p>
+            <ul class="feature-list">
+              <li><strong>Fundamento:</strong> O preço de venda imobiliário possui distribuição leptocúrtica assimétrica à direita. A transformação $y' = \ln(1 + y)$ aproxima o resíduo da normalidade gaussiana $\mathcal{N}(0, \sigma^2)$.</li>
+              <li><strong>Inversão Automática:</strong> O pipeline reaplica $y = \exp(y') - 1$ (<code>expm1</code>) antes de emitir a resposta da API REST.</li>
+              <li><strong>Outros Métodos:</strong> Suporte configurável para <code>box-cox</code> e <code>yeo-johnson</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Validação Cruzada -->
+        <div class="info-card">
+          <div class="card-title">3. Parâmetros de Particionamento & Validação Cruzada</div>
+          <div class="card-body">
+            <p><strong>Configuração:</strong> <code>tecnica: "kfold"</code>, <code>n_splits: 3</code> (ou 10 no externo), <code>shuffle: true</code></p>
+            <ul class="feature-list">
+              <li><strong>Embaralhamento (shuffle=true):</strong> Desfaz a ordenação cronológica ou geográfica que poderia enviesar determinados folds.</li>
+              <li><strong>Semente (random_state=42):</strong> Garante que os mesmos apartamentos componham os conjuntos de treino e teste em todos os modelos.</li>
+              <li><strong>Técnicas Alternativas:</strong> <code>repeated_kfold</code> (múltiplas repetições) e <code>time_series_split</code> (para dados temporais).</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Métricas e Métodos de Otimização -->
+        <div class="info-card">
+          <div class="card-title">4. Métricas de Otimização & Mecanismo de Busca</div>
+          <div class="card-body">
+            <p><strong>Configuração:</strong> <code>metodo: "random"</code>, <code>otimizar_metrica: "RMSE"</code>, <code>manter_melhor: true</code></p>
+            <ul class="feature-list">
+              <li><strong>Por que RMSE:</strong> Raiz do Erro Quadrático Médio penaliza quadraticamente desvios grandes, priorizando modelos com menor índice de erros grosseiros em imóveis de alto padrão.</li>
+              <li><strong>manter_melhor=true:</strong> Mecanismo de segurança *Fail-Safe* que preserva a parametrização baseline se o tuning iterativo degradar a performance.</li>
+              <li><strong>Busca Randômica:</strong> Amostragem uniforme de 10 combinações por modelo, cobrindo o espaço de hiperparâmetros com eficiência computacional.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card de Critérios Estatísticos de Comparação e Seleção -->
+      <div class="info-card">
+        <div class="card-title">
+          Protocolo Estatístico Rigoroso de Seleção (Friedman & Nemenyi)
+        </div>
+        <div class="card-body">
+          <p>
+            A seleção do modelo campeão promovido à produção <strong>não se baseia em uma simples média pontual de métricas</strong>. O sistema adota o teste de hipóteses não-paramétrico recomendado pela literatura científica de Machine Learning:
+          </p>
+          <ol style="margin: 0; padding-left: 24px; line-height: 1.8;">
+            <li><strong>Validação Cruzada K-Fold Externa:</strong> Cada modelo é avaliado nos mesmos $K$ subconjuntos de teste, garantindo pareamento experimental estrito.</li>
+            <li><strong>Teste Não-Paramétrico de Friedman:</strong> Testa a hipótese nula $H_0$ de que todos os algoritmos possuem desempenhos equivalentes no ranking de resíduos ($p < 0.05$).</li>
+            <li><strong>Pós-Teste de Nemenyi:</strong> Caso $H_0$ seja rejeitada, calcula a <strong>Distância Crítica (CD)</strong>:
+              $$CD = q_\alpha \sqrt{\frac{k(k+1)}{6N}}$$
+              onde dois modelos só são declarados estatisticamente distintos se a diferença entre seus rankings médios for superior a $CD$. O modelo com melhor ranking dentro da margem crítica é promovido como campeão no MLflow e publicado na API.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de Tuning de Hiperparâmetros e Validação Cruzada -->
+    <section id="tuning-validacao-cruzada" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">Tuning de Hiperparâmetros & Validação Cruzada</h2>
+        <p class="section-desc">
+          Fundamentos científicos, técnicas de particionamento da <code>FabricaFolds</code> e algoritmos de busca de hiperparâmetros configuráveis em <code>configuracoes/04_modelagem_regressao.yaml</code>. O sistema adota <strong>Validação Cruzada Aninhada (Nested CV)</strong> para garantir estimativas realistas de erro sem vazamento de dados (<em>data leakage</em>).
+        </p>
+      </div>
+
+      <!-- Card Conceitual: Validação Cruzada Aninhada (Nested CV) -->
+      <div class="info-card" style="margin-bottom: 24px; border-left: 4px solid var(--accent-purple);">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>🔄</span>
+          <span>Princípio da Validação Cruzada em Duas Camadas (Nested CV)</span>
+        </div>
+        <div class="card-body">
+          <p>
+            O erro mais comum em projetos de aprendizado de máquina é utilizar a mesma validação cruzada para <strong>otimizar hiperparâmetros</strong> e <strong>declarar a performance final</strong> do modelo. Isso gera o chamado <em>otimismo espúrio</em> (overfitting no conjunto de validação). O projeto resolve isso desacoplando estritamente duas camadas:
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 12px;">
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--accent-cyan); font-weight: 700; margin-bottom: 6px;">1. Loop Interno (Inner CV — Etapa 4: Modelagem)</div>
+              <p style="font-size: 0.88rem; margin: 0; line-height: 1.6;">
+                Ocorre durante a busca de hiperparâmetros (<code>tuning.ativo: true</code>). O conjunto de treino é dividido internamente em folds para guiar os algoritmos de busca (Random, Grid, Bayesian ou Optuna) na escolha da melhor combinação de parâmetros, sem tocar no conjunto de teste.
+              </p>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: #10b981; font-weight: 700; margin-bottom: 6px;">2. Loop Externo (Outer CV — Etapa 5: Avaliação & Folds)</div>
+              <p style="font-size: 0.88rem; margin: 0; line-height: 1.6;">
+                Os modelos já ajustados são avaliados em <strong>10 folds externos independentes e estritamente pareados</strong>. Cada fold é persistido individualmente no MLflow e alimenta os testes de hipóteses de Friedman e Nemenyi para comprovar a superioridade do modelo campeão.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- As 4 Técnicas de Validação Cruzada da FabricaFolds -->
+      <h3 style="color: var(--accent-cyan); font-size: 1.25rem; margin: 30px 0 16px;">
+        As 4 Estratégias de Validação Cruzada da <code>FabricaFolds</code>
+      </h3>
+      <div class="table-container" style="margin-bottom: 30px;">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th style="width: 170px;">Técnica</th>
+              <th style="width: 180px;">Classe Scikit-Learn</th>
+              <th style="width: 170px;">Parâmetros no YAML</th>
+              <th style="min-width: 250px;">Mecanismo de Particionamento</th>
+              <th style="min-width: 230px;">Vantagens & Cenário Ideal em Imóveis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>K-Fold Tradicional</strong></td>
+              <td><code>KFold</code></td>
+              <td><code>n_splits: 3</code> (ou 10)<br><code>shuffle: true</code><br><code>random_state: 42</code></td>
+              <td>Divide a amostra em $K$ blocos disjuntos. A cada iteração, $K-1$ blocos treinam o modelo e 1 bloco atua como teste cego.</td>
+              <td>Padrão da indústria para dados tabulares estáticos; garante que todo apartamento seja avaliado exatamente uma vez como teste.</td>
+            </tr>
+            <tr>
+              <td><strong>Repeated K-Fold</strong></td>
+              <td><code>RepeatedKFold</code></td>
+              <td><code>n_splits: 5</code><br><code>n_repeats: 3</code><br><code>random_state: 42</code></td>
+              <td>Executa o K-Fold completo $R$ vezes consecutivas, aplicando diferentes permutações pseudoaleatórias aos dados.</td>
+              <td>Reduz o erro padrão e a variância da estimativa em bases de tamanho moderado com alta dispersão de preços por metro quadrado.</td>
+            </tr>
+            <tr>
+              <td><strong>Shuffle Split</strong></td>
+              <td><code>ShuffleSplit</code></td>
+              <td><code>n_splits: 5</code><br><code>test_size: 0.2</code><br><code>random_state: 42</code></td>
+              <td>Gera $N$ divisões aleatórias independentes mantendo a proporção de teste fixa (ex: 80% treino / 20% teste a cada split).</td>
+              <td>Desacopla o número de iterações do tamanho do teste; ideal para simulações Monte Carlo de sensibilidade amostral.</td>
+            </tr>
+            <tr>
+              <td><strong>Time Series Split</strong></td>
+              <td><code>TimeSeriesSplit</code></td>
+              <td><code>n_splits: 3</code><br><code>max_train_size: null</code></td>
+              <td>Janela temporal expansiva onde os dados de teste encontram-se estritamente no futuro em relação ao conjunto de treino.</td>
+              <td>Essencial caso o dataset inclua data de transação, impedindo vazamento de futuro (<em>look-ahead bias</em>) por inflação imobiliária.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Os 4 Métodos de Tuning de Hiperparâmetros -->
+      <h3 style="color: var(--accent-cyan); font-size: 1.25rem; margin: 30px 0 16px;">
+        Os 4 Métodos de Busca & Otimização de Hiperparâmetros
+      </h3>
+      <div class="cards-grid" style="margin-bottom: 28px;">
+        <!-- Card Random Search -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--primary);">1.</span> Randomized Search (<code>random</code>)
+          </div>
+          <div class="card-body">
+            <p><strong>Fundamento Teórico:</strong> Bergstra & Bengio (2012) — <em>Random Search for Hyper-Parameter Optimization</em>.</p>
+            <p>Amostra aleatoriamente $N$ configurações uniformes do espaço de hiperparâmetros.</p>
+            <ul class="feature-list">
+              <li><strong>Por que é o padrão do projeto:</strong> Como diferentes parâmetros possuem impactos desiguais no erro (ex: <code>learning_rate</code> afeta muito mais que <code>min_samples_split</code>), a busca aleatória explora muito mais valores distintos que uma grade fixa no mesmo tempo.</li>
+              <li><strong>Eficiência:</strong> Avalia 10 iterações cobrindo faixas amplas sem desperdício de CPU.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card Grid Search -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--secondary);">2.</span> Grid Search Exaustivo (<code>grid</code>)
+          </div>
+          <div class="card-body">
+            <p><strong>Mecanismo:</strong> Produto cartesiano determinístico de todos os valores definidos na grade ($\prod |P_i|$).</p>
+            <ul class="feature-list">
+              <li><strong>Ponto Forte:</strong> Garante que todas as combinações discretas especificadas sejam testadas sem aleatoriedade.</li>
+              <li><strong>Ponto Fraco:</strong> Maldição da dimensionalidade: adicionar 3 parâmetros com 4 valores cada resulta em $4^3 = 64$ treinos por modelo $\times K$ folds.</li>
+              <li><strong>Quando Usar:</strong> Grades pequenas de modelos lineares (ex: apenas <code>alpha</code> e <code>fit_intercept</code>).</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card Otimização Bayesiana -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--accent-amber);">3.</span> Otimização Bayesiana (<code>bayesian</code>)
+          </div>
+          <div class="card-body">
+            <p><strong>Biblioteca:</strong> <code>scikit-optimize</code> (via PyCaret nativo <code>search_library="scikit-optimize"</code>).</p>
+            <p>Modela a função de perda desconhecida $f(\theta)$ usando Processos Gaussianos (*Surrogate Model*).</p>
+            <ul class="feature-list">
+              <li><strong>Função de Aquisição:</strong> Utiliza <em>Expected Improvement</em> (EI) para ponderar exploração de regiões incertas e aproveitamento das melhores regiões já conhecidas.</li>
+              <li><strong>Vantagem:</strong> Encontra soluções superiores com menos iterações em espaços contínuos densos.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card Optuna TPE -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: #10b981;">4.</span> Optuna TPE (<code>optuna</code>)
+          </div>
+          <div class="card-body">
+            <p><strong>Algoritmo:</strong> <em>Tree-structured Parzen Estimator</em> (TPE) via <code>search_library="optuna"</code>.</p>
+            <p>Modela separadamente duas densidades de probabilidade: $P(\theta | y < y^*)$ para bons modelos e $P(\theta | y \ge y^*)$ para os demais.</p>
+            <ul class="feature-list">
+              <li><strong>Poda Antecipada (Pruning):</strong> Interrompe o treinamento de folds que mostram convergência nitidamente desfavorável nos passos iniciais.</li>
+              <li><strong>Alta Escalabilidade:</strong> Estado da arte para ensembles avançados de XGBoost e LightGBM.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mecanismos de Governança e Segurança do Tuning -->
+      <div class="info-card" style="margin-bottom: 24px;">
+        <div class="card-title">
+          Mecanismos de Segurança & Fail-Safe do Processo de Tuning
+        </div>
+        <div class="card-body">
+          <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+            <li><strong>Proteção Contra Degradação (<code>manter_melhor: true</code>):</strong> O tuning de hiperparâmetros não tem garantia matemática de superar os parâmetros padrão calibrados pela biblioteca. O pipeline calcula o score cruzado do estimador baseline e, se o modelo pós-tuning obtiver RMSE superior, <strong>os hiperparâmetros ajustados são automaticamente descartados e o modelo padrão é preservado</strong>.</li>
+            <li><strong>Critério de Parada Antecipada (<code>early_stopping: bool</code>):</strong> Permite que a busca por gradiente iterativo seja interrompida caso a métrica de validação não apresente ganho superior a uma tolerância mínima por $N$ iterações sucessivas.</li>
+            <li><strong>Direção da Métrica de Otimização:</strong> O sistema converte automaticamente a métrica configurada (<code>RMSE</code>, <code>MAE</code>) para os escores canônicos do Scikit-Learn (ex: <code>neg_root_mean_squared_error</code>), garantindo que funções de maximização convirjam para o menor erro em reais.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção de Pydantic: Validação Estrita, Tipagem e Integridade de Dados -->
+    <section id="pydantic-validacao" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">Pydantic: Validação Estrita, Tipagem & Integridade</h2>
+        <p class="section-desc">
+          O <strong>Pydantic V2</strong> (com núcleo de alta performance construído em Rust) atua como o alicerce fundamental de integridade de dados do projeto. Ele assegura validação em tempo de execução (<em>runtime</em>), conformidade de contratos de DTOs, parseamento seguro dos 7 arquivos YAML e validação de payloads HTTP na API FastAPI, garantindo uma arquitetura estritamente tipada com <strong>zero uso de <code>Any</code></strong>.
+        </p>
+      </div>
+
+      <!-- Card Conceitual: O que é o Pydantic e por que ele é crucial -->
+      <div class="info-card" style="margin-bottom: 24px; border-left: 4px solid var(--accent-cyan);">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>📐</span>
+          <span>Fundamento: Validação Estática (Pyright) vs Validação em Tempo de Execução (Pydantic)</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Em sistemas de Machine Learning em produção, anotações de tipo puras do Python (PEP 484) só são verificadas durante a análise estática (ex: via <code>pyright</code> em tempo de desenvolvimento). Porém, <strong>dados reais externos</strong> (como arquivos YAML de configuração, planilhas Excel e requisições HTTP de clientes) chegam ao sistema durante a execução.
+          </p>
+          <ul style="margin: 0; padding-left: 20px; line-height: 1.7;">
+            <li><strong>Princípio Fail-Fast:</strong> Qualquer inconsistência de tipo, valor negativo indevido ou campo obrigatório ausente é interceptada no exato momento da instanciação, interrompendo a execução com mensagens de erro autoexplicativas (<code>ValidationError</code>).</li>
+            <li><strong>Núcleo em Rust (pydantic-core):</strong> O Pydantic V2 executa validações e serializações em código binário nativo compuserado em Rust, conferindo velocidades até 20x superiores às abordagens tradicionais baseadas em código Python puro.</li>
+            <li><strong>Interoperabilidade Nativa com OpenAPI:</strong> Todos os modelos <code>BaseModel</code> geram esquemas JSON Schema canônicos, servindo como base automática para a documentação interativa Swagger UI da API.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Grid dos 4 Pilares de Uso do Pydantic no Projeto -->
+      <h3 style="color: var(--accent-cyan); font-size: 1.25rem; margin: 30px 0 16px;">Os 4 Pilares de Aplicação do Pydantic no Sistema</h3>
+      <div class="cards-grid" style="margin-bottom: 28px;">
+        <!-- Pilar 1: Configurações YAML -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--primary);">1.</span> Esquemas Tipados dos 7 Arquivos YAML
+          </div>
+          <div class="card-body">
+            <p><strong>Módulo:</strong> <code>app/esquema_configuracao.py</code> e <code>app/conf_yaml.py</code></p>
+            <p>Cada arquivo de configuração (01 a 07) é mapeado em classes Pydantic estritas:</p>
+            <ul class="feature-list">
+              <li><code>ConfiguracaoFonte</code>: valida caminho existente e tipo (<code>xlsx</code>, <code>csv</code>, <code>sql</code>).</li>
+              <li><code>ConfiguracaoColeta</code>: restrições de colunas obrigatórias e validação de nulos no alvo.</li>
+              <li><code>ConfiguracaoModelagem</code>: tipos literais (<code>pycaret</code> ou <code>sklearn</code>) e faixas numéricas de CV.</li>
+              <li><code>ConfiguracaoImplantacao</code>: regras de negócio e limites de threshold validados.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Pilar 2: DTOs da Cadeia de Responsabilidade -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--secondary);">2.</span> DTOs e Contratos entre Elos do Pipeline
+          </div>
+          <div class="card-body">
+            <p><strong>Módulo:</strong> <code>app/contratos_*</code> e <code>ContextoPipeline</code></p>
+            <p>A comunicação entre os elos da cadeia de responsabilidade é feita exclusivamente por Data Transfer Objects (DTOs) imutáveis:</p>
+            <ul class="feature-list">
+              <li><code>ResultadoColeta</code>: encapsula shape, colunas e contagem de nulos validados.</li>
+              <li><code>ResultadoPreparacao</code>: colunas geradas e registros filtrados.</li>
+              <li><code>ResultadoTreino</code>: métricas do modelo e caminho do artefato salvo.</li>
+              <li><code>ResultadoFriedman</code>: estatística qui-quadrado, p-valor e distância crítica $CD$.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Pilar 3: Validação de Entrada da API REST -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--accent-amber);">3.</span> Validação de Payloads de Entrada (HTTP POST)
+          </div>
+          <div class="card-body">
+            <p><strong>Módulo:</strong> <code>app/contratos_implantacao/avaliador_regras.py</code> (<code>RequisicaoImovel</code>)</p>
+            <p>Intercepta e valida requisições no endpoint <code>/predict</code> com restrições físicas reais:</p>
+            <ul class="feature-list">
+              <li><code>Metragem: float = Field(gt=0.0)</code>: rejeita metragens zeradas ou negativas.</li>
+              <li><code>Quartos, Banheiros, Vagas: int = Field(ge=0)</code>: impede valores inteiros negativos.</li>
+              <li><code>Bairro: str = Field(min_length=1)</code>: obriga identificação válida do logradouro.</li>
+              <li>Gera automaticamente resposta <strong>HTTP 422 Unprocessable Entity</strong> com campo e motivo exato em caso de erro.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Pilar 4: Serialização Estruturada de Saída da API -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: #10b981;">4.</span> Contratos de Saída & Regras de Negócio
+          </div>
+          <div class="card-body">
+            <p><strong>Módulo:</strong> <code>RespostaPredicao</code> e <code>StatusServico</code></p>
+            <p>Formatação consistente e serialização JSON padronizada do payload de retorno:</p>
+            <ul class="feature-list">
+              <li><code>preco_predito</code>: valor estimado em R$ pelo modelo campeão.</li>
+              <li><code>regras_calculadas</code>: dicionário estruturado com comissão, entrada mínima e parcelas.</li>
+              <li><code>detalhes_regras</code>: lista descritiva da fórmula e justificativa de cada regra.</li>
+              <li><code>data_hora_iso</code>: carimbo de data/hora no padrão internacional ISO 8601.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Resumo dos Principais Modelos Pydantic -->
+      <div class="table-container" style="margin-bottom: 30px;">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th style="width: 220px;">Classe Pydantic</th>
+              <th style="width: 220px;">Arquivo / Camada</th>
+              <th style="min-width: 240px;">Principais Campos & Restrições</th>
+              <th style="min-width: 220px;">Papel na Arquitetura</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>ConfiguracaoCompleta</code></td>
+              <td><code>app/esquema_configuracao.py</code></td>
+              <td>Composição tipada dos 7 YAMLs (projeto, fonte, preparacao, modelagem, etc.)</td>
+              <td>Valida e centraliza todas as configurações do sistema no singleton <code>ConfYAML</code>.</td>
+            </tr>
+            <tr>
+              <td><code>RequisicaoImovel</code></td>
+              <td><code>contratos_implantacao/avaliador_regras.py</code></td>
+              <td><code>Metragem > 0</code>, <code>Quartos >= 0</code>, <code>Bairro != ""</code>, <code>Valor_Condominio >= 0</code></td>
+              <td>Payload de entrada validado da rota <code>POST /predict</code> na API FastAPI.</td>
+            </tr>
+            <tr>
+              <td><code>RespostaPredicao</code></td>
+              <td><code>contratos_implantacao/avaliador_regras.py</code></td>
+              <td><code>preco_predito</code>, <code>regras_calculadas</code>, <code>modelo_campeao</code>, <code>data_hora_iso</code></td>
+              <td>Contrato de resposta estruturada para corretores e sistemas imobiliários externos.</td>
+            </tr>
+            <tr>
+              <td><code>StatusServico</code></td>
+              <td><code>contratos_implantacao/avaliador_regras.py</code></td>
+              <td><code>status</code>, <code>versao_api</code>, <code>modelo_campeao</code>, <code>total_regras_ativas</code></td>
+              <td>Resposta padronizada da rota <code>GET /health</code> para monitoramento de liveness.</td>
+            </tr>
+            <tr>
+              <td><code>ResultadoTreino</code></td>
+              <td><code>contratos_modelagem/motor_treinador.py</code></td>
+              <td><code>modelo</code>, <code>metricas</code> (RMSE, MAE, R²), <code>hiperparametros</code></td>
+              <td>DTO imutável contendo o resultado do treinamento repassado para a etapa de avaliação.</td>
+            </tr>
+            <tr>
+              <td><code>ResultadoFriedman</code></td>
+              <td><code>contratos_avaliacao/avaliador_estatistico.py</code></td>
+              <td><code>estatistica</code>, <code>p_valor</code>, <code>hipotese_rejeitada</code>, <code>distancia_critica</code></td>
+              <td>DTO de governança estatística comparativa entre os modelos treinados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Exemplo Prático de Código Pydantic -->
+      <div class="info-card">
+        <div class="card-title">
+          Demonstração Prática: Contrato de Entrada e Validação na API
+        </div>
+        <div class="card-body">
+          Veja a implementação real do modelo <code>RequisicaoImovel</code> e como o Pydantic protege o sistema contra dados espúrios:
+          <pre class="code-block">
+from pydantic import BaseModel, Field
+
+class RequisicaoImovel(BaseModel):
+    """Esquema de entrada para requisição de avaliação e inferência de imóvel."""
+    Metragem: float = Field(gt=0.0, description="Área total ou útil do apartamento em m²")
+    Quartos: int = Field(ge=0, description="Quantidade de dormitórios")
+    Banheiros: int = Field(ge=0, description="Quantidade de banheiros")
+    Vagas: int = Field(ge=0, description="Quantidade de vagas de garagem")
+    Bairro: str = Field(min_length=1, description="Bairro de localização em Ribeirão Preto")
+    Zona: str = Field(default="Sul", description="Zona da cidade (Sul, Leste, Oeste, Norte, Centro)")
+    Valor_Condominio: float = Field(default=0.0, ge=0.0, description="Taxa condominial em R$")
+    Valor_Iptu: float = Field(default=0.0, ge=0.0, description="Valor do IPTU em R$")
+    Area_Privativa: float = Field(default=0.0, ge=0.0, description="Área privativa útil em m²")
+
+# Cenário 1: Payload Válido -> Instanciação instantânea
+imovel = RequisicaoImovel(
+    Metragem=85.5, Quartos=3, Banheiros=2, Vagas=2,
+    Bairro="Jardim Botânico", Zona="Sul", Valor_Condominio=650.0
+)
+
+# Cenário 2: Payload com Metragem Negativa (-10) -> Erro Imediato HTTP 422:
+# {
+#   "detail": [
+#     {
+#       "type": "greater_than",
+#       "loc": ["body", "Metragem"],
+#       "msg": "Input should be greater than 0",
+#       "input": -10.0
+#     }
+#   ]
+# }</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção: Instrução de Uso e Governança dos Arquivos YAML -->
+    <section id="guia-arquivos-yaml" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">Instrução de Uso & Governança dos Arquivos YAML</h2>
+        <p class="section-desc">
+          O pipeline de aprendizado de máquina é 100% parametrizável e governado por configurações declarativas centralizadas no diretório <code>configuracoes/</code>. Todas as definições de ingestão, engenharia tabular, análises exploratórias, algoritmos de regressão, validação cruzada, regras de precificação e observabilidade são carregadas, interpoladas com variáveis de ambiente e estritamente validadas em tempo de execução pela classe <code>ConfYAML</code> (em <code>app/conf_yaml.py</code>) e pelo parser seguro <code>ValidadorAst</code>.
+        </p>
+      </div>
+
+      <!-- Card 1: Arquitetura de Configuração e Princípios de Segurança -->
+      <div class="info-card" style="margin-bottom: 24px; border-left: 4px solid var(--primary);">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>⚙️</span>
+          <span>Arquitetura Centralizada (ConfYAML) & Os 4 Princípios de Configuração</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Diferente de pipelines legados onde cada script lê arquivos soltos sem padronização, este projeto adota uma arquitetura de <strong>Ponto Único de Leitura e Validação</strong>:
+          </p>
+          <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 14px;">
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--primary); font-weight: 700; margin-bottom: 6px;">1. Não-Fragmentação</div>
+              <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                Nenhum módulo ou serviço lê arquivos YAML diretamente. O pipeline consome exclusivamente instâncias tipadas de <code>ConfiguracaoCompleta</code> geradas por <code>ConfYAML</code>.
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--secondary); font-weight: 700; margin-bottom: 6px;">2. Interpolação de Ambientes</div>
+              <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                Suporte nativo a <code>${VARIAVEL:padrao}</code>. Caminhos de arquivos, URLs de serviços (MLflow, Grafana) e credenciais vêm do ambiente sem risco de vazamento em commits.
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--accent-amber); font-weight: 700; margin-bottom: 6px;">3. Validação em 3 Camadas</div>
+              <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                1º Parsing sintático PyYAML; 2º Esquema Pydantic V2 estrito; 3º Validação semântica cruzada (alvo existente, modelos válidos, ausência de colisão em regras).
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--success); font-weight: 700; margin-bottom: 6px;">4. Execução Segura via AST</div>
+              <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                Expressões lógicas e aritméticas (filtros where, features e regras) passam por uma <strong>whitelist de nós da Árvore Sintática Abstrata (AST)</strong>. Proibição total de <code>eval</code> e <code>exec</code> arbitrários.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Catálogo dos 7 Arquivos YAML por Etapa -->
+      <h3 style="color: var(--primary); font-size: 1.25rem; margin: 32px 0 16px;">Catálogo Estrutural dos 7 Arquivos de Configuração</h3>
+      <div class="table-responsive" style="margin-bottom: 28px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 220px;">Arquivo YAML</th>
+              <th style="width: 140px;">Etapa / Elo</th>
+              <th>Finalidade & Parâmetros Principais</th>
+              <th style="width: 200px;">Variáveis de Ambiente Suportadas</th>
+              <th style="width: 160px;">Modelo Pydantic</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>01_coleta_dados.yaml</code></td>
+              <td><span class="badge primary">Etapa 1: Ingestão</span></td>
+              <td>Identificação do projeto, semente aleatória, fonte original (XLSX/CSV/SQL), destino Staging SQLite e validação de colunas mandatórias.</td>
+              <td><code>${IMOVEIS_XLSX_PATH}</code><br><code>${STAGING_SQLITE_PATH}</code><br><code>${ALVO}</code></td>
+              <td><code>ConfiguracaoColeta</code><br><code>ConfiguracaoFonte</code></td>
+            </tr>
+            <tr>
+              <td><code>02_preparacao_dados.yaml</code></td>
+              <td><span class="badge secondary">Etapa 2: Tabular</span></td>
+              <td>Seleção do motor (<code>pandas</code> ou <code>polars</code>), catálogo de atributos com tipo estatístico e papel, filtros condicionais e engenharia de atributos novos.</td>
+              <td>—</td>
+              <td><code>ConfiguracaoTabular</code><br><code>ConfiguracaoSelecao</code></td>
+            </tr>
+            <tr>
+              <td><code>03_analise_eda.yaml</code></td>
+              <td><span class="badge success">Etapa 3: EDA</span></td>
+              <td>Motor de visualização (<code>grafana</code>, <code>seaborn</code>, <code>plotly</code>, <code>altair</code>), caminhos de exportação HTML/JSON e catálogo de análises (histogramas, boxplots, dispersão, correlações).</td>
+              <td>—</td>
+              <td><code>ConfiguracaoEda</code></td>
+            </tr>
+            <tr>
+              <td><code>04_modelagem_regressao.yaml</code></td>
+              <td><span class="badge accent">Etapa 4: Treinamento</span></td>
+              <td>Motor de treino (<code>pycaret</code> ou <code>sklearn</code>), estratégias de imputação de nulos, transformação do alvo (<code>log1p</code>), catálogo de 10 estimadores e grades de tuning.</td>
+              <td>—</td>
+              <td><code>ConfiguracaoModelagem</code></td>
+            </tr>
+            <tr>
+              <td><code>05_avaliacao_selecao.yaml</code></td>
+              <td><span class="badge primary">Etapa 5: Validação</span></td>
+              <td>Proporção de Holdout (20%), folds de CV externa e interna, métrica de decisão primária (RMSE), testes estatísticos de Friedman/Nemenyi ($\alpha = 0.05$) e ensemble de votação.</td>
+              <td>—</td>
+              <td><code>ConfiguracaoAvaliacao</code></td>
+            </tr>
+            <tr>
+              <td><code>06_implantacao_regras.yaml</code></td>
+              <td><span class="badge warning">Etapa 6: Serving & Regras</span></td>
+              <td>Fórmulas de precificação imobiliária pós-predição (margens de negociação $\pm 5\%$, preço por $\text{m}^2$, comissões de corretagem de $6\%$) e parâmetros do servidor REST FastAPI.</td>
+              <td>—</td>
+              <td><code>ConfiguracaoImplantacao</code></td>
+            </tr>
+            <tr>
+              <td><code>07_monitoramento_drift.yaml</code></td>
+              <td><span class="badge danger">Etapa 7: Observabilidade</span></td>
+              <td>URL e dashboards do Grafana, métricas de serviço monitoradas (latências p50/p95/p99, erro), limiares de alarme estatístico de drift (KS-test, PSI, degradação de RMSE).</td>
+              <td><code>${GRAFANA_URL}</code></td>
+              <td><code>ConfiguracaoMonitoramento</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Detalhamento dos Arquivos com Exemplos e Diretrizes de Customização -->
+      <h3 style="color: var(--primary); font-size: 1.25rem; margin: 32px 0 16px;">Detalhamento e Exemplos Práticos de Customização</h3>
+
+      <!-- Bloco 1: 01_coleta_dados.yaml -->
+      <div class="info-card" style="margin-bottom: 20px;">
+        <div class="card-title">
+          <span>📁 01_coleta_dados.yaml — Ingestão de Dados e Staging Seguro</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Controla a fonte primária dos dados brutos e o destino intermediário (Staging). O pipeline lê da fonte externa apenas uma vez, persistindo um snapshot imutável em SQLite para garantir reprodutibilidade.
+          </p>
+          <pre class="code-block">
+# configuracoes/01_coleta_dados.yaml
+projeto:
+  nome: "previsao_imoveis_rp"
+  alvo: "Valor_da_Venda"       # Nome canônico da variável dependente
+  semente: 42                  # Semente pseudo-aleatória universal
+
+fonte:
+  tipo: "xlsx"                 # Suporta: xlsx | csv | sql | api
+  caminho: "${IMOVEIS_XLSX_PATH:storage-data/imoveis_apartamentos_rp.xlsx}"
+  aba: 0
+
+repositorio_staging:
+  tipo: "sqlite"               # Suporta: sqlite | postgres | mysql
+  caminho: "${STAGING_SQLITE_PATH:storage-data/staging_imoveis.db}"
+  tabela: "imoveis_preparados"
+
+coleta:
+  nome_alvo: "${ALVO:Valor_da_Venda}"
+  colunas_obrigatorias:
+    - "Valor_da_Venda"
+    - "Metragem"
+    - "Bairro"
+  validar_nulos_alvo: false    # Se true, falha caso haja nulos na variável resposta
+  substituir_staging: true     # Se true, recria a tabela do staging a cada coleta</pre>
+          <div style="background: rgba(56, 189, 248, 0.08); padding: 12px 16px; border-radius: 6px; border-left: 3px solid var(--primary); font-size: 0.88rem; margin-top: 10px;">
+            💡 <strong>Dica de Operação:</strong> Para alternar a fonte de dados para um banco SQL ou apontar para um arquivo de teste sem alterar o repositório Git, basta definir a variável de ambiente no shell:<br>
+            <code>export IMOVEIS_XLSX_PATH="/dados/homologacao/apartamentos_2026.xlsx"</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 2: 02_preparacao_dados.yaml -->
+      <div class="info-card" style="margin-bottom: 20px;">
+        <div class="card-title">
+          <span>📁 02_preparacao_dados.yaml — Engenharia Tabular e Expressões Seguras</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Permite alternar o motor computacional entre <code>pandas</code> e <code>polars</code> e definir expressões de filtragem (<em>where clauses</em>), transformações de coluna e criação de atributos derivados.
+          </p>
+          <pre class="code-block">
+# configuracoes/02_preparacao_dados.yaml
+tabular:
+  motor: "pandas"              # Alterne para "polars" para processamento multithread ultrarrápido
+
+selecao:
+  ativo: true
+  colunas:
+    - {nome: "Valor_da_Venda", ativo: true, tipo: "quantitativa_continua", papel: "alvo"}
+    - {nome: "Metragem", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
+    - {nome: "Quartos", ativo: true, tipo: "quantitativa_discreta", papel: "numerica"}
+    - {nome: "Banheiros", ativo: true, tipo: "quantitativa_discreta", papel: "numerica"}
+    - {nome: "Vagas", ativo: true, tipo: "quantitativa_discreta", papel: "numerica"}
+    - {nome: "Bairro", ativo: true, tipo: "qualitativa_nominal", papel: "categorica"}
+    - {nome: "Zona", ativo: true, tipo: "qualitativa_nominal", papel: "categorica"}
+    - {nome: "Valor_Condominio", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
+
+filtros:
+  ativo: true
+  expressoes:
+    - nome: "metragem_positiva"
+      ativo: true
+      expressao:
+        pandas: "df['Metragem'] > 0"
+        polars: "df['Metragem'] > 0"
+    - nome: "preco_positivo"
+      ativo: true
+      expressao:
+        pandas: "df['Valor_da_Venda'] > 0"
+        polars: "df['Valor_da_Venda'] > 0"
+
+transformacoes:
+  ativo: true
+  expressoes:
+    - nome: "metragem_ajustada"
+      ativo: false             # Ative para aplicar clipping na metragem mínima
+      destino: "Metragem"
+      expressao:
+        pandas: "df['Metragem'].clip(lower=1)"
+        polars: "df['Metragem'].clip(lower_bound=1)"
+
+atributos_novos:
+  ativo: true
+  expressoes:
+    - nome: "razao_banheiro_quarto"
+      ativo: true
+      destino: "Razao_Banheiro_Quarto"
+      expressao:
+        pandas: "df['Banheiros'] / df['Quartos']"
+        polars: "df['Banheiros'] / df['Quartos']"</pre>
+          <div style="background: rgba(245, 158, 11, 0.08); padding: 12px 16px; border-radius: 6px; border-left: 3px solid var(--accent-amber); font-size: 0.88rem; margin-top: 10px;">
+            ⚠️ <strong>Regra de Segurança:</strong> O parser AST aceita apenas operadores matemáticos (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>), comparações (<code>></code>, <code><</code>, <code>==</code>) e chamadas a métodos numéricos mapeados (ex: <code>clip</code>, <code>log1p</code>). Chamadas como <code>os.system()</code>, <code>eval()</code> ou tentativas de importação disparam <code>ErroExpressaoInsegura</code> imediatamente.
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 3: 03_analise_eda.yaml -->
+      <div class="info-card" style="margin-bottom: 20px;">
+        <div class="card-title">
+          <span>📁 03_analise_eda.yaml — Configuração de Análises e Visualizações</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Configura as análises exploratórias e o motor visual de saída. Suporta a emissão de relatórios consolidados em HTML e JSON, além de sincronização de métricas com painéis Grafana.
+          </p>
+          <pre class="code-block">
+# configuracoes/03_analise_eda.yaml
+eda:
+  motor_grafico: "grafana"     # Suporta: grafana | seaborn | plotly | altair
+  caminho_relatorio_html: "storage-data/relatorio_eda.html"
+  caminho_relatorio_json: "storage-data/relatorio_eda.json"
+  analises:
+    - nome: "distribuicao_preco_venda"
+      descricao: "Análise da dispersão univariada e assimetria do valor de venda."
+      ativo: true
+      tipo_grafico: "histograma"
+      coluna: "Valor_da_Venda"
+      titulo: "Distribuição do Preço de Venda (R$)"
+      nbins: 35
+      escala: "linear"
+
+    - nome: "dispersao_precos_por_bairro"
+      ativo: true
+      tipo_grafico: "boxplot"
+      coluna_x: "Bairro"
+      coluna_y: "Valor_da_Venda"
+      titulo: "Dispersão e Quartis de Preço por Bairro"
+
+    - nome: "correlacao_features_numericas"
+      ativo: true
+      tipo_grafico: "correlacao"
+      titulo: "Matriz de Correlação Linear (Pearson)"</pre>
+        </div>
+      </div>
+
+      <!-- Bloco 4: 04_modelagem_regressao.yaml -->
+      <div class="info-card" style="margin-bottom: 20px;">
+        <div class="card-title">
+          <span>📁 04_modelagem_regressao.yaml — Algoritmos, Pré-processamento e Tuning</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Determina o ecossistema de treinamento (PyCaret isolado ou Scikit-Learn puro), estratégias de imputação de valores ausentes, normalização e faixas de busca de hiperparâmetros.
+          </p>
+          <pre class="code-block">
+# configuracoes/04_modelagem_regressao.yaml
+modelagem:
+  motor_treino: "pycaret"      # Suporta: "pycaret" (funções nativas) ou "sklearn" (pipeline desacoplado)
+
+  imputacao:
+    ativo: true
+    estrategia_numerica: "mediana"       # mediana | media | mais_frequente | constante
+    estrategia_categorica: "mais_frequente"
+    por_atributo:
+      Metragem: {ativo: true, estrategia: "mediana"}
+      Bairro: {ativo: true, estrategia: "mais_frequente"}
+
+  preprocessamento:
+    transformar_alvo: true
+    metodo_transformacao_alvo: "log1p"   # Corrige assimetria positiva do preço
+    transformar_atributos:
+      ativo: true
+      metodo: "log1p"
+      colunas: ["Metragem", "Area_Privativa", "Valor_Condominio", "Valor_Iptu"]
+
+  modelos:                     # Catálogo de modelos candidatos (ative ou desative individualmente)
+    - {nome: "regressao_linear", ativo: true, pycaret_id: "lr", sklearn_class: "LinearRegression"}
+    - {nome: "lasso", ativo: true, pycaret_id: "lasso", sklearn_class: "Lasso"}
+    - {nome: "ridge", ativo: true, pycaret_id: "ridge", sklearn_class: "Ridge"}
+    - {nome: "random_forest", ativo: true, pycaret_id: "rf", sklearn_class: "RandomForestRegressor"}
+    - {nome: "xgboost", ativo: true, pycaret_id: "xgboost", sklearn_class: "XGBRegressor"}
+    - {nome: "lightgbm", ativo: true, pycaret_id: "lightgbm", sklearn_class: "LGBMRegressor"}
+
+  tuning:
+    ativo: true
+    metodo: "random"           # random | grid | bayesian
+    n_iteracoes: 30
+    metrica_otimizacao: "RMSE"
+    parametros:
+      lightgbm:
+        num_leaves: [15, 31, 63, 127]
+        learning_rate: [0.01, 0.05, 0.1, 0.2]
+        n_estimators: [50, 100, 200, 300]
+        max_depth: [-1, 5, 10, 15]</pre>
+        </div>
+      </div>
+
+      <!-- Bloco 5: 05_avaliacao_selecao.yaml -->
+      <div class="info-card" style="margin-bottom: 20px;">
+        <div class="card-title">
+          <span>📁 05_avaliacao_selecao.yaml — Validação Cruzada, Friedman e Votação</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Estabelece a divisão estatística dos dados, o particionamento em folds estratificados ou agrupados, os testes de significância não-paramétricos e a formação de comitê de modelos (ensemble).
+          </p>
+          <pre class="code-block">
+# configuracoes/05_avaliacao_selecao.yaml
+avaliacao:
+  validacao:
+    holdout: 0.2               # 20% do dataset reservado para teste cego final
+    cv_externa:
+      metodo: "repeated_kfold" # repeated_kfold | kfold
+      splits: 5                # 5 folds externos
+      repeticoes: 3            # 3 repetições -> 15 avaliações por estimador
+    cv_interna:
+      metodo: "kfold"
+      splits: 3                # 3 folds internos para ajuste de hiperparâmetros
+      embaralhar: true
+    metrica: "RMSE"            # Métrica primária de ordenação e desempate
+
+  estatistica:
+    teste: "friedman"          # Teste de Friedman para comparação pareada de rankings
+    pos_teste: "nemenyi"       # Pós-teste de Nemenyi com Distância Crítica (CD)
+    alpha: 0.05                # Nível de significância estatística (95% de confiança)
+    desempate: "menor_rmse"
+
+  votacao:
+    ativo: false               # Alterne para true para ativar o ensemble dos N melhores
+    tecnica: "media_simples"   # media_simples | voting_regressor | media_ponderada_rmse | stacking
+    melhores_n: 3              # Quantidade de modelos campeões combinados
+    meta_modelo: "ridge"</pre>
+        </div>
+      </div>
+
+      <!-- Bloco 6: 06_implantacao_regras.yaml -->
+      <div class="info-card" style="margin-bottom: 20px;">
+        <div class="card-title">
+          <span>📁 06_implantacao_regras.yaml — Regras de Negócio Imobiliárias e Serving</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Define a camada de lógica imobiliária calculada a partir da saída do modelo preditivo (<code>preco_predito</code>), formatando as respostas entregues pela API FastAPI.
+          </p>
+          <pre class="code-block">
+# configuracoes/06_implantacao_regras.yaml
+implantacao:
+  ativo: true
+  coluna_alvo_predito: "preco_predito"
+  regras:
+    - nome: "margem_inferior_negociacao"
+      ativo: true
+      descricao: "Faixa mínima de negociação (5% abaixo do preço previsto)"
+      destino: "preco_minimo_sugerido"
+      expressao: "preco_predito * 0.95"
+
+    - nome: "margem_superior_negociacao"
+      ativo: true
+      descricao: "Faixa máxima de negociação (5% acima do preço previsto)"
+      destino: "preco_maximo_sugerido"
+      expressao: "preco_predito * 1.05"
+
+    - nome: "valor_metro_quadrado_predito"
+      ativo: true
+      descricao: "Preço por m² calculado dinamicamente"
+      destino: "preco_m2_predito"
+      expressao: "preco_predito / Metragem"
+
+    - nome: "taxa_comissao_imobiliaria"
+      ativo: true
+      descricao: "Comissão estimada da imobiliária (6% do valor de venda)"
+      destino: "valor_comissao_estimada"
+      expressao: "preco_predito * 0.06"
+
+  serving:
+    host: "0.0.0.0"
+    porta: 8080
+    endpoint: "/invocations"</pre>
+        </div>
+      </div>
+
+      <!-- Bloco 7: 07_monitoramento_drift.yaml -->
+      <div class="info-card" style="margin-bottom: 24px;">
+        <div class="card-title">
+          <span>📁 07_monitoramento_drift.yaml — Detecção de Deriva e Observabilidade</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Monitora a estabilidade das distribuições preditoras e do alvo em produção. Dispara alertas no Grafana quando alterações estatisticamente significativas são detectadas.
+          </p>
+          <pre class="code-block">
+# configuracoes/07_monitoramento_drift.yaml
+monitoramento:
+  observabilidade:
+    grafana_url: "${GRAFANA_URL:http://localhost:3000}"
+    dashboards:
+      - "eda"
+      - "modelos"
+      - "estatistica"
+      - "servico"
+    metricas:
+      - "rmse"
+      - "mae"
+      - "r2"
+      - "latencia_p50"
+      - "latencia_p95"
+      - "taxa_erro"
+      - "drift"
+
+  drift:
+    ativo: true
+    tipos_monitorados:
+      - "covariate_drift"       # Mudança na distribuição das variáveis explicativas P(X)
+      - "concept_drift"         # Mudança na relação matemática subjacente P(Y|X)
+      - "label_drift"           # Mudança no valor do alvo de mercado P(Y)
+      - "prediction_drift"      # Mudança no padrão de inferências geradas P(Y_hat)
+    limiares:
+      covariate_drift_pvalor: 0.05    # Limiar do teste Kolmogorov-Smirnov para rejeitar H0
+      prediction_drift_ks: 0.10       # Distância D máxima aceitável antes de alertar drift
+      rmse_degradacao_maxima: 0.15    # Alerta se erro aumentar mais de 15% sobre a baseline</pre>
+        </div>
+      </div>
+
+      <!-- Card 3: Guia de Operação e Comandos Práticos -->
+      <div class="info-card">
+        <div class="card-title">
+          <span>💻 Modo de Uso no Terminal CLI e Código Python</span>
+        </div>
+        <div class="card-body">
+          <p>
+            O pipeline e seus módulos podem ser executados com configurações customizadas diretamente via CLI ou importados em código Python:
+          </p>
+          <pre class="code-block">
+# 1. Execução do pipeline completo consumindo o diretório de configurações padrão:
+python -m app.executar_pipeline --etapa todas
+
+# 2. Execução apontando para um diretório de configurações de homologação/teste:
+python -m app.executar_pipeline --config-dir configuracoes_homolog --etapa todas
+
+# 3. Execução de um elo isolado (ex: apenas a etapa de coleta ou modelagem):
+python -m app.executar_pipeline --etapa coleta
+python -m app.executar_pipeline --etapa modelagem
+
+# 4. Sobrescrevendo parâmetros via variáveis de ambiente no shell (sem alterar arquivos):
+export IMOVEIS_XLSX_PATH="/var/data/apartamentos_novos.xlsx"
+export GRAFANA_URL="http://grafana-producao.internal:3000"
+python -m app.executar_pipeline --etapa todas</pre>
+
+          <p style="margin-top: 18px;"><strong>Utilização Programática em Scripts Python:</strong></p>
+          <pre class="code-block">
+from app.conf_yaml import ConfYAML, ErroConfiguracao
+
+try:
+    # Carrega e valida automaticamente todos os 7 arquivos YAML do diretório:
+    conf = ConfYAML("configuracoes")
+
+    # Acesso tipado sem risco de erros de chave ou None inesperado:
+    nome_alvo = conf.obter_coleta().nome_alvo
+    motor_treino = conf.obter_modelagem().motor_treino
+    limiar_ks = conf.obter_monitoramento().drift.limiares["prediction_drift_ks"]
+
+    print(f"Pipeline configurado com sucesso! Alvo: {nome_alvo} | Motor: {motor_treino}")
+
+except ErroConfiguracao as erro:
+    # Captura diagnósticos claros caso algum YAML esteja corrompido ou inseguro:
+    print(f"Falha de validação da configuração: {erro}")</pre>
+        </div>
+      </div>
+    </section>
+
     <!-- MLflow Governance Section -->
     <section id="goverranca-mlflow" class="doc-section">
       <div class="section-header">
@@ -964,7 +3584,377 @@ params:
       </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Seção: API FastAPI & Regras de Negócio Dinâmicas -->
+    <section id="api-inferencia" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">API FastAPI & Regras de Negócio Dinâmicas</h2>
+        <p class="section-desc">
+          A disponibilização do modelo campeão promovido (<strong>LightGBM</strong>) em produção é realizada por meio de uma API REST síncrona construída com <strong>FastAPI</strong> e <strong>Uvicorn</strong>. A camada de inferência não se limita a prever o valor bruto do imóvel: ela executa regras de negócio imobiliárias parametrizadas via YAML e avaliadas com máxima segurança pelo parser AST.
+        </p>
+      </div>
+
+      <!-- Card dos Endpoints e Arquitetura REST -->
+      <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="info-card">
+          <div class="card-title" style="color: var(--success);">
+            <span style="background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-family: monospace;">GET /health</span>
+          </div>
+          <div class="card-body">
+            <p><strong>Healthcheck & Prontidão do Modelo:</strong></p>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+              Retorna o status operacional da API, versão do serviço, identificador do modelo carregado (<code>lightgbm</code>), métricas de validação cruzada registradas e data de promoção.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="card-title" style="color: var(--primary);">
+            <span style="background: rgba(56, 189, 248, 0.15); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-family: monospace;">POST /predict</span>
+          </div>
+          <div class="card-body">
+            <p><strong>Inferência com Regras de Negócio:</strong></p>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+              Recebe o payload JSON estritamente validado por <code>RequisicaoImovel</code>, executa a transformação de pré-processamento, aplica a regressão e calcula as margens de preço, valor do m² e comissão de corretagem.
+            </p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="card-title" style="color: var(--secondary);">
+            <span style="background: rgba(129, 140, 248, 0.15); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-family: monospace;">POST /invocations</span>
+          </div>
+          <div class="card-body">
+            <p><strong>Padrão Canônico MLflow Serving:</strong></p>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+              Compatibilidade nativa com o formato de invocação de instâncias de serving do MLflow, aceitando matrizes de registros tabulares para inferência em lote.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Execução das Regras de Negócio via AST -->
+      <div class="info-card" style="margin-bottom: 24px;">
+        <div class="card-title">
+          <span>📐 Pipeline de Avaliação das Regras de Negócio (YAML + AST)</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Após o estimador calcular a estimativa base $\hat{y}$ (<code>preco_predito</code>), a classe <code>ExecutorRegras</code> aplica sequencialmente as fórmulas declaradas em <code>06_implantacao_regras.yaml</code>:
+          </p>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Regra de Negócio</th>
+                  <th>Destino no JSON</th>
+                  <th>Fórmula Avaliada via AST</th>
+                  <th>Significado Imobiliário</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Margem Inferior</strong></td>
+                  <td><code>preco_minimo_sugerido</code></td>
+                  <td><code>preco_predito * 0.95</code></td>
+                  <td>Piso recomendado para negociação agressiva à vista (-5%).</td>
+                </tr>
+                <tr>
+                  <td><strong>Margem Superior</strong></td>
+                  <td><code>preco_maximo_sugerido</code></td>
+                  <td><code>preco_predito * 1.05</code></td>
+                  <td>Teto recomendado para margem de anúncio e contraproposta (+5%).</td>
+                </tr>
+                <tr>
+                  <td><strong>Preço por Metro²</strong></td>
+                  <td><code>preco_m2_predito</code></td>
+                  <td><code>preco_predito / Metragem</code></td>
+                  <td>Valor unitário em R$/m² para benchmark no bairro de Ribeirão Preto.</td>
+                </tr>
+                <tr>
+                  <td><strong>Comissão de Corretagem</strong></td>
+                  <td><code>valor_comissao_estimada</code></td>
+                  <td><code>preco_predito * 0.06</code></td>
+                  <td>Honorários estimados da intermediação imobiliária (padrão CRECI de 6%).</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção: Monitoramento, Observabilidade & Detecção de Drifts -->
+    <section id="monitoramento-drift" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">Monitoramento de Modelos, Observabilidade & Detecção de Drift</h2>
+        <p class="section-desc">
+          Modelos de Machine Learning implantados em produção operam em ambientes dinâmicos sujeitos a transformações socioeconômicas, sazonalidade e alterações no perfil dos imóveis anunciados. O sistema implementa uma camada completa de <strong>Observabilidade Contínua e Detecção Estatística de Drift</strong>, combinando testes de hipóteses não-paramétricos (Kolmogorov-Smirnov), índices de estabilidade populacional (PSI), rastreamento de degradação supervisionada e painéis em tempo real no <strong>Grafana</strong>.
+        </p>
+      </div>
+
+      <!-- Card Conceitual: O que é Drift e a Decomposição da Distribuição Conjunta -->
+      <div class="info-card" style="margin-bottom: 24px; border-left: 4px solid var(--accent-cyan);">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>🔬</span>
+          <span>Fundamentação Estatística: A Decomposição da Distribuição Conjunta $P(X, Y)$</span>
+        </div>
+        <div class="card-body">
+          <p>
+            No paradigma supervisionado, o modelo aprende a aproximar a esperança condicional $E[Y|X]$ a partir de uma distribuição conjunta de treinamento $P_{\text{treino}}(X, Y)$. Em produção, a hipótese de dados <em>Independentes e Identicamente Distribuídos (I.I.D.)</em> deixa de ser válida ao longo do tempo. A distribuição conjunta pode ser fatorada de duas formas fundamentais:
+          </p>
+          <div style="background: rgba(15, 23, 42, 0.7); padding: 18px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; margin: 16px 0; font-family: monospace; font-size: 1.05rem;">
+            <span style="color: var(--primary);">P(X, Y)</span> = <span style="color: var(--secondary);">P(X)</span> · <span style="color: var(--accent-amber);">P(Y|X)</span> &nbsp;&nbsp;&nbsp;&nbsp;[Perspectiva de Covariáveis]<br>
+            <span style="color: var(--primary);">P(X, Y)</span> = <span style="color: var(--success);">P(Y)</span> · <span style="color: var(--accent);">P(X|Y)</span> &nbsp;&nbsp;&nbsp;&nbsp;[Perspectiva de Rótulos]
+          </div>
+          <p>
+            A partir dessa decomposição, qualquer alteração temporal pode impactar as marginais ou a condicional, exigindo detectores estatísticos específicos para cada componente.
+          </p>
+        </div>
+      </div>
+
+      <!-- Os 5 Tipos de Drift Monitorados no Projeto -->
+      <h3 style="color: var(--accent-cyan); font-size: 1.3rem; margin: 34px 0 16px;">Os 5 Tipos de Drift Monitorados no Sistema</h3>
+      <div class="table-responsive" style="margin-bottom: 28px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 200px;">Tipo de Drift</th>
+              <th style="width: 140px;">Componente</th>
+              <th>Definição no Domínio Imobiliário de RP</th>
+              <th style="width: 220px;">Método Estatístico Utilizado</th>
+              <th style="width: 160px;">Limiar de Alerta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Covariate / Data Drift</strong></td>
+              <td><span class="badge primary">P(X)</span></td>
+              <td>
+                Mudança na distribuição das variáveis explicativas dos apartamentos (ex: aumento de lançamentos compactos de 40m², concentração em novas zonas ou bairros com IPTU mais elevado).
+              </td>
+              <td>
+                • Numéricas: <strong>KS-Test bicaudal</strong><br>
+                • Categóricas: <strong>PSI (Population Stability)</strong>
+              </td>
+              <td>
+                $p$-valor $< 0.05$<br>
+                $\text{PSI} > 0.20$
+              </td>
+            </tr>
+            <tr>
+              <td><strong>2. Prediction Drift</strong></td>
+              <td><span class="badge secondary">P(Ŷ)</span></td>
+              <td>
+                Desvio na distribuição dos preços previstos gerados pelo modelo em produção em relação às predições da base de validação, indicando tendência inflacionária ou deflacionária nas saídas.
+              </td>
+              <td>
+                <strong>Teste Kolmogorov-Smirnov</strong> bicaudal entre séries de predições de referência e produção
+              </td>
+              <td>
+                Estatística $D > 0.10$<br>
+                e $p$-valor $< 0.05$
+              </td>
+            </tr>
+            <tr>
+              <td><strong>3. Target / Label Drift</strong></td>
+              <td><span class="badge success">P(Y)</span></td>
+              <td>
+                Deslocamento na distribuição dos valores reais de fechamento de venda dos apartamentos conforme as escrituras são registradas e disponibilizadas (<em>delayed feedback</em>).
+              </td>
+              <td>
+                <strong>Teste Kolmogorov-Smirnov</strong> bicaudal na distribuição do valor de venda real
+              </td>
+              <td>
+                $p$-valor $< 0.05$
+              </td>
+            </tr>
+            <tr>
+              <td><strong>4. Real Concept Drift</strong></td>
+              <td><span class="badge danger">P(Y|X)</span></td>
+              <td>
+                <strong>Degradação real do modelo:</strong> a relação matemática entre atributos físicos e o preço mudou (ex: um apartamento de 80m² na Zona Sul que valia R$ 500k passa a valer R$ 750k sem alteração das características).
+              </td>
+              <td>
+                Acompanhamento contínuo de <strong>RMSE, MAE e R²</strong> sobre rótulos reais consolidados
+              </td>
+              <td>
+                Aumento de RMSE $> 15\%$ em relação ao baseline de CV
+              </td>
+            </tr>
+            <tr>
+              <td><strong>5. Virtual Drift</strong></td>
+              <td><span class="badge warning">P(X) sem Δ P(Y|X)</span></td>
+              <td>
+                O perfil dos imóveis anunciados mudou temporariamente (ex: surgimento de um condomínio atípico), porém o modelo <strong>continua acertando com precisão</strong> as predições.
+              </td>
+              <td>
+                Inspeção conjunta de Data Drift sem evidência de degradação no erro RMSE
+              </td>
+              <td>
+                Sinal de alerta para monitoramento (não retreinar)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Detalhamento dos Métodos Estatísticos: KS-Test e PSI -->
+      <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 28px;">
+        <!-- Card KS-Test -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--primary);">📊 Teste Kolmogorov-Smirnov (KS-Test)</span>
+          </div>
+          <div class="card-body">
+            <p>
+              Aplicado a todas as variáveis preditoras contínuas (<code>Metragem</code>, <code>Area_Privativa</code>, <code>Valor_Condominio</code>, <code>Valor_Iptu</code>) e às predições (<code>preco_predito</code>).
+            </p>
+            <p style="font-size: 0.9rem;">
+              O teste avalia a hipótese nula $H_0$ de que as amostras de referência $F_{\text{ref}}(x)$ e de produção $F_{\text{prod}}(x)$ foram geradas a partir da mesma distribuição acumulada contínua:
+            </p>
+            <div style="background: rgba(15, 23, 42, 0.7); padding: 12px; border-radius: 6px; text-align: center; margin: 10px 0; font-family: monospace;">
+              D = sup<sub>x</sub> | F<sub>ref</sub>(x) - F<sub>prod</sub>(x) |
+            </div>
+            <ul class="feature-list" style="font-size: 0.88rem;">
+              <li><strong>Estatística D:</strong> Representa a distância vertical máxima entre as funções de distribuição acumulada empíricas (ECDF).</li>
+              <li><strong>Critério de Rejeição:</strong> Se o $p$-valor $< 0.05$, rejeita-se $H_0$ com 95% de confiança estatística, confirmando a presença de drift na variável.</li>
+              <li><strong>Vantagem:</strong> Teste não-paramétrico, independente de suposições de normalidade gaussiana.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Card PSI -->
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--secondary);">🏷️ Population Stability Index (PSI)</span>
+          </div>
+          <div class="card-body">
+            <p>
+              Utilizado para avaliar estabilidade em variáveis qualitativas e categóricas de alta cardinalidade, como <code>Bairro</code> e <code>Zona</code>.
+            </p>
+            <p style="font-size: 0.9rem;">
+              Baseado na divergência de Kullback-Leibler simétrica, quantifica o desvio relativo entre as proporções das classes entre a referência ($P_{\text{ref}}$) e a produção ($P_{\text{prod}}$):
+            </p>
+            <div style="background: rgba(15, 23, 42, 0.7); padding: 12px; border-radius: 6px; text-align: center; margin: 10px 0; font-family: monospace;">
+              PSI = ∑ (P<sub>prod, i</sub> - P<sub>ref, i</sub>) · ln(P<sub>prod, i</sub> / P<sub>ref, i</sub>)
+            </div>
+            <ul class="feature-list" style="font-size: 0.88rem;">
+              <li><strong>PSI < 0.10:</strong> <span style="color: var(--success); font-weight: 600;">Estável</span> — Nenhuma alteração significativa na composição dos bairros.</li>
+              <li><strong>0.10 ≤ PSI ≤ 0.20:</strong> <span style="color: var(--accent-amber); font-weight: 600;">Moderado</span> — Mudança perceptível no perfil de mercado; exige acompanhamento.</li>
+              <li><strong>PSI > 0.20:</strong> <span style="color: var(--accent-rose); font-weight: 600;">Drift Significativo</span> — Desvio substancial nas proporções; aciona investigação operacional.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Padrões Temporais de Drift -->
+      <div class="info-card" style="margin-bottom: 24px;">
+        <div class="card-title">
+          <span>⏱️ Padrões Temporais de Ocorrência de Drift</span>
+        </div>
+        <div class="card-body">
+          <p>
+            O pipeline de observabilidade classifica as anomalias detectadas segundo a sua dinâmica temporal, evitando reações desproporcionais a ruídos transitórios:
+          </p>
+          <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 14px;">
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--accent-rose); font-weight: 700;">Abrupto (Sudden)</div>
+              <div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 6px;">
+                Quebra drástica e instantânea (ex: mudança drástica na taxa básica Selic, alteração drástica nas regras de zoneamento de RP).
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--accent-amber); font-weight: 700;">Gradual (Gradual)</div>
+              <div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 6px;">
+                Transição alternada ao longo de semanas entre o padrão antigo e o novo, com períodos de coexistência.
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--primary); font-weight: 700;">Incremental</div>
+              <div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 6px;">
+                Tendência contínua de subida ou descida (ex: valorização contínua do metro quadrado em função da inflação da construção civil).
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--secondary); font-weight: 700;">Recorrente / Sazonal</div>
+              <div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 6px;">
+                Variações cíclicas regulares (ex: picos de procura e locação/venda em períodos de início de ano letivo universitário em Ribeirão Preto).
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--success); font-weight: 700;">Blip (Anomalia Pontual)</div>
+              <div style="font-size: 0.84rem; color: var(--text-muted); margin-top: 6px;">
+                Pico transitório em um lote específico que se normaliza em seguida. <em>Não requer qualquer intervenção no modelo</em>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Princípio Fundamental: Virtual Drift vs Real Concept Drift -->
+      <div class="info-card" style="margin-bottom: 24px; border-left: 4px solid var(--accent-amber);">
+        <div class="card-title">
+          <span>⚠️ Princípio Vital de Governança: Não Confundir Virtual Drift com Perda de Desempenho</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Um dos erros mais comuns e onerosos em engenharia de machine learning é <strong>disparar retreinamentos automáticos sempre que um teste KS ou PSI aponta drift</strong>. O projeto segue uma diretriz rigorosa:
+          </p>
+          <ul style="margin: 0; padding-left: 20px; line-height: 1.7;">
+            <li><strong>Data Drift é apenas um indicador de investigação:</strong> A alteração em $P(X)$ ou $P(\hat{Y})$ pode ocorrer simplesmente porque a imobiliária lançou novos produtos de tipologia diferente (ex: apartamentos estúdio), sem que o modelo tenha errado as estimativas.</li>
+            <li><strong>Respeito à Disponibilidade Tardia dos Rótulos (Delayed Feedback):</strong> Vendas imobiliárias levam semanas ou meses para serem concluídas no cartório. Portanto, rótulos reais $Y$ não chegam instantaneamente. Não se deve assumir <em>Concept Drift</em> sem evidência supervisionada comprovada (aumento comprovado de RMSE sobre dados fechados).</li>
+            <li><strong>Mitigação de Degradação Catastrófica:</strong> Retreinar um modelo imediatamente com dados escassos de um lote sob Virtual Drift pode introduzir viés e degradar a performance global.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Matriz Prescritiva de Ações da Engenharia de ML -->
+      <div class="info-card">
+        <div class="card-title">
+          <span>📋 Matriz Prescritiva de Decisão Operacional</span>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Classificação do Diagnóstico</th>
+                  <th>Gatilhos Estatísticos Identificados</th>
+                  <th>Impacto no Negócio</th>
+                  <th>Ação Prescritiva Recomendada</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge success">STATUS VERDE</span></td>
+                  <td>$p$-valor KS $\ge 0.05$ em todas as features e $\text{PSI} \le 0.10$.</td>
+                  <td>Nenhum. Sistema operando em regime de alta fidelidade estatística.</td>
+                  <td>Manter monitoramento de rotina; nenhuma intervenção requerida.</td>
+                </tr>
+                <tr>
+                  <td><span class="badge warning">VIRTUAL DRIFT</span></td>
+                  <td>KS $p < 0.05$ ou $\text{PSI} > 0.20$ em features, mas sem aumento de RMSE.</td>
+                  <td>Mudança no perfil dos imóveis anunciados, mas predições permanecem consistentes.</td>
+                  <td>Registrar alerta informativo no Grafana; acompanhar volumes por bairro sem retreinar o modelo.</td>
+                </tr>
+                <tr>
+                  <td><span class="badge primary">LABEL DRIFT</span></td>
+                  <td>KS $p < 0.05$ na distribuição de preços reais $P(Y)$.</td>
+                  <td>Tendência macroeconômica de valorização/desvalorização geral em Ribeirão Preto.</td>
+                  <td>Verificar índices FipeZAP locais e validar se as predições acompanham a tendência.</td>
+                </tr>
+                <tr>
+                  <td><span class="badge danger">REAL CONCEPT DRIFT</span></td>
+                  <td>Aumento de $\text{RMSE} > 15\%$ em relação à baseline de CV (R$ 38.850).</td>
+                  <td><strong>Crítico:</strong> O modelo campeão perdeu poder preditivo na realidade atual de mercado.</td>
+                  <td><strong>Disparar pipeline de retreinamento</strong> com dados recentes e acionar quality gate com @statistician.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
     <footer class="doc-footer">
       <div>Previsão de Preços de Apartamentos — Ribeirão Preto / SP</div>
       <div>Python 3.12+ | PyCaret & Scikit-Learn | MLflow | Grafana | FastAPI</div>
@@ -972,6 +3962,78 @@ params:
   </main>
 
   <script>
+    // =========================================================================
+    // Controle de Zoom & Pan Interativo dos Diagramas
+    // =========================================================================
+    const estadoZoom = {
+      'tab-uml': { zoom: 1.0, panX: 0, panY: 0, isDragging: false, startX: 0, startY: 0 },
+      'tab-atividades': { zoom: 1.0, panX: 0, panY: 0, isDragging: false, startX: 0, startY: 0 },
+      'tab-fluxo': { zoom: 1.0, panX: 0, panY: 0, isDragging: false, startX: 0, startY: 0 }
+    };
+
+    function obterAbaAtivaId() {
+      const paneAtivo = document.querySelector('.diagram-pane.active');
+      return paneAtivo ? paneAtivo.id : 'tab-uml';
+    }
+
+    function atualizarTransformAba(tabId) {
+      const pane = document.getElementById(tabId);
+      if (!pane) return;
+      const estado = estadoZoom[tabId] || { zoom: 1.0, panX: 0, panY: 0 };
+      const img = pane.querySelector('.svg-diagram');
+      const viewport = pane.querySelector('.diagram-viewport');
+
+      if (img) {
+        img.style.transform = `translate(${estado.panX}px, ${estado.panY}px) scale(${estado.zoom})`;
+      }
+
+      if (viewport) {
+        if (estado.zoom > 1.0) {
+          viewport.classList.add('panning');
+        } else {
+          viewport.classList.remove('panning');
+        }
+      }
+
+      // Atualiza o badge se for a aba ativa
+      if (tabId === obterAbaAtivaId()) {
+        const badge = document.getElementById('badge-zoom-nivel');
+        if (badge) {
+          badge.textContent = `${Math.round(estado.zoom * 100)}%`;
+        }
+      }
+    }
+
+    function zoomIn() {
+      const tabId = obterAbaAtivaId();
+      const estado = estadoZoom[tabId];
+      if (!estado) return;
+      estado.zoom = Math.min(3.5, +(estado.zoom + 0.25).toFixed(2));
+      atualizarTransformAba(tabId);
+    }
+
+    function zoomOut() {
+      const tabId = obterAbaAtivaId();
+      const estado = estadoZoom[tabId];
+      if (!estado) return;
+      estado.zoom = Math.max(0.4, +(estado.zoom - 0.25).toFixed(2));
+      if (estado.zoom <= 1.0) {
+        estado.panX = 0;
+        estado.panY = 0;
+      }
+      atualizarTransformAba(tabId);
+    }
+
+    function resetarZoom() {
+      const tabId = obterAbaAtivaId();
+      const estado = estadoZoom[tabId];
+      if (!estado) return;
+      estado.zoom = 1.0;
+      estado.panX = 0;
+      estado.panY = 0;
+      atualizarTransformAba(tabId);
+    }
+
     // Controle de Tabs interativas
     function abrirTab(evt, tabId) {
       const panes = document.querySelectorAll('.diagram-pane');
@@ -985,6 +4047,85 @@ params:
         paneAlvo.classList.add('active');
       }
       evt.currentTarget.classList.add('active');
+
+      // Sincroniza o nível de zoom ao trocar de aba
+      atualizarTransformAba(tabId);
+    }
+
+    // Inicializa listeners nos diagram-viewport após carregamento
+    function inicializarInteracoesDiagramas() {
+      ['tab-uml', 'tab-atividades', 'tab-fluxo'].forEach(tabId => {
+        const pane = document.getElementById(tabId);
+        if (!pane) return;
+        const viewport = pane.querySelector('.diagram-viewport');
+        if (!viewport) return;
+
+        // Roda do mouse para zoom suave
+        viewport.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const estado = estadoZoom[tabId];
+          const delta = e.deltaY < 0 ? 0.15 : -0.15;
+          const novoZoom = Math.max(0.4, Math.min(3.5, +(estado.zoom + delta).toFixed(2)));
+          if (novoZoom !== estado.zoom) {
+            estado.zoom = novoZoom;
+            if (estado.zoom <= 1.0) {
+              estado.panX = 0;
+              estado.panY = 0;
+            }
+            atualizarTransformAba(tabId);
+          }
+        }, { passive: false });
+
+        // Início do arraste
+        viewport.addEventListener('mousedown', (e) => {
+          if (e.button !== 0) return;
+          const estado = estadoZoom[tabId];
+          estado.isDragging = true;
+          estado.startX = e.clientX - estado.panX;
+          estado.startY = e.clientY - estado.panY;
+          viewport.classList.add('is-dragging');
+        });
+
+        // Movimento do arraste
+        window.addEventListener('mousemove', (e) => {
+          const estado = estadoZoom[tabId];
+          if (!estado || !estado.isDragging) return;
+          estado.panX = e.clientX - estado.startX;
+          estado.panY = e.clientY - estado.startY;
+          atualizarTransformAba(tabId);
+        });
+
+        // Fim do arraste
+        const encerrarArraste = () => {
+          const estado = estadoZoom[tabId];
+          if (estado && estado.isDragging) {
+            estado.isDragging = false;
+            viewport.classList.remove('is-dragging');
+          }
+        };
+        window.addEventListener('mouseup', encerrarArraste);
+        viewport.addEventListener('mouseleave', encerrarArraste);
+
+        // Duplo clique para alternar zoom rápido
+        viewport.addEventListener('dblclick', () => {
+          const estado = estadoZoom[tabId];
+          if (!estado) return;
+          if (estado.zoom === 1.0) {
+            estado.zoom = 1.75;
+          } else {
+            estado.zoom = 1.0;
+            estado.panX = 0;
+            estado.panY = 0;
+          }
+          atualizarTransformAba(tabId);
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', inicializarInteracoesDiagramas);
+    } else {
+      inicializarInteracoesDiagramas();
     }
 
     // Copiar código Mermaid original da aba ativa
@@ -1008,6 +4149,49 @@ params:
         });
       } else {
         document.exitFullscreen();
+      }
+    }
+
+    // Filtros e Busca Interativa do Dicionário de Transformações (Pandas & Polars)
+    let categoriaAtivaDicionario = 'todas';
+    let termoBuscaDicionario = '';
+
+    function filtrarCategoria(categoria, botao) {
+      categoriaAtivaDicionario = categoria;
+      const botoes = document.querySelectorAll('#filtro-categoria-container .pill-btn');
+      botoes.forEach(b => b.classList.remove('active'));
+      if (botao) botao.classList.add('active');
+      aplicarFiltrosDicionario();
+    }
+
+    function filtrarPorTexto(termo) {
+      termoBuscaDicionario = termo.toLowerCase().trim();
+      aplicarFiltrosDicionario();
+    }
+
+    function aplicarFiltrosDicionario() {
+      const tabela = document.getElementById('tabela-dicionario');
+      if (!tabela) return;
+      const linhas = tabela.querySelectorAll('tbody tr');
+      let visiveis = 0;
+
+      linhas.forEach(linha => {
+        const categoriaLinha = linha.getAttribute('data-category');
+        const matchCategoria = (categoriaAtivaDicionario === 'todas') || (categoriaLinha === categoriaAtivaDicionario);
+        const textoLinha = linha.textContent.toLowerCase();
+        const matchTexto = termoBuscaDicionario === '' || textoLinha.includes(termoBuscaDicionario);
+
+        if (matchCategoria && matchTexto) {
+          linha.style.display = '';
+          visiveis++;
+        } else {
+          linha.style.display = 'none';
+        }
+      });
+
+      const contador = document.getElementById('contador-exemplos');
+      if (contador) {
+        contador.textContent = `${visiveis} de ${linhas.length} exemplos`;
       }
     }
   </script>

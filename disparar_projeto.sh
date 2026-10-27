@@ -75,6 +75,18 @@ executar_etapa() {
     python app/executar_pipeline.py --etapa "$ETAPA"
 }
 
+treinar_campeao() {
+    verificar_ambiente
+    verificar_docker
+    echo -e "\n${C_CIANO}====================================================================${C_RESET}"
+    echo -e "${C_CIANO}  Treinamento & Promoção Exclusiva do Modelo Campeão (LightGBM)    ${C_RESET}"
+    echo -e "${C_CIANO}====================================================================${C_RESET}"
+    echo -e "${C_AZUL}Iniciando Etapa 6: Ajuste com Pré-processamento, Holdout e Regras...${C_RESET}\n"
+    python app/executar_pipeline.py --etapa 6
+    echo -e "\n${C_VERDE}✓ Modelo campeão treinado, avaliado no holdout e promovido com sucesso!${C_RESET}"
+    echo -e "${C_VERDE}  Artefatos persistidos em: production_artifacts/campeao/${C_RESET}"
+}
+
 iniciar_api() {
     verificar_ambiente
     echo -e "\n${C_VERDE}====================================================================${C_RESET}"

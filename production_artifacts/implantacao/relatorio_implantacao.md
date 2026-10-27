@@ -1,10 +1,10 @@
 # Relatório de Entrega — Etapa 6: Implantação e Regras de Negócio Dinâmicas
 
-**Data de Execução:** 2026-10-26T20:17:00.606063+00:00  
+**Data de Execução:** 2026-10-27T00:17:54.024544+00:00  
 **Responsáveis:** @ml_engineer, @ml_architect, @pm  
 **Status:** CONCLUÍDO COM SUCESSO  
 **Evidências Persistidas:** [storage-data/relatorio_implantacao.json](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/storage-data/relatorio_implantacao.json)  
-**Run de Promoção no MLflow:** `df177a5c37ce4267bfe6f811881be53e`  
+**Run de Promoção no MLflow:** `ff82b7d6289a4b42bb53e04f68b00fba`  
 
 ---
 
@@ -14,9 +14,9 @@ O modelo campeão **LightGBM** (`LGBMRegressor`), validado na Etapa 5 como super
 
 - **Identificador:** `lightgbm`
 - **Versão:** `1.0.0-champion`
-- **Artefato Persistido:** [`/tmp/pytest-of-rodrigo/pytest-50/test_orquestrador_executa_impl0/campeao/modelo_campeao.joblib`](file:////tmp/pytest-of-rodrigo/pytest-50/test_orquestrador_executa_impl0/campeao/modelo_campeao.joblib)
-- **Metadados Oficiais:** [`/tmp/pytest-of-rodrigo/pytest-50/test_orquestrador_executa_impl0/campeao/metadados_campeao.json`](file:////tmp/pytest-of-rodrigo/pytest-50/test_orquestrador_executa_impl0/campeao/metadados_campeao.json)
-- **Rastreabilidade no MLflow:** Run `df177a5c37ce4267bfe6f811881be53e` com tags `modelo.status=Production` e `modelo.alias=champion`.
+- **Artefato Persistido:** [`production_artifacts/campeao/modelo_campeao.joblib`](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/production_artifacts/campeao/modelo_campeao.joblib)
+- **Metadados Oficiais:** [`production_artifacts/campeao/metadados_campeao.json`](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/production_artifacts/campeao/metadados_campeao.json)
+- **Rastreabilidade no MLflow:** Run `ff82b7d6289a4b42bb53e04f68b00fba` com tags `modelo.status=Production` e `modelo.alias=champion`.
 
 ### Métricas de Generalização no Holdout (20% Retido)
 - **RMSE:** **R$ 123,590.32**
