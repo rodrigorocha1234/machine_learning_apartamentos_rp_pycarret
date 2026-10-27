@@ -7,6 +7,7 @@ from sklearn.model_selection import (
     TimeSeriesSplit,
 )
 
+from app.enums_dominio import TecnicaValidacaoCruzada
 from app.esquema_configuracao import ConfiguracaoFolds
 from app.motores_modelagem.fabrica_folds import FabricaFolds
 from app.motores_modelagem.treinador_pycaret import TreinadorPycaret
@@ -17,7 +18,7 @@ def test_fabrica_folds_kfold():
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=True,
-        tecnica="kfold",
+        tecnica=TecnicaValidacaoCruzada.KFOLD,
         parametros={"kfold": {"n_splits": 4, "shuffle": True, "random_state": 123}},
     )
     divisor = fabrica.criar_divisor(config, folds_fallback=3)
@@ -31,7 +32,7 @@ def test_fabrica_folds_repeated_kfold():
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=True,
-        tecnica="repeated_kfold",
+        tecnica=TecnicaValidacaoCruzada.REPEATED_KFOLD,
         parametros={"repeated_kfold": {"n_splits": 5, "n_repeats": 2, "random_state": 99}},
     )
     divisor = fabrica.criar_divisor(config, folds_fallback=3)
@@ -43,7 +44,7 @@ def test_fabrica_folds_shuffle_split():
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=True,
-        tecnica="shuffle_split",
+        tecnica=TecnicaValidacaoCruzada.SHUFFLE_SPLIT,
         parametros={"shuffle_split": {"n_splits": 6, "test_size": 0.25, "random_state": 42}},
     )
     divisor = fabrica.criar_divisor(config, folds_fallback=3)
@@ -56,7 +57,7 @@ def test_fabrica_folds_time_series_split():
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=True,
-        tecnica="time_series_split",
+        tecnica=TecnicaValidacaoCruzada.TIME_SERIES_SPLIT,
         parametros={"time_series_split": {"n_splits": 4, "max_train_size": 100}},
     )
     divisor = fabrica.criar_divisor(config, folds_fallback=3)
@@ -69,7 +70,7 @@ def test_fabrica_folds_inativo_retorna_fallback():
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=False,
-        tecnica="time_series_split",
+        tecnica=TecnicaValidacaoCruzada.TIME_SERIES_SPLIT,
         parametros={"time_series_split": {"n_splits": 10}},
     )
     divisor = fabrica.criar_divisor(config, folds_fallback=5)

@@ -15,6 +15,7 @@ from app.contratos_visualizacao.adaptador_visualizacao import (
     AdaptadorVisualizacao,
     ResultadoAnaliseEda,
 )
+from app.enums_dominio import MotorGraficoTipo
 from app.esquema_configuracao import ConfiguracaoEda
 
 
@@ -66,7 +67,7 @@ def test_adaptador_grafana_renderizacao(
     assert adaptador.obter_nome_motor() == "grafana"
 
     config = ConfiguracaoEda(
-        motor_grafico="grafana",
+        motor_grafico=MotorGraficoTipo.GRAFANA,
         caminho_relatorio_json=str(caminho_json),
     )
 
@@ -89,7 +90,7 @@ def test_adaptador_relatorios_renderizacao(
     assert adaptador.obter_nome_motor() == "relatorios"
 
     config = ConfiguracaoEda(
-        motor_grafico="seaborn",
+        motor_grafico=MotorGraficoTipo.SEABORN,
         caminho_relatorio_html=str(caminho_html),
     )
 
@@ -105,15 +106,15 @@ def test_adaptador_relatorios_renderizacao(
 
 
 def test_fabrica_visualizadores() -> None:
-    config_grafana = ConfiguracaoEda(motor_grafico="grafana")
+    config_grafana = ConfiguracaoEda(motor_grafico=MotorGraficoTipo.GRAFANA)
     vis_grafana = FabricaVisualizadores.criar_visualizador(config_grafana)
     assert isinstance(vis_grafana, AdaptadorGrafana)
 
-    config_seaborn = ConfiguracaoEda(motor_grafico="seaborn")
+    config_seaborn = ConfiguracaoEda(motor_grafico=MotorGraficoTipo.SEABORN)
     vis_seaborn = FabricaVisualizadores.criar_visualizador(config_seaborn)
     assert isinstance(vis_seaborn, AdaptadorRelatorios)
 
-    config_invalido = ConfiguracaoEda(motor_grafico="grafana")
+    config_invalido = ConfiguracaoEda(motor_grafico=MotorGraficoTipo.GRAFANA)
     config_invalido.motor_grafico = "motor_inexistente"  # type: ignore[assignment]
     with pytest.raises(ErroFabricaVisualizadores, match="Motor gráfico não suportado"):
         FabricaVisualizadores.criar_visualizador(config_invalido)

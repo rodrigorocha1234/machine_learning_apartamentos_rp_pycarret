@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from app.contratos_dados.repositorio_dados import RepositorioDados
+from app.enums_dominio import TipoRepositorioStaging
 from app.esquema_configuracao import ConfiguracaoRepositorioStaging
 from app.repositorios_dados.fabrica_repositorios import (
     ErroFabricaRepositorios,
@@ -91,7 +92,7 @@ def test_repositorio_sqlite_uri_prefix(tmp_path: Path) -> None:
 def test_fabrica_repositorios_criacao_sqlite(tmp_path: Path) -> None:
     """Valida criação de RepositorioSqlite a partir da FabricaRepositorios."""
     config = ConfiguracaoRepositorioStaging(
-        tipo="sqlite", caminho=str(tmp_path / "fabrica.db"), tabela="staging"
+        tipo=TipoRepositorioStaging.SQLITE, caminho=str(tmp_path / "fabrica.db"), tabela="staging"
     )
     repo = FabricaRepositorios.criar_repositorio(config)
 

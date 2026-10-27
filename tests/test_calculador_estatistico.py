@@ -6,6 +6,7 @@ from typing import cast
 import pandas as pd
 import pytest
 
+from app.enums_dominio import TipoGrafico
 from app.esquema_configuracao import ItemAnaliseEda
 from app.servicos_eda.calculador_estatistico import (
     CalculadorEstatistico,
@@ -31,7 +32,7 @@ def test_calculador_histograma(dados_teste: pd.DataFrame) -> None:
     calculador = CalculadorEstatistico()
     item = ItemAnaliseEda(
         nome="hist_preco",
-        tipo_grafico="histograma",
+        tipo_grafico=TipoGrafico.HISTOGRAMA,
         coluna="Valor_da_Venda",
         nbins=5,
     )
@@ -51,7 +52,7 @@ def test_calculador_histograma_com_expressao(dados_teste: pd.DataFrame) -> None:
     calculador = CalculadorEstatistico()
     item = ItemAnaliseEda(
         nome="hist_preco_m2",
-        tipo_grafico="histograma",
+        tipo_grafico=TipoGrafico.HISTOGRAMA,
         coluna="Preco_M2",
         expressao="df['Valor_da_Venda'] / df['Metragem']",
         nbins=5,
@@ -68,7 +69,7 @@ def test_calculador_boxplot(dados_teste: pd.DataFrame) -> None:
     calculador = CalculadorEstatistico()
     item = ItemAnaliseEda(
         nome="box_preco_bairro",
-        tipo_grafico="boxplot",
+        tipo_grafico=TipoGrafico.BOXPLOT,
         coluna_x="Bairro",
         coluna_y="Valor_da_Venda",
     )
@@ -83,7 +84,7 @@ def test_calculador_dispersao(dados_teste: pd.DataFrame) -> None:
     calculador = CalculadorEstatistico()
     item = ItemAnaliseEda(
         nome="disp_metragem_preco",
-        tipo_grafico="dispersao",
+        tipo_grafico=TipoGrafico.DISPERSAO,
         coluna_x="Metragem",
         coluna_y="Valor_da_Venda",
         cor="Quartos",
@@ -100,7 +101,7 @@ def test_calculador_correlacao(dados_teste: pd.DataFrame) -> None:
     calculador = CalculadorEstatistico()
     item = ItemAnaliseEda(
         nome="corr_matriz",
-        tipo_grafico="correlacao",
+        tipo_grafico=TipoGrafico.CORRELACAO,
     )
     resultado = calculador.calcular_analise(dados_teste, item)
 
@@ -113,7 +114,7 @@ def test_calculador_tabela_resumo(dados_teste: pd.DataFrame) -> None:
     calculador = CalculadorEstatistico()
     item = ItemAnaliseEda(
         nome="tab_bairro",
-        tipo_grafico="tabela",
+        tipo_grafico=TipoGrafico.TABELA,
         agrupar_por="Bairro",
         coluna="Valor_da_Venda",
         ordenar_por="contagem",
@@ -130,7 +131,7 @@ def test_calculador_coluna_inexistente(dados_teste: pd.DataFrame) -> None:
     calculador = CalculadorEstatistico()
     item = ItemAnaliseEda(
         nome="coluna_fantasma",
-        tipo_grafico="histograma",
+        tipo_grafico=TipoGrafico.HISTOGRAMA,
         coluna="Coluna_Inexistente",
     )
     with pytest.raises(ErroCalculoEstatistico, match="Coluna 'Coluna_Inexistente' não encontrada"):
@@ -141,7 +142,7 @@ def test_calculador_dataframe_vazio() -> None:
     calculador = CalculadorEstatistico()
     item = ItemAnaliseEda(
         nome="hist_vazio",
-        tipo_grafico="histograma",
+        tipo_grafico=TipoGrafico.HISTOGRAMA,
         coluna="Valor_da_Venda",
     )
     with pytest.raises(ErroCalculoEstatistico, match="DataFrame vazio"):

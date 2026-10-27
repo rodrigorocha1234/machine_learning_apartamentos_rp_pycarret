@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import override
 
 from app.conf_yaml import ConfYAML
+from app.enums_dominio import EtapaPipeline
 from app.repositorios_dados.fabrica_repositorios import FabricaRepositorios
 from app.servicos_avaliacao.orquestrador_avaliacao import OrquestradorAvaliacao, ResultadoEtapaAvaliacao
 from app.servicos_coleta.coletor_dados import ColetorDados, ResultadoColeta
@@ -24,7 +25,7 @@ class ContextoPipeline:
     """Contexto compartilhado e transitado entre os elos da Cadeia de Responsabilidade."""
 
     conf: ConfYAML
-    etapa_alvo: str = "todas"
+    etapa_alvo: EtapaPipeline | str = EtapaPipeline.TODAS
     etapas_executadas: list[str] = field(default_factory=lambda: list[str]())
     tempos_etapas: dict[str, float] = field(default_factory=lambda: dict[str, float]())
     resultado_coleta: ResultadoColeta | None = None
@@ -49,7 +50,7 @@ class EloCadeiaPipeline(ABC):
 
     @property
     @abstractmethod
-    def numero_etapa(self) -> str:
+    def numero_etapa(self) -> EtapaPipeline | str:
         """Identificador numérico da etapa (1 a 7)."""
         ...
 
@@ -61,18 +62,20 @@ class EloCadeiaPipeline(ABC):
 
     def processar(self, contexto: ContextoPipeline) -> ContextoPipeline:
         """Executa a etapa caso corresponda ao alvo ou à execução global e propaga na cadeia."""
-        deve_executar = contexto.etapa_alvo in ("todas", self.numero_etapa)
+        identificador_etapa = str(self.numero_etapa)
+        alvo = str(contexto.etapa_alvo)
+        deve_executar = alvo in (EtapaPipeline.TODAS, "todas", identificador_etapa)
 
         if deve_executar:
             self._imprimir_cabecalho()
             inicio = time.perf_counter()
             self._executar_etapa(contexto)
             duracao = time.perf_counter() - inicio
-            contexto.tempos_etapas[self.numero_etapa] = duracao
-            contexto.etapas_executadas.append(self.numero_etapa)
+            contexto.tempos_etapas[identificador_etapa] = duracao
+            contexto.etapas_executadas.append(identificador_etapa)
 
         # Se foi solicitada apenas uma etapa específica e ela já foi concluída, encerra a cadeia
-        if contexto.etapa_alvo == self.numero_etapa:
+        if alvo == identificador_etapa:
             return contexto
 
         # Propaga a execução para o próximo elo da cadeia
@@ -98,8 +101,8 @@ class EloColetaDados(EloCadeiaPipeline):
 
     @property
     @override
-    def numero_etapa(self) -> str:
-        return "1"
+    def numero_etapa(self) -> EtapaPipeline:
+        return EtapaPipeline.COLETA
 
     @property
     @override
@@ -122,8 +125,8 @@ class EloPreparacaoDados(EloCadeiaPipeline):
 
     @property
     @override
-    def numero_etapa(self) -> str:
-        return "2"
+    def numero_etapa(self) -> EtapaPipeline:
+        return EtapaPipeline.PREPARACAO
 
     @property
     @override
@@ -149,8 +152,8 @@ class EloAnaliseEda(EloCadeiaPipeline):
 
     @property
     @override
-    def numero_etapa(self) -> str:
-        return "3"
+    def numero_etapa(self) -> EtapaPipeline:
+        return EtapaPipeline.EDA
 
     @property
     @override
@@ -174,8 +177,8 @@ class EloModelagemRegressao(EloCadeiaPipeline):
 
     @property
     @override
-    def numero_etapa(self) -> str:
-        return "4"
+    def numero_etapa(self) -> EtapaPipeline:
+        return EtapaPipeline.MODELAGEM
 
     @property
     @override
@@ -199,8 +202,8 @@ class EloAvaliacaoSelecao(EloCadeiaPipeline):
 
     @property
     @override
-    def numero_etapa(self) -> str:
-        return "5"
+    def numero_etapa(self) -> EtapaPipeline:
+        return EtapaPipeline.AVALIACAO
 
     @property
     @override
@@ -224,8 +227,8 @@ class EloImplantacaoRegras(EloCadeiaPipeline):
 
     @property
     @override
-    def numero_etapa(self) -> str:
-        return "6"
+    def numero_etapa(self) -> EtapaPipeline:
+        return EtapaPipeline.IMPLANTACAO
 
     @property
     @override
@@ -249,8 +252,8 @@ class EloObservabilidadeDrift(EloCadeiaPipeline):
 
     @property
     @override
-    def numero_etapa(self) -> str:
-        return "7"
+    def numero_etapa(self) -> EtapaPipeline:
+        return EtapaPipeline.DRIFT
 
     @property
     @override
@@ -297,10 +300,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Disparador do Pipeline de Previsão de Imóveis (Padrão GoF Cadeia de Responsabilidade)"
     )
+    opcoes_etapa = [
+        EtapaPipeline.COLETA.value,
+        EtapaPipeline.PREPARACAO.value,
+        EtapaPipeline.EDA.value,
+        EtapaPipeline.MODELAGEM.value,
+        EtapaPipeline.AVALIACAO.value,
+        EtapaPipeline.IMPLANTACAO.value,
+        EtapaPipeline.DRIFT.value,
+        EtapaPipeline.TODAS.value,
+    ]
     parser.add_argument(
         "--etapa",
-        choices=["1", "2", "3", "4", "5", "6", "7", "todas"],
-        default="todas",
+        choices=opcoes_etapa,
+        default=EtapaPipeline.TODAS.value,
         help="Etapa individual a executar ou 'todas' para pipeline completo",
     )
     args = parser.parse_args()
@@ -309,7 +322,7 @@ def main() -> None:
     conf = ConfYAML()
     contexto = ContextoPipeline(conf=conf, etapa_alvo=args.etapa)
 
-    if args.etapa == "todas":
+    if args.etapa == EtapaPipeline.TODAS.value:
         print("\n🚀 INICIANDO EXECUÇÃO COMPLETA DO PIPELINE (CADEIA DE RESPONSABILIDADE: ETAPAS 1 A 7)...")
     else:
         print(f"\n🎯 DISPARANDO CADEIA DE RESPONSABILIDADE PARA A ETAPA {args.etapa}...")

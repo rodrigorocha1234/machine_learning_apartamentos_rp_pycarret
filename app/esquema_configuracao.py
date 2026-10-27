@@ -6,8 +6,29 @@ sem nenhuma utilização de Any.
 
 from __future__ import annotations
 
-from typing import Literal
 from pydantic import BaseModel, Field
+
+from app.enums_dominio import (
+    CriterioDesempate,
+    EstrategiaImputacao,
+    MetaModeloStacking,
+    MetodoTransformacaoEscala,
+    MetodoTuning,
+    MetricaAvaliacao,
+    MotorGraficoTipo,
+    MotorTabularTipo,
+    MotorTreinoTipo,
+    PapelVariavel,
+    PosTesteTipo,
+    TecnicaValidacaoCruzada,
+    TecnicaVotacao,
+    TesteEstatisticoTipo,
+    TipoDrift,
+    TipoEstatisticoVariavel,
+    TipoFonteDados,
+    TipoGrafico,
+    TipoRepositorioStaging,
+)
 
 
 class ConfiguracaoProjeto(BaseModel):
@@ -21,8 +42,8 @@ class ConfiguracaoProjeto(BaseModel):
 class ConfiguracaoFonte(BaseModel):
     """Configurações da fonte primária de ingestão de dados."""
 
-    tipo: Literal["xlsx", "csv", "sql", "api"] = Field(
-        default="xlsx", description="Formato da fonte primária de dados"
+    tipo: TipoFonteDados = Field(
+        default=TipoFonteDados.XLSX, description="Formato da fonte primária de dados"
     )
     caminho: str = Field(min_length=1, description="Caminho do arquivo ou recurso de dados")
     aba: int | str = Field(default=0, description="Índice numérico ou nome da aba da planilha")
@@ -31,8 +52,8 @@ class ConfiguracaoFonte(BaseModel):
 class ConfiguracaoRepositorioStaging(BaseModel):
     """Configurações do banco intermediário de persistência (staging)."""
 
-    tipo: Literal["sqlite", "postgres", "mysql"] = Field(
-        default="sqlite", description="Tipo de tecnologia do banco de staging"
+    tipo: TipoRepositorioStaging = Field(
+        default=TipoRepositorioStaging.SQLITE, description="Tipo de tecnologia do banco de staging"
     )
     caminho: str = Field(min_length=1, description="Caminho ou DSN de conexão do staging")
     tabela: str = Field(
@@ -62,15 +83,8 @@ class ColunaSelecao(BaseModel):
 
     nome: str = Field(min_length=1, description="Nome da coluna no conjunto de dados")
     ativo: bool = Field(default=True, description="Indica se a coluna está ativa para uso")
-    tipo: Literal[
-        "quantitativa_continua",
-        "quantitativa_discreta",
-        "qualitativa_nominal",
-        "qualitativa_ordinal",
-    ] = Field(description="Tipo estatístico da variável")
-    papel: Literal["alvo", "numerica", "categorica", "identificador", "ignorar"] = Field(
-        description="Papel da coluna na modelagem"
-    )
+    tipo: TipoEstatisticoVariavel = Field(description="Tipo estatístico da variável")
+    papel: PapelVariavel = Field(description="Papel da coluna na modelagem")
 
 
 class ConfiguracaoSelecao(BaseModel):
@@ -144,8 +158,8 @@ class ConfiguracaoAtributosNovos(BaseModel):
 class ConfiguracaoTabular(BaseModel):
     """Configurações do motor de processamento tabular."""
 
-    motor: Literal["pandas", "polars"] = Field(
-        default="pandas", description="Motor tabular utilizado na preparação de dados"
+    motor: MotorTabularTipo = Field(
+        default=MotorTabularTipo.PANDAS, description="Motor tabular utilizado na preparação de dados"
     )
 
 
@@ -159,9 +173,7 @@ class ItemAnaliseEda(BaseModel):
         default=None,
         description="Expressão Python restrita via AST para geração de atributo ou cálculo",
     )
-    tipo_grafico: Literal[
-        "histograma", "boxplot", "dispersao", "correlacao", "barras", "tabela"
-    ] = Field(description="Tipo de representação visual")
+    tipo_grafico: TipoGrafico = Field(description="Tipo de representação visual")
     coluna: str | None = Field(default=None, description="Coluna principal para gráficos univariados")
     coluna_x: str | None = Field(default=None, description="Variável para o eixo X")
     coluna_y: str | None = Field(default=None, description="Variável para o eixo Y")
@@ -183,8 +195,8 @@ class ItemAnaliseEda(BaseModel):
 class ConfiguracaoEda(BaseModel):
     """Configurações de visualização e Análise Exploratória de Dados."""
 
-    motor_grafico: Literal["grafana", "seaborn", "plotly", "altair"] = Field(
-        default="grafana", description="Motor de renderização gráfica"
+    motor_grafico: MotorGraficoTipo = Field(
+        default=MotorGraficoTipo.GRAFANA, description="Motor de renderização gráfica"
     )
     caminho_relatorio_html: str = Field(
         default="storage-data/relatorio_eda.html", description="Caminho do relatório HTML"
@@ -201,7 +213,7 @@ class ConfiguracaoImputacaoAtributo(BaseModel):
     """Estratégia de imputação customizada para um atributo específico."""
 
     ativo: bool = Field(default=True, description="Flag de ativação da imputação customizada")
-    estrategia: Literal["mediana", "media", "mais_frequente", "constante"] = Field(
+    estrategia: EstrategiaImputacao = Field(
         description="Estratégia aplicada à coluna"
     )
 
@@ -210,11 +222,11 @@ class ConfiguracaoImputacao(BaseModel):
     """Configurações de tratamento de valores ausentes (imputação)."""
 
     ativo: bool = Field(default=True, description="Flag de ativação da imputação")
-    estrategia_numerica: Literal["mediana", "media", "mais_frequente", "constante"] = Field(
-        default="mediana", description="Estratégia padrão para atributos numéricos"
+    estrategia_numerica: EstrategiaImputacao = Field(
+        default=EstrategiaImputacao.MEDIANA, description="Estratégia padrão para atributos numéricos"
     )
-    estrategia_categorica: Literal["mais_frequente", "constante"] = Field(
-        default="mais_frequente", description="Estratégia padrão para atributos categóricos"
+    estrategia_categorica: EstrategiaImputacao = Field(
+        default=EstrategiaImputacao.MAIS_FREQUENTE, description="Estratégia padrão para atributos categóricos"
     )
     valor_constante_numerico: float = Field(
         default=0.0, description="Valor sentinela numérico caso estratégia seja constante"
@@ -234,8 +246,8 @@ class ConfiguracaoPreprocessamentoAtributos(BaseModel):
     """Configurações de transformação matemática de atributos."""
 
     ativo: bool = Field(default=True, description="Flag de ativação da transformação de features")
-    metodo: Literal["log1p", "log", "yeo-johnson"] = Field(
-        default="log1p", description="Método matemático de transformação"
+    metodo: MetodoTransformacaoEscala = Field(
+        default=MetodoTransformacaoEscala.LOG1P, description="Método matemático de transformação"
     )
     colunas: list[str] = Field(
         default_factory=list, description="Lista de atributos a transformar"
@@ -248,8 +260,8 @@ class ConfiguracaoPreprocessamento(BaseModel):
     transformar_alvo: bool = Field(
         default=True, description="Aplica transformação monotônica no alvo com reversão automática"
     )
-    metodo_transformacao_alvo: Literal["log1p", "log", "yeo-johnson", "box-cox"] = Field(
-        default="log1p", description="Método matemático aplicado à variável alvo"
+    metodo_transformacao_alvo: MetodoTransformacaoEscala = Field(
+        default=MetodoTransformacaoEscala.LOG1P, description="Método matemático aplicado à variável alvo"
     )
     transformar_atributos: ConfiguracaoPreprocessamentoAtributos = Field(
         default_factory=ConfiguracaoPreprocessamentoAtributos,
@@ -267,7 +279,7 @@ class ItemModelo(BaseModel):
 
 
 type ValorParametro = int | float | str | bool | list[int]
-type TecnicaFolds = Literal["kfold", "repeated_kfold", "shuffle_split", "time_series_split"]
+type TecnicaFolds = TecnicaValidacaoCruzada
 type ValorParametroFolds = int | float | bool | str | None
 
 
@@ -275,8 +287,8 @@ class ConfiguracaoFolds(BaseModel):
     """Configurações da técnica e parâmetros de particionamento em folds."""
 
     ativo: bool = Field(default=True, description="Flag de ativação da técnica de folds configurada")
-    tecnica: TecnicaFolds = Field(
-        default="kfold", description="Técnica de particionamento em folds selecionada"
+    tecnica: TecnicaValidacaoCruzada = Field(
+        default=TecnicaValidacaoCruzada.KFOLD, description="Técnica de particionamento em folds selecionada"
     )
     parametros: dict[str, dict[str, ValorParametroFolds]] = Field(
         default_factory=lambda: {
@@ -293,11 +305,11 @@ class ConfiguracaoTuning(BaseModel):
     """Configurações de otimização de hiperparâmetros (tuning)."""
 
     ativo: bool = Field(default=True, description="Flag geral para execução de tuning")
-    metodo: Literal["random", "grid", "bayesian", "optuna"] = Field(
-        default="random", description="Algoritmo de busca de hiperparâmetros"
+    metodo: MetodoTuning = Field(
+        default=MetodoTuning.RANDOM, description="Algoritmo de busca de hiperparâmetros"
     )
-    otimizar_metrica: Literal["RMSE", "MAE", "R2", "RMSLE"] = Field(
-        default="RMSE", description="Métrica estatística orientadora da otimização"
+    otimizar_metrica: MetricaAvaliacao = Field(
+        default=MetricaAvaliacao.RMSE, description="Métrica estatística orientadora da otimização"
     )
     iteracoes: int = Field(
         default=10, ge=1, description="Número de iterações ou amostragens da busca"
@@ -334,8 +346,8 @@ class ConfiguracaoMlflow(BaseModel):
 class ConfiguracaoModelagem(BaseModel):
     """Configurações completas da etapa de modelagem de machine learning."""
 
-    motor_treino: Literal["pycaret", "sklearn"] = Field(
-        default="pycaret", description="Framework de machine learning ativo"
+    motor_treino: MotorTreinoTipo = Field(
+        default=MotorTreinoTipo.PYCARET, description="Framework de machine learning ativo"
     )
     imputacao: ConfiguracaoImputacao = Field(default_factory=ConfiguracaoImputacao)
     preprocessamento: ConfiguracaoPreprocessamento = Field(
@@ -352,8 +364,8 @@ class ConfiguracaoModelagem(BaseModel):
 class CvExterna(BaseModel):
     """Configuração da validação cruzada externa de benchmark."""
 
-    metodo: Literal["repeated_kfold", "kfold"] = Field(
-        default="repeated_kfold", description="Método da validação cruzada externa"
+    metodo: TecnicaValidacaoCruzada = Field(
+        default=TecnicaValidacaoCruzada.REPEATED_KFOLD, description="Método da validação cruzada externa"
     )
     splits: int = Field(default=5, ge=2, description="Número de folds")
     repeticoes: int = Field(default=3, ge=1, description="Número de repetições no RepeatedKFold")
@@ -362,8 +374,8 @@ class CvExterna(BaseModel):
 class CvInterna(BaseModel):
     """Configuração da validação cruzada interna de tuning."""
 
-    metodo: Literal["kfold"] = Field(
-        default="kfold", description="Método da validação cruzada interna"
+    metodo: TecnicaValidacaoCruzada = Field(
+        default=TecnicaValidacaoCruzada.KFOLD, description="Método da validação cruzada interna"
     )
     splits: int = Field(default=3, ge=2, description="Número de folds internos")
     embaralhar: bool = Field(default=True, description="Embaralha registros antes dos folds")
@@ -377,21 +389,23 @@ class ConfiguracaoValidacao(BaseModel):
     )
     cv_externa: CvExterna = Field(default_factory=CvExterna)
     cv_interna: CvInterna = Field(default_factory=CvInterna)
-    metrica: Literal["RMSE", "MAE", "R2"] = Field(
-        default="RMSE", description="Métrica de otimização e ranqueamento"
+    metrica: MetricaAvaliacao = Field(
+        default=MetricaAvaliacao.RMSE, description="Métrica de otimização e ranqueamento"
     )
 
 
 class ConfiguracaoEstatistica(BaseModel):
     """Configuração dos testes estatísticos de hipóteses pareadas."""
 
-    teste: Literal["friedman"] = Field(default="friedman", description="Teste não-paramétrico global")
-    pos_teste: Literal["nemenyi"] = Field(
-        default="nemenyi", description="Pós-teste de comparações pareadas"
+    teste: TesteEstatisticoTipo = Field(
+        default=TesteEstatisticoTipo.FRIEDMAN, description="Teste não-paramétrico global"
+    )
+    pos_teste: PosTesteTipo = Field(
+        default=PosTesteTipo.NEMENYI, description="Pós-teste de comparações pareadas"
     )
     alpha: float = Field(default=0.05, gt=0.0, lt=1.0, description="Nível de significância estatística")
-    desempate: Literal["menor_rmse", "menor_mae", "maior_r2"] = Field(
-        default="menor_rmse", description="Critério determinístico de desempate"
+    desempate: CriterioDesempate = Field(
+        default=CriterioDesempate.MENOR_RMSE, description="Critério determinístico de desempate"
     )
 
 
@@ -399,12 +413,12 @@ class ConfiguracaoVotacao(BaseModel):
     """Configuração do ensemble e técnicas de votação de regressores."""
 
     ativo: bool = Field(default=False, description="Flag de ativação da técnica de ensemble")
-    tecnica: Literal["media_simples", "voting_regressor", "media_ponderada_rmse", "stacking"] = (
-        Field(default="media_simples", description="Estratégia de combinação dos modelos")
+    tecnica: TecnicaVotacao = Field(
+        default=TecnicaVotacao.MEDIA_SIMPLES, description="Estratégia de combinação dos modelos"
     )
     melhores_n: int = Field(default=3, ge=2, description="Quantidade de modelos ranqueados a combinar")
-    meta_modelo: Literal["ridge", "linear"] = Field(
-        default="ridge", description="Meta-estimador para empilhamento (stacking)"
+    meta_modelo: MetaModeloStacking = Field(
+        default=MetaModeloStacking.RIDGE, description="Meta-estimador para empilhamento (stacking)"
     )
 
 
@@ -474,12 +488,12 @@ class ConfiguracaoDrift(BaseModel):
     """Configurações de monitoramento de data drift e degradação estatística."""
 
     ativo: bool = Field(default=True, description="Flag de ativação do monitoramento de drift")
-    tipos_monitorados: list[str] = Field(
+    tipos_monitorados: list[TipoDrift] = Field(
         default_factory=lambda: [
-            "covariate_drift",
-            "concept_drift",
-            "label_drift",
-            "prediction_drift",
+            TipoDrift.COVARIATE_DRIFT,
+            TipoDrift.CONCEPT_DRIFT,
+            TipoDrift.LABEL_DRIFT,
+            TipoDrift.PREDICTION_DRIFT,
         ],
         description="Tipos de drift monitorados",
     )

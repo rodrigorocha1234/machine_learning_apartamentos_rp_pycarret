@@ -9,6 +9,7 @@ import pytest
 from app.adaptadores_visualizacao.adaptador_grafana import AdaptadorGrafana
 from app.adaptadores_visualizacao.adaptador_relatorios import AdaptadorRelatorios
 from app.conf_yaml import ConfYAML
+from app.enums_dominio import MotorGraficoTipo, TipoGrafico
 from app.esquema_configuracao import ConfiguracaoEda, ItemAnaliseEda
 from app.servicos_eda.analisador_eda import AnalisadorEda
 from app.servicos_eda.calculador_estatistico import CalculadorEstatistico
@@ -39,18 +40,18 @@ def test_analisador_eda_fluxo_completo_grafana(
     caminho_json = tmp_path / "relatorio_eda.json"
 
     config_eda = ConfiguracaoEda(
-        motor_grafico="grafana",
+        motor_grafico=MotorGraficoTipo.GRAFANA,
         caminho_relatorio_json=str(caminho_json),
         analises=[
             ItemAnaliseEda(
                 nome="dist_preco",
-                tipo_grafico="histograma",
+                tipo_grafico=TipoGrafico.HISTOGRAMA,
                 coluna="Valor_da_Venda",
                 nbins=5,
             ),
             ItemAnaliseEda(
                 nome="disp_bairro",
-                tipo_grafico="boxplot",
+                tipo_grafico=TipoGrafico.BOXPLOT,
                 coluna_x="Bairro",
                 coluna_y="Valor_da_Venda",
             ),
@@ -80,12 +81,12 @@ def test_analisador_eda_fluxo_completo_relatorios_html(
     caminho_html = tmp_path / "relatorio_eda.html"
 
     config_eda = ConfiguracaoEda(
-        motor_grafico="seaborn",
+        motor_grafico=MotorGraficoTipo.SEABORN,
         caminho_relatorio_html=str(caminho_html),
         analises=[
             ItemAnaliseEda(
                 nome="preco_m2_expr",
-                tipo_grafico="histograma",
+                tipo_grafico=TipoGrafico.HISTOGRAMA,
                 coluna="Preco_M2",
                 expressao="df['Valor_da_Venda'] / df['Metragem']",
                 nbins=5,

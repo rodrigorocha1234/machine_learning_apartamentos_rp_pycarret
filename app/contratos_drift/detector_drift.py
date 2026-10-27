@@ -6,6 +6,8 @@ from typing import Protocol, runtime_checkable
 import pandas as pd
 from pydantic import BaseModel, Field
 
+from app.enums_dominio import ClassificacaoDrift, MetodoEstatisticoDrift
+
 
 class MetricasQualidadeDados(BaseModel):
     """Métricas de qualidade, integridade e conformidade de esquema dos dados."""
@@ -28,7 +30,9 @@ class ResultadoDriftVariavel(BaseModel):
 
     nome_variavel: str = Field(description="Nome da coluna avaliada")
     tipo_variavel: str = Field(description="Papel da variável (numerica, categorica, alvo, predicao)")
-    metodo_estatistico: str = Field(description="Teste aplicado (kolmogorov_smirnov, psi, wasserstein)")
+    metodo_estatistico: MetodoEstatisticoDrift | str = Field(
+        description="Teste aplicado (kolmogorov_smirnov, psi, wasserstein)"
+    )
     estatistica_teste: float = Field(description="Valor numérico da estatística calculada")
     p_valor: float | None = Field(default=None, description="P-valor do teste (quando aplicável)")
     limiar_alerta: float = Field(description="Limiar configurado no YAML para acionamento de alerta")
@@ -56,7 +60,7 @@ class ResultadoRelatorioDrift(BaseModel):
     concept_drift_detectado: bool | None = Field(
         default=None, description="Degradação na relação funcional P(Y|X) se rótulos estiverem disponíveis"
     )
-    classificacao_drift: str = Field(
+    classificacao_drift: ClassificacaoDrift | str = Field(
         description="Diagnóstico taxonômico (sem_drift, virtual_drift, real_concept_drift, sudden_drift, gradual_drift)"
     )
     degradacao_rmse_percentual: float | None = Field(

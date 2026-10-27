@@ -14,6 +14,7 @@ from app.contratos_drift.detector_drift import (
     ResultadoRelatorioDrift,
 )
 from app.detectores_drift.avaliador_qualidade import AvaliadorQualidade
+from app.enums_dominio import ClassificacaoDrift, MetodoEstatisticoDrift
 from app.esquema_configuracao import ConfiguracaoDrift
 
 
@@ -81,7 +82,7 @@ class CalculadorDrift(DetectorDrift):
                     ResultadoDriftVariavel(
                         nome_variavel=col,
                         tipo_variavel="numerica",
-                        metodo_estatistico="kolmogorov_smirnov",
+                        metodo_estatistico=MetodoEstatisticoDrift.KOLMOGOROV_SMIRNOV,
                         estatistica_teste=round(stat_ks, 4),
                         p_valor=round(p_val, 6),
                         limiar_alerta=limiar_pvalor,
@@ -114,7 +115,7 @@ class CalculadorDrift(DetectorDrift):
                     ResultadoDriftVariavel(
                         nome_variavel=col,
                         tipo_variavel="categorica",
-                        metodo_estatistico="psi",
+                        metodo_estatistico=MetodoEstatisticoDrift.PSI,
                         estatistica_teste=round(psi_valor, 4),
                         p_valor=None,
                         limiar_alerta=0.20,
@@ -139,7 +140,7 @@ class CalculadorDrift(DetectorDrift):
                     ResultadoDriftVariavel(
                         nome_variavel="preco_predito",
                         tipo_variavel="predicao",
-                        metodo_estatistico="kolmogorov_smirnov",
+                        metodo_estatistico=MetodoEstatisticoDrift.KOLMOGOROV_SMIRNOV,
                         estatistica_teste=round(stat_pred, 4),
                         p_valor=round(p_pred, 6),
                         limiar_alerta=limiar_ks_pred,
@@ -168,7 +169,7 @@ class CalculadorDrift(DetectorDrift):
                     ResultadoDriftVariavel(
                         nome_variavel="Valor_da_Venda",
                         tipo_variavel="alvo",
-                        metodo_estatistico="kolmogorov_smirnov",
+                        metodo_estatistico=MetodoEstatisticoDrift.KOLMOGOROV_SMIRNOV,
                         estatistica_teste=round(stat_y, 4),
                         p_valor=round(p_y, 6),
                         limiar_alerta=limiar_pvalor,
@@ -258,39 +259,39 @@ class CalculadorDrift(DetectorDrift):
         prediction_drift: bool,
         target_drift: bool | None,
         concept_drift: bool | None,
-    ) -> str:
+    ) -> ClassificacaoDrift:
         """Classifica rigorosamente o tipo de desvio sem assumir degradação apressada."""
         if concept_drift is True:
-            return "real_concept_drift"
+            return ClassificacaoDrift.REAL_CONCEPT_DRIFT
 
         if covariate_drift or prediction_drift:
-            return "virtual_drift"
+            return ClassificacaoDrift.VIRTUAL_DRIFT
 
         if target_drift is True:
-            return "label_drift"
+            return ClassificacaoDrift.LABEL_DRIFT
 
-        return "sem_drift"
+        return ClassificacaoDrift.SEM_DRIFT
 
     def _gerar_recomendacao(
         self,
-        classificacao: str,
+        classificacao: ClassificacaoDrift | str,
         variaveis_com_drift: list[str],
         degradacao_pct: float | None,
     ) -> str:
         """Produz a orientação operacional prescritiva de engenharia."""
-        if classificacao == "real_concept_drift":
+        if classificacao in (ClassificacaoDrift.REAL_CONCEPT_DRIFT, ClassificacaoDrift.REAL_CONCEPT_DRIFT.value):
             pct_txt = f"{degradacao_pct * 100.0:.1f}%" if degradacao_pct is not None else "> 15%"
             return (
                 f"ALERTA CRÍTICO: Concept Drift Real detectado com degradação de erro RMSE de {pct_txt}. "
                 "Recomenda-se acionar pipeline de retreinamento do modelo com dados recentes e reavaliação de hipóteses."
             )
-        if classificacao == "virtual_drift":
+        if classificacao in (ClassificacaoDrift.VIRTUAL_DRIFT, ClassificacaoDrift.VIRTUAL_DRIFT.value):
             vars_txt = ", ".join(variaveis_com_drift[:3])
             return (
                 f"AVISO: Virtual Drift detectado em features ({vars_txt}) ou predições, porém sem degradação "
                 "de performance comprovada. Monitorar de perto a evolução temporal sem necessidade imediata de retreino."
             )
-        if classificacao == "label_drift":
+        if classificacao in (ClassificacaoDrift.LABEL_DRIFT, ClassificacaoDrift.LABEL_DRIFT.value):
             return (
                 "AVISO: Label Drift detectado na distribuição dos preços reais. "
                 "Verificar mudanças macroeconômicas ou sazonalidade imobiliária em Ribeirão Preto."

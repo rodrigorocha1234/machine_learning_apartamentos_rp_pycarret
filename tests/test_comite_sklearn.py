@@ -8,6 +8,7 @@ from sklearn.linear_model import Ridge
 
 from app.comites_votacao.comite_sklearn import ComiteSklearn
 from app.contratos_avaliacao.construtor_comite import ResultadoComite
+from app.enums_dominio import MetaModeloStacking, TecnicaVotacao
 from app.esquema_configuracao import ConfiguracaoVotacao
 
 
@@ -42,7 +43,9 @@ def test_comite_desativado(dados_ensemble: tuple[pd.DataFrame, pd.DataFrame]) ->
 def test_comite_media_simples(dados_ensemble: tuple[pd.DataFrame, pd.DataFrame]) -> None:
     df_tr, df_hd = dados_ensemble
     comite = ComiteSklearn()
-    cfg_votacao = ConfiguracaoVotacao(ativo=True, tecnica="media_simples", melhores_n=2)
+    cfg_votacao = ConfiguracaoVotacao(
+        ativo=True, tecnica=TecnicaVotacao.MEDIA_SIMPLES, melhores_n=2
+    )
 
     mod_1 = Ridge().fit(df_tr[["Area"]], df_tr["Alvo"])
     mod_2 = Ridge(alpha=10.0).fit(df_tr[["Area"]], df_tr["Alvo"])
@@ -60,7 +63,9 @@ def test_comite_media_simples(dados_ensemble: tuple[pd.DataFrame, pd.DataFrame])
 def test_comite_media_ponderada(dados_ensemble: tuple[pd.DataFrame, pd.DataFrame]) -> None:
     df_tr, df_hd = dados_ensemble
     comite = ComiteSklearn()
-    cfg_votacao = ConfiguracaoVotacao(ativo=True, tecnica="media_ponderada_rmse", melhores_n=2)
+    cfg_votacao = ConfiguracaoVotacao(
+        ativo=True, tecnica=TecnicaVotacao.MEDIA_PONDERADA_RMSE, melhores_n=2
+    )
 
     mod_1 = Ridge().fit(df_tr[["Area"]], df_tr["Alvo"])
     mod_2 = Ridge(alpha=5.0).fit(df_tr[["Area"]], df_tr["Alvo"])
@@ -76,7 +81,9 @@ def test_comite_media_ponderada(dados_ensemble: tuple[pd.DataFrame, pd.DataFrame
 def test_comite_voting_regressor(dados_ensemble: tuple[pd.DataFrame, pd.DataFrame]) -> None:
     df_tr, df_hd = dados_ensemble
     comite = ComiteSklearn()
-    cfg_votacao = ConfiguracaoVotacao(ativo=True, tecnica="voting_regressor", melhores_n=2)
+    cfg_votacao = ConfiguracaoVotacao(
+        ativo=True, tecnica=TecnicaVotacao.VOTING_REGRESSOR, melhores_n=2
+    )
 
     mod_1 = Ridge().fit(df_tr[["Area"]], df_tr["Alvo"])
     mod_2 = Ridge(alpha=2.0).fit(df_tr[["Area"]], df_tr["Alvo"])
@@ -93,7 +100,10 @@ def test_comite_stacking(dados_ensemble: tuple[pd.DataFrame, pd.DataFrame]) -> N
     df_tr, df_hd = dados_ensemble
     comite = ComiteSklearn()
     cfg_votacao = ConfiguracaoVotacao(
-        ativo=True, tecnica="stacking", melhores_n=2, meta_modelo="ridge"
+        ativo=True,
+        tecnica=TecnicaVotacao.STACKING,
+        melhores_n=2,
+        meta_modelo=MetaModeloStacking.RIDGE,
     )
 
     mod_1 = Ridge().fit(df_tr[["Area"]], df_tr["Alvo"])

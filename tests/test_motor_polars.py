@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from app.contratos_dados.motor_tabela import MotorTabela
+from app.enums_dominio import MotorTabularTipo
 from app.esquema_configuracao import ConfiguracaoTabular
 from app.motores_tabela.fabrica_motores import ErroFabricaMotores, FabricaMotores
 from app.motores_tabela.motor_pandas import MotorPandas
@@ -105,10 +106,14 @@ def test_motor_polars_rejeicao_expressao_maliciosa(dados_exemplo: pd.DataFrame) 
 
 def test_fabrica_motores_sucesso() -> None:
     """Valida a criação desacoplada de motores via FabricaMotores."""
-    motor_pd = FabricaMotores.criar_motor(ConfiguracaoTabular(motor="pandas"))
+    motor_pd = FabricaMotores.criar_motor(
+        ConfiguracaoTabular(motor=MotorTabularTipo.PANDAS)
+    )
     assert isinstance(motor_pd, MotorPandas)
 
-    motor_pl = FabricaMotores.criar_motor(ConfiguracaoTabular(motor="polars"))
+    motor_pl = FabricaMotores.criar_motor(
+        ConfiguracaoTabular(motor=MotorTabularTipo.POLARS)
+    )
     assert isinstance(motor_pl, MotorPolars)
 
 

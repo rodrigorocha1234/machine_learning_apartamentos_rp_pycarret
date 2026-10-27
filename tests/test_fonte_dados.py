@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from app.contratos_dados.fonte_dados import FonteDados
+from app.enums_dominio import TipoFonteDados
 from app.esquema_configuracao import ConfiguracaoFonte
 from app.fontes_dados.fabrica_fontes import ErroFabricaFontes, FabricaFontes
 from app.fontes_dados.fonte_excel import ErroFonteExcel, FonteExcel
@@ -66,7 +67,7 @@ def test_fabrica_fontes_criacao_sucesso(tmp_path: Path) -> None:
     arquivo_excel = tmp_path / "dados.xlsx"
     pd.DataFrame({"Valor_da_Venda": [100]}).to_excel(arquivo_excel, index=False, engine="openpyxl")
 
-    config = ConfiguracaoFonte(tipo="xlsx", caminho=str(arquivo_excel), aba=0)
+    config = ConfiguracaoFonte(tipo=TipoFonteDados.XLSX, caminho=str(arquivo_excel), aba=0)
     fonte = FabricaFontes.criar_fonte(config)
 
     assert isinstance(fonte, FonteExcel)

@@ -735,6 +735,7 @@
       <a href="#guia-arquivos-yaml" class="nav-item">Instrução dos Arquivos YAML</a>
       <a href="#goverranca-mlflow" class="nav-item">MLflow & Folds Hierárquicos</a>
       <a href="#api-inferencia" class="nav-item">API FastAPI & Regras</a>
+      <a href="#interpretacao-negocio" class="nav-item">Métricas & Decisão de Negócio</a>
       <a href="#monitoramento-drift" class="nav-item">Drift & Observabilidade</a>
     </nav>
   </aside>
@@ -3687,7 +3688,270 @@ params:
       </div>
     </section>
 
-    <!-- Seção: Monitoramento, Observabilidade & Detecção de Drifts -->
+    <!-- Seção: Interpretação de Resultados para a Equipe de Negócio -->
+    <section id="interpretacao-negocio" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">Interpretação de Resultados & Métricas para o Negócio</h2>
+        <p class="section-desc">
+          Para que um sistema de inteligência artificial gere impacto econômico real, a equipe de corretores, avaliadores imobiliários e diretores comerciais precisa traduzir termos estatísticos (como MSE, RMSE, MAE, MAPE e $R^2$) em decisões financeiras, limites seguros de desconto e estratégias de captação e venda de apartamentos em Ribeirão Preto.
+        </p>
+      </div>
+
+      <!-- Card 1: Dicionário Executivo das Métricas de Regressão -->
+      <div class="info-card" style="margin-bottom: 24px; border-left: 4px solid var(--primary);">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>💼</span>
+          <span>Dicionário Executivo: Como a Equipe de Negócio Deve Ler as Métricas</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Abaixo está a correspondência direta entre o conceito matemático de Machine Learning e o seu significado prático no balcão da imobiliária:
+          </p>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 130px;">Métrica</th>
+                  <th style="width: 180px;">Definição Matemática</th>
+                  <th>Significado Prático no Negócio Imobiliário</th>
+                  <th style="width: 150px;">Valor Típico (RP)</th>
+                  <th style="width: 200px;">Impacto na Decisão Comercial</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>RMSE</strong><br><span style="font-size: 0.75rem; color: var(--text-muted);">Root Mean Squared Error</span></td>
+                  <td>Raiz da média dos quadrados dos desvios: $\sqrt{\frac{1}{n} \sum (y - \hat{y})^2}$</td>
+                  <td>
+                    <strong>A margem de desvio padrão em Reais (R$).</strong> Como eleva os erros ao quadrado antes de tirar a raiz, penaliza severamente grandes distorções. É o indicador de risco contra "avaliações desastrosas".
+                  </td>
+                  <td><span class="badge primary">R$ 38.850,00</span></td>
+                  <td>
+                    Garante que em $\approx 68\%$ dos apartamentos na mesma faixa de preço, o valor de mercado real estará dentro de $\pm$ R$ 38,8 mil do valor previsto.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>MAE</strong><br><span style="font-size: 0.75rem; color: var(--text-muted);">Mean Absolute Error</span></td>
+                  <td>Média linear das diferenças absolutas: $\frac{1}{n} \sum |y - \hat{y}|$</td>
+                  <td>
+                    <strong>O erro comum do dia a dia.</strong> Representa a gordura de negociação média que um corretor experiente observa entre a pedida inicial e o fechamento no cartório.
+                  </td>
+                  <td><span class="badge success">R$ 26.400,00</span></td>
+                  <td>
+                    Indica que uma contraproposta de $\pm$ R$ 26 mil está perfeitamente alinhada com a volatilidade natural das transações na cidade.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>MSE</strong><br><span style="font-size: 0.75rem; color: var(--text-muted);">Mean Squared Error</span></td>
+                  <td>Média dos erros quadráticos: $\frac{1}{n} \sum (y - \hat{y})^2$</td>
+                  <td>
+                    <strong>Métrica interna de penalidade.</strong> Não possui interpretação direta em Reais lineares (está na escala de R$²), mas serve para comparar algoritmos: o modelo com menor MSE é o que menos comete erros grosseiros.
+                  </td>
+                  <td><span class="badge secondary">1.51 × 10⁹ R$²</span></td>
+                  <td>
+                    Utilizado internamente pelo comitê técnico para selecionar o estimador campeão mais estável e evitar precificações absurdas.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>MAPE</strong><br><span style="font-size: 0.75rem; color: var(--text-muted);">Mean Absolute Pct Error</span></td>
+                  <td>Erro percentual médio: $\frac{100\%}{n} \sum \left|\frac{y - \hat{y}}{y}\right|$</td>
+                  <td>
+                    <strong>A precisão percentual universal.</strong> Permite comparar a acurácia de apartamentos populares (R$ 220k) e apartamentos de alto padrão na Fiusa (R$ 1.5M) sob a mesma régua.
+                  </td>
+                  <td><span class="badge accent">5.2%</span></td>
+                  <td>
+                    Significa que o modelo acerta em média com <strong>94,8% de assertividade</strong> sobre o valor real do imóvel, independentemente da faixa de preço.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>R² (R-Dois)</strong><br><span style="font-size: 0.75rem; color: var(--text-muted);">Coeficiente de Determinação</span></td>
+                  <td>Proporção da variância explicada: $1 - \frac{\sum (y - \hat{y})^2}{\sum (y - \bar{y})^2}$</td>
+                  <td>
+                    <strong>Poder explicativo do mercado.</strong> Mede quanto da flutuação de preço entre imóveis é explicada pelas características físicas e de localização versus fatores puramente subjetivos.
+                  </td>
+                  <td><span class="badge success">0.9130 (91,3%)</span></td>
+                  <td>
+                    <strong>91,3% do preço</strong> é explicado pelas variáveis cadastradas (metragem, bairro, vagas, condomínio). Apenas 8,7% depende de fatores imponderáveis (urgência do vendedor, estado da pintura).
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Exemplo Simulado de Saída da API para a Equipe de Negócio -->
+      <div class="info-card" style="margin-bottom: 24px;">
+        <div class="card-title">
+          <span>📡 Cenário Real Simulado: Requisição & Retorno da API para Corretores</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Considere um caso comum: um corretor capta um apartamento de <strong>3 quartos e 85.5 m²</strong> no <strong>Jardim Botânico</strong> (Zona Sul de Ribeirão Preto). Ao consultar a API de precificação (<code>POST /predict</code>), a resposta gerada é detalhada a seguir:
+          </p>
+
+          <div class="cards-grid" style="grid-template-columns: 1fr 1.3fr; gap: 18px; margin-top: 14px;">
+            <!-- Painel de Entrada -->
+            <div style="background: rgba(15, 23, 42, 0.7); padding: 18px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--primary); font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">
+                📥 Dados de Entrada do Imóvel (Payload do Cliente)
+              </div>
+              <pre class="code-block" style="font-size: 0.8rem; margin: 0;">
+{
+  "Metragem": 85.5,
+  "Quartos": 3,
+  "Banheiros": 2,
+  "Vagas": 2,
+  "Bairro": "Jardim Botânico",
+  "Zona": "Sul",
+  "Valor_Condominio": 650.0,
+  "Valor_Iptu": 120.0,
+  "Area_Privativa": 82.0
+}</pre>
+              <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 10px;">
+                ✓ Tipologia: Apartamento padrão intermediário<br>
+                ✓ Localização: Zona de alta liquidez e valorização em RP
+              </div>
+            </div>
+
+            <!-- Painel de Saída Formatada -->
+            <div style="background: rgba(15, 23, 42, 0.7); padding: 18px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--success); font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">
+                📤 Resposta da API REST (Previsão + Regras de Negócio)
+              </div>
+              <pre class="code-block" style="font-size: 0.8rem; margin: 0;">
+{
+  "status": "sucesso",
+  "modelo": "lightgbm-v1.0.0-champion",
+  "precificacao": {
+    "preco_predito": 542469.97,
+    "preco_m2_predito": 6344.68,
+    "faixa_confianca_minima": 515346.47,
+    "faixa_confianca_maxima": 569593.47,
+    "margem_negociacao_sugerida": {
+      "preco_minimo_sugerido": 515346.47,
+      "preco_maximo_sugerido": 569593.47,
+      "delta_percentual": 5.0
+    }
+  },
+  "regras_comerciais": {
+    "valor_comissao_estimada_6pct": 32548.20,
+    "sugestao_entrada_minima_20pct": 108493.99,
+    "saldo_financiamento_maximo_80pct": 433975.98
+  },
+  "governanca_modelo": {
+    "score_confiabilidade": 0.94,
+    "status_avaliacao": "DENTRO_DO_DOMINIO_ESTATISTICO"
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Como a Equipe de Corretores e Gestores Opera com Estes Dados -->
+      <div class="info-card" style="margin-bottom: 24px;">
+        <div class="card-title">
+          <span>🎯 Manual de Aplicação Prática na Mesa de Negociação</span>
+        </div>
+        <div class="card-body">
+          <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            <!-- Situação 1 -->
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--accent-rose); font-weight: 700; margin-bottom: 6px;">
+                Cenário 1: Proprietário Pede R$ 640.000 (Sobreavaliação)
+              </div>
+              <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                <strong>O que a API indica:</strong> O teto do modelo para liquidez rápida é de <code>R$ 569.593,47</code>. O proprietário está <strong>13% acima do mercado</strong>.<br>
+                <strong>Conduta do Corretor:</strong> Apresentar o relatório com o preço médio do m² no Jardim Botânico (<code>R$ 6.344,68/m²</code>). Demonstrar que imóveis acima do teto acumulam em média 120 dias a mais de condomínio/IPTU ociosos.
+              </div>
+            </div>
+
+            <!-- Situação 2 -->
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--accent-amber); font-weight: 700; margin-bottom: 6px;">
+                Cenário 2: Comprador Oferece R$ 480.000 (Suboferta Agressiva)
+              </div>
+              <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                <strong>O que a API indica:</strong> O piso de segurança sugerido é <code>R$ 515.346,47</code> (-5% da pedida base).<br>
+                <strong>Conduta do Corretor:</strong> Não aceitar a oferta de imediato. Orientar o vendedor a fazer uma contraproposta ancorada no piso do modelo (ex: R$ 518.000), demonstrando que o valor está tecnicamente fundamentado e é justo.
+              </div>
+            </div>
+
+            <!-- Situação 3 -->
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--success); font-weight: 700; margin-bottom: 6px;">
+                Cenário 3: Oportunidade de Compra Rápida (Deal Hunter)
+              </div>
+              <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                <strong>O que a API indica:</strong> Se um imóvel entrar para captação por menos de <code>R$ 500.000</code>, a API sinaliza como abaixo do piso de mercado.<br>
+                <strong>Conduta do Corretor:</strong> Acionar a carteira de investidores para fechamento à vista em 48h, oferecendo ganho imediato de capital (<em>equity</em> instantâneo).
+              </div>
+            </div>
+
+            <!-- Situação 4 -->
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--secondary); font-weight: 700; margin-bottom: 6px;">
+                Cenário 4: Estruturação Financeira & Caixa da Imobiliária
+              </div>
+              <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                <strong>Previsão de Receita e Crédito:</strong><br>
+                • Comissão estimada da transação (6%): <strong>R$ 32.548,20</strong>.<br>
+                • Entrada mínima necessária para o comprador: <strong>R$ 108.493,99</strong>.<br>
+                • Saldo a financiar na Caixa/Itaú: <strong>R$ 433.975,98</strong>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Resumo dos Riscos Comerciais e Mitigações -->
+      <div class="info-card">
+        <div class="card-title">
+          <span>🛡️ Matriz de Decisão Rápida para Gestores Imobiliários</span>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Situação Comercial</th>
+                  <th>Indicador Fornecido pela API</th>
+                  <th>Risco Comercial Envolvido</th>
+                  <th>Ação Prescritiva Recomendada</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Preço Pedido > Teto Sugerido</strong></td>
+                  <td><code>Valor Anunciado > preco_maximo_sugerido</code></td>
+                  <td>Encalhe do imóvel no portal, custo de anúncio inútil e desvalorização por tempo de praça.</td>
+                  <td>Negociar reposicionamento de preço na captação antes de investir verba em mídia paga.</td>
+                </tr>
+                <tr>
+                  <td><strong>Preço Pedido Dentro da Margem</strong></td>
+                  <td><code>preco_minimo_sugerido ≤ Preço ≤ preco_maximo_sugerido</code></td>
+                  <td>Risco equilibrado; alta probabilidade de liquidez em menos de 45 dias.</td>
+                  <td>Publicar nos portais principais com selo de <em>"Preço Alinhado com o Mercado"</em>.</td>
+                </tr>
+                <tr>
+                  <td><strong>Preço Pedido < Piso Sugerido</strong></td>
+                  <td><code>Valor Anunciado < preco_minimo_sugerido</code></td>
+                  <td>Perda de comissão por subavaliação ou vício oculto no imóvel (problema estrutural).</td>
+                  <td>Vistoria presencial obrigatória para descartar reformas pesadas; se idôneo, venda prioritária.</td>
+                </tr>
+                <tr>
+                  <td><strong>Score de Confiabilidade Baixo</strong></td>
+                  <td><code>score_confiabilidade < 0.70</code></td>
+                  <td>Imóvel muito atípico (ex: 6 vagas, condomínio de R$ 5.000 em bairro periférico).</td>
+                  <td>Acionar avaliação humana por perito judicial credenciado pelo CRECI; não automatizar.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
     <section id="monitoramento-drift" class="doc-section">
       <div class="section-header">
         <h2 class="section-title">Monitoramento de Modelos, Observabilidade & Detecção de Drift</h2>
