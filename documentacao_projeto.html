@@ -3509,20 +3509,24 @@ monitoramento:
             O pipeline e seus módulos podem ser executados com configurações customizadas diretamente via CLI ou importados em código Python:
           </p>
           <pre class="code-block">
-# 1. Execução do pipeline completo consumindo o diretório de configurações padrão:
+# 1. Disparo Rápido via Script de Automação do Projeto:
+./disparar_projeto.sh              # Executa o pipeline de ML completo (todas as etapas)
+./disparar_projeto.sh campeao      # Treina e promove EXCLUSIVAMENTE o modelo campeão (LightGBM)
+./disparar_projeto.sh etapa 6      # Executa a Etapa 6 via Cadeia de Responsabilidade
+./disparar_projeto.sh api          # Inicia o servidor FastAPI na porta 8000
+./disparar_projeto.sh testes       # Roda a suíte completa de 134 testes no Pytest
+
+# 2. Execução Direta via Módulo Python do Pipeline:
 python -m app.executar_pipeline --etapa todas
+python -m app.executar_pipeline --etapa 6  # Treinamento e promoção do campeão
 
-# 2. Execução apontando para um diretório de configurações de homologação/teste:
+# 3. Execução apontando para um diretório de configurações customizado:
 python -m app.executar_pipeline --config-dir configuracoes_homolog --etapa todas
-
-# 3. Execução de um elo isolado (ex: apenas a etapa de coleta ou modelagem):
-python -m app.executar_pipeline --etapa coleta
-python -m app.executar_pipeline --etapa modelagem
 
 # 4. Sobrescrevendo parâmetros via variáveis de ambiente no shell (sem alterar arquivos):
 export IMOVEIS_XLSX_PATH="/var/data/apartamentos_novos.xlsx"
 export GRAFANA_URL="http://grafana-producao.internal:3000"
-python -m app.executar_pipeline --etapa todas</pre>
+./disparar_projeto.sh campeao</pre>
 
           <p style="margin-top: 18px;"><strong>Utilização Programática em Scripts Python:</strong></p>
           <pre class="code-block">
