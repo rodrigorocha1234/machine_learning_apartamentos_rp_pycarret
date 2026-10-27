@@ -127,6 +127,7 @@ mostrar_ajuda() {
     echo -e "Uso: ${C_VERDE}./disparar_projeto.sh [COMANDO]${C_RESET}\n"
     echo "Comandos disponíveis:"
     echo -e "  ${C_CIANO}pipeline${C_RESET}     (padrão) Executa o pipeline de ML completo (Etapas 1 a 7)"
+    echo -e "  ${C_CIANO}campeao${C_RESET}      Treina e promove exclusivamente o modelo campeão (LightGBM)"
     echo -e "  ${C_CIANO}etapa <N>${C_RESET}    Executa uma etapa específica de 1 a 7 (ex: etapa 4)"
     echo -e "  ${C_CIANO}api${C_RESET}          Inicia o servidor de inferência FastAPI (porta 8000)"
     echo -e "  ${C_CIANO}testes${C_RESET}       Executa a suíte de 134 testes no Pytest e Pyright estrito"
@@ -144,6 +145,9 @@ imprimir_banner
 case "${1:-pipeline}" in
     pipeline)
         executar_pipeline
+        ;;
+    campeao|treinar-campeao|modelo-campeao)
+        treinar_campeao
         ;;
     etapa)
         executar_etapa "$2"
