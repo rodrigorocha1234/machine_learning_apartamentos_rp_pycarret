@@ -6,7 +6,7 @@
 # ==============================================================================
 
 modelagem:
-  motor_treino: "pycaret" # pycaret | sklearn
+  motor_treino: "sklearn" # pycaret | sklearn
 
   imputacao:
     ativo: true
@@ -24,10 +24,10 @@ modelagem:
         estrategia: "mais_frequente"
 
   preprocessamento:
-    transformar_alvo: true
+    transformar_alvo: false
     metodo_transformacao_alvo: "log1p" # log1p | log | yeo-johnson | box-cox
     transformar_atributos:
-      ativo: true
+      ativo: false
       metodo: "log1p"
       colunas:
         - "Metragem"
@@ -79,38 +79,38 @@ modelagem:
         ativo: true
         fit_intercept: [true, false]
       lasso:
-        ativo: true
+        ativo: false
         alpha: [0.01, 0.1, 1.0, 10.0]
       ridge:
-        ativo: true
+        ativo: false
         alpha: [0.01, 0.1, 1.0, 10.0]
       elasticnet:
-        ativo: true
+        ativo: false
         alpha: [0.01, 0.1, 1.0]
         l1_ratio: [0.2, 0.5, 0.8]
       arvore_decisao:
-        ativo: true
+        ativo: false
         max_depth: [3, 5, 10]
         min_samples_split: [2, 5]
       random_forest:
-        ativo: true
+        ativo: false
         n_estimators: [50, 100]
         max_depth: [5, 10]
       svr:
-        ativo: true
+        ativo: false
         C: [0.1, 1.0, 10.0]
         kernel: ["rbf", "linear"]
       rede_neural:
-        ativo: true
+        ativo: false
         hidden_layer_sizes: [[50], [100]]
         max_iter: [200]
       xgboost:
-        ativo: true
+        ativo: false
         n_estimators: [50, 100]
         max_depth: [3, 6]
         learning_rate: [0.05, 0.1]
       lightgbm:
-        ativo: true
+        ativo: false
         n_estimators: [50, 100]
         max_depth: [3, 6]
         learning_rate: [0.05, 0.1]

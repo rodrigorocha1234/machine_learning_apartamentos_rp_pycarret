@@ -14,6 +14,10 @@ from app.contratos_modelagem.motor_treinador import (
 )
 from app.esquema_configuracao import ConfiguracaoModelagem
 from app.motores_modelagem.fabrica_folds import FabricaFolds
+from app.servicos_observabilidade.publicador_modelos_grafana import (
+    PublicadorModelosGrafana,
+    formatar_nome_modelo,
+)
 
 
 class ErroTreinadorPycaret(Exception):
@@ -90,7 +94,12 @@ class TreinadorPycaret(MotorTreinador):
                     k: cast(list[object], v) for k, v in grade.items()
                 }
 
+                nome_formatado = formatar_nome_modelo(item_modelo.nome)
                 if config.tuning.ativo and grade_pycaret:
+                    msg_tuning = f"realizando tuning de parâmetros {nome_formatado}"
+                    print(f"  → Realizando tuning de parâmetros {nome_formatado}...")
+                    PublicadorModelosGrafana.registrar_log(item_modelo.nome, msg_tuning)
+                    tuning_ativo = True
                     search_lib = "scikit-learn"
                     search_algo = "random"
                     if config.tuning.metodo == "grid":
@@ -124,6 +133,10 @@ class TreinadorPycaret(MotorTreinador):
                         verbose=False,
                     )
                 else:
+                    msg_tuning = f"treinando modelo {nome_formatado} (tuning desativado)"
+                    print(f"  → Treinando modelo {nome_formatado} (tuning desativado)...")
+                    PublicadorModelosGrafana.registrar_log(item_modelo.nome, msg_tuning)
+                    tuning_ativo = False
                     modelo_ajustado = modelo_base
 
                 duracao = time.perf_counter() - inicio_modelo
@@ -164,6 +177,8 @@ class TreinadorPycaret(MotorTreinador):
                             if k in todos_params:
                                 params_dict[k] = todos_params[k]
 
+                print(f"  ✓ {nome_formatado.capitalize()} concluído em {duracao:.2f}s | RMSE: R$ {rmse_val:,.2f}")
+
                 res_modelo = ResultadoTreinoModelo(
                     nome_modelo=item_modelo.nome,
                     framework="pycaret",
@@ -174,6 +189,8 @@ class TreinadorPycaret(MotorTreinador):
                         "R2": round(r2_val, 4),
                     },
                     duracao_segundos=round(duracao, 4),
+                    tuning_ativo=tuning_ativo,
+                    mensagem_tuning=msg_tuning,
                 )
                 modelos_treinados.append(res_modelo)
 

@@ -25,6 +25,10 @@ from app.contratos_modelagem.motor_treinador import (
 )
 from app.esquema_configuracao import ConfiguracaoModelagem
 from app.motores_modelagem.fabrica_folds import FabricaFolds
+from app.servicos_observabilidade.publicador_modelos_grafana import (
+    PublicadorModelosGrafana,
+    formatar_nome_modelo,
+)
 
 
 class EstimadorTreinado(Protocol):
@@ -111,7 +115,12 @@ class TreinadorSklearn(MotorTreinador):
                 for k, v in grade_configurada.items()
             }
 
+            nome_formatado = formatar_nome_modelo(item_modelo.nome)
             if config.tuning.ativo and grade_sklearn:
+                msg_tuning = f"realizando tuning de parâmetros {nome_formatado}"
+                print(f"  → Realizando tuning de parâmetros {nome_formatado}...")
+                PublicadorModelosGrafana.registrar_log(item_modelo.nome, msg_tuning)
+                tuning_ativo = True
                 mapa_scorers: dict[str, str] = {
                     "RMSE": "neg_root_mean_squared_error",
                     "MAE": "neg_mean_absolute_error",
@@ -179,6 +188,10 @@ class TreinadorSklearn(MotorTreinador):
                         f"Falha no tuning do modelo '{item_modelo.nome}': {erro_fit}"
                     ) from erro_fit
             else:
+                msg_tuning = f"treinando modelo {nome_formatado} (tuning desativado)"
+                print(f"  → Treinando modelo {nome_formatado} (tuning desativado)...")
+                PublicadorModelosGrafana.registrar_log(item_modelo.nome, msg_tuning)
+                tuning_ativo = False
                 # Treinamento direto sem busca
                 try:
                     estimador_final.fit(X, y)
@@ -198,6 +211,7 @@ class TreinadorSklearn(MotorTreinador):
                     ) from erro_fit_direto
 
             duracao = time.perf_counter() - inicio_modelo
+            print(f"  ✓ {nome_formatado.capitalize()} concluído em {duracao:.2f}s | RMSE: R$ {melhor_score:,.2f}")
 
             # Cálculo de métricas adicionais
             preds_finais: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(
@@ -225,6 +239,8 @@ class TreinadorSklearn(MotorTreinador):
                     "R2": round(r2, 4),
                 },
                 duracao_segundos=round(duracao, 4),
+                tuning_ativo=tuning_ativo,
+                mensagem_tuning=msg_tuning,
             )
             modelos_treinados.append(res_modelo)
 

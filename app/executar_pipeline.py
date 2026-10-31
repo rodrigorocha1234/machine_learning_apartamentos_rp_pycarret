@@ -195,6 +195,7 @@ class EloModelagemRegressao(EloCadeiaPipeline):
         print(f"✓ Modelo campeão inicial: {res_modelagem.modelo_campeao}")
         print(f"✓ Melhor RMSE CV: R$ {res_tuning.melhor_rmse:,.2f}")
         print(f"✓ Run Pai MLflow: {res_modelagem.run_id_pai}")
+        print("✓ Dashboard Grafana: config_ob/dashboards/dashboard_modelos.json (UID: modelos-apartamentos-rp)")
 
 
 class EloAvaliacaoSelecao(EloCadeiaPipeline):

@@ -3339,6 +3339,48 @@ atributos_novos:
           </ul>
         </div>
       </div>
+
+      <!-- Card Operacional: Telemetria e Logs de Tuning no Terminal e no Grafana -->
+      <div class="info-card" style="margin-top: 24px; border-left: 4px solid var(--accent-cyan);">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>📊</span>
+          <span>Telemetria em Tempo Real: Terminal, Grafana & Loki</span>
+        </div>
+        <div class="card-body">
+          <p>
+            Durante a execução da <strong>Etapa 4 (Modelagem & Tuning)</strong>, tanto o <code>TreinadorSklearn</code> quanto o <code>TreinadorPycaret</code> emitem eventos estruturados de observabilidade simultaneamente para dois canais:
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 12px 0;">
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: var(--accent-cyan); font-weight: 700; margin-bottom: 6px;">1. Log do Terminal (Console ANSI)</div>
+              <p style="font-size: 0.88rem; margin: 0 0 8px; line-height: 1.5;">
+                Acompanhamento visual direto no terminal com indicação explícita do modelo em ajuste:
+              </p>
+              <pre class="code-block" style="font-size: 0.8rem; margin: 0;">
+  → Realizando tuning de parâmetros regressão linear...
+  ✓ Regressão linear concluído em 0.45s | RMSE: R$ 42,500.00
+  → Realizando tuning de parâmetros lasso...
+  ✓ Lasso concluído em 0.52s | RMSE: R$ 41,200.00
+  → Realizando tuning de parâmetros ridge...
+  ...
+  → Realizando tuning de parâmetros lightgbm...
+  ✓ Lightgbm concluído em 1.10s | RMSE: R$ 38,850.45</pre>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="color: #10b981; font-weight: 700; margin-bottom: 6px;">2. Dashboard Grafana Provisionado & Loki</div>
+              <p style="font-size: 0.88rem; margin: 0 0 8px; line-height: 1.5;">
+                O serviço <code>PublicadorModelosGrafana</code> persiste automaticamente o dashboard <code>config_ob/dashboards/dashboard_modelos.json</code> (UID: <code>modelos-apartamentos-rp</code>):
+              </p>
+              <ul class="feature-list" style="font-size: 0.85rem;">
+                <li><strong>Painel de Linha do Tempo:</strong> feed em tempo real com eventos de cada modelo (<code>realizando tuning de parâmetros...</code>).</li>
+                <li><strong>Tabela de Hiperparâmetros:</strong> exibe os parâmetros ótimos encontrados vs padrão.</li>
+                <li><strong>Métricas & Campeão:</strong> cards de estatísticas com RMSE formatado em R$ e ranking dos modelos.</li>
+                <li><strong>Ingestão Loki:</strong> envio automático via HTTP para <code>http://localhost:3100/loki/api/v1/push</code>.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Seção de Pydantic: Validação Estrita, Tipagem e Integridade de Dados -->

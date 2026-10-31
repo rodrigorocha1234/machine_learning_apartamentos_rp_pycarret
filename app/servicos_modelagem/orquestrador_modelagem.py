@@ -18,6 +18,7 @@ from app.motores_modelagem.fabrica_treinadores import FabricaTreinadores
 from app.repositorios_dados.fabrica_repositorios import FabricaRepositorios
 from app.repositorios_dados.repositorio_sqlite import RepositorioSqlite
 from app.servicos_modelagem.rastreador_mlflow import RastreadorMlflow
+from app.servicos_observabilidade.publicador_modelos_grafana import PublicadorModelosGrafana
 
 
 class ErroOrquestradorModelagem(Exception):
@@ -105,6 +106,17 @@ class OrquestradorModelagem:
             raise ErroOrquestradorModelagem(
                 f"Falha no motor de modelagem '{nome_motor}': {erro_treino}"
             ) from erro_treino
+
+        # 4.1. Publicação e provisionamento automático no Grafana
+        try:
+            publicador_grafana = PublicadorModelosGrafana()
+            caminho_dash = publicador_grafana.publicar_dashboard_modelos(
+                resultado_tuning=resultado_tuning,
+                motor=nome_motor,
+            )
+            print(f"✓ Dashboard Grafana de Modelos provisionado: {caminho_dash}")
+        except Exception as erro_dash:
+            print(f"⚠ Aviso: Não foi possível atualizar dashboard Grafana de modelos: {erro_dash}")
 
         # 5. Registro dos runs filhos aninhados no MLflow
         tecnica_prep = (

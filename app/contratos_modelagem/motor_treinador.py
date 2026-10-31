@@ -23,6 +23,14 @@ class ResultadoTreinoModelo(BaseModel):
     duracao_segundos: float = Field(
         ge=0.0, description="Duração do treinamento e tuning do modelo em segundos"
     )
+    tuning_ativo: bool = Field(
+        default=True,
+        description="Indica se o tuning foi realizado ou se o modelo usou hiperparâmetros padrão",
+    )
+    mensagem_tuning: str = Field(
+        default="",
+        description="Mensagem de status do tuning (ex: realizando tuning de parâmetros regressão linear)",
+    )
 
 
 class ResultadoTuning(BaseModel):
