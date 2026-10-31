@@ -236,7 +236,7 @@ class PublicadorGrafana(PublicadorMetricas):
             "templating": {"list": []},
             "time": {"from": "now-6h", "to": "now"},
             "timepicker": {},
-            "timezone": "browser",
+            "timezone": "America/Sao_Paulo",
             "title": "Monitoramento de Drift — Previsão Apartamentos RP",
             "uid": "drift-apartamentos-rp",
             "version": 1,

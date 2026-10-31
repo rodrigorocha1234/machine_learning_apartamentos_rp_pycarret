@@ -17,124 +17,22 @@
   "panels": [
     {
       "id": 1,
-      "title": "Modelo Campeão do Tuning",
-      "type": "stat",
+      "title": "Indicadores Gerais da Modelagem",
+      "type": "text",
       "gridPos": {
         "x": 0,
         "y": 0,
-        "w": 6,
+        "w": 24,
         "h": 4
       },
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "textMode": "auto"
+        "mode": "html",
+        "content": "<div style=\"display: flex; gap: 14px; width: 100%; flex-wrap: wrap;\">\n  <div style=\"flex: 1; min-width: 220px; background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; border-radius: 8px; padding: 14px 18px;\">\n    <div style=\"font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px;\">🏆 Modelo Campeão do Tuning</div>\n    <div style=\"font-size: 1.6rem; font-weight: 700; color: #10b981;\">Lasso</div>\n    <div style=\"font-size: 0.8rem; color: #64748b; margin-top: 4px;\">Menor erro médio na validação cruzada</div>\n  </div>\n  <div style=\"flex: 1; min-width: 220px; background: rgba(59, 130, 246, 0.12); border: 1px solid #3b82f6; border-radius: 8px; padding: 14px 18px;\">\n    <div style=\"font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px;\">📉 Melhor RMSE (Validação Cruzada)</div>\n    <div style=\"font-size: 1.6rem; font-weight: 700; color: #60a5fa;\">R$ 12,848.72</div>\n    <div style=\"font-size: 0.8rem; color: #64748b; margin-top: 4px;\">Métrica em moeda brasileira (R$)</div>\n  </div>\n  <div style=\"flex: 1; min-width: 220px; background: rgba(168, 85, 247, 0.12); border: 1px solid #a855f7; border-radius: 8px; padding: 14px 18px;\">\n    <div style=\"font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px;\">📊 Modelos Avaliados</div>\n    <div style=\"font-size: 1.6rem; font-weight: 700; color: #c084fc;\">2 modelos</div>\n    <div style=\"font-size: 0.8rem; color: #64748b; margin-top: 4px;\">Bateria de regressão comparativa</div>\n  </div>\n  <div style=\"flex: 1; min-width: 220px; background: rgba(245, 158, 11, 0.12); border: 1px solid #f59e0b; border-radius: 8px; padding: 14px 18px;\">\n    <div style=\"font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px;\">⚙️ Motor & Busca</div>\n    <div style=\"font-size: 1.6rem; font-weight: 700; color: #fbbf24;\">SKLEARN • RANDOM</div>\n    <div style=\"font-size: 0.8rem; color: #64748b; margin-top: 4px;\">2 iterações • Fuso: América/São Paulo (-03)</div>\n  </div>\n</div>"
       },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "green"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": []
-          }
-        }
-      },
-      "description": "Modelo selecionado com o menor erro de CV: Regressão linear"
+      "description": "Resumo dos resultados da etapa de modelagem e tuning de hiperparâmetros."
     },
     {
       "id": 2,
-      "title": "Melhor RMSE (Validação Cruzada)",
-      "type": "stat",
-      "gridPos": {
-        "x": 6,
-        "y": 0,
-        "w": 6,
-        "h": 4
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "currencyBRL",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "blue"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": []
-          }
-        }
-      },
-      "description": "RMSE R$ 107,135.17"
-    },
-    {
-      "id": 3,
-      "title": "Modelos Avaliados",
-      "type": "stat",
-      "gridPos": {
-        "x": 12,
-        "y": 0,
-        "w": 6,
-        "h": 4
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "purple"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": []
-          }
-        }
-      },
-      "description": "Total de 10 modelos avaliados"
-    },
-    {
-      "id": 4,
-      "title": "Motor & Busca",
-      "type": "stat",
-      "gridPos": {
-        "x": 18,
-        "y": 0,
-        "w": 6,
-        "h": 4
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "orange"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": []
-          }
-        }
-      },
-      "description": "Motor: PYCARET | Busca: RANDOM (10 iterações)"
-    },
-    {
-      "id": 5,
       "title": "Eventos e Logs de Tuning no Grafana",
       "type": "text",
       "gridPos": {
@@ -145,141 +43,25 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "### Linha do Tempo e Eventos de Tuning de Modelos\n\n| Horário | Modelo | Evento de Execução Registrado |\n| :--- | :--- | :--- |\n| 2026-10-31 23:21:17 UTC | **regressão linear** | `realizando tuning de parâmetros regressão linear` |\n| 2026-10-31 23:21:22 UTC | **lasso** | `treinando modelo lasso (tuning desativado)` |\n| 2026-10-31 23:21:22 UTC | **ridge** | `treinando modelo ridge (tuning desativado)` |\n| 2026-10-31 23:21:22 UTC | **elasticnet** | `treinando modelo elasticnet (tuning desativado)` |\n| 2026-10-31 23:21:22 UTC | **árvore de decisão** | `treinando modelo árvore de decisão (tuning desativado)` |\n| 2026-10-31 23:21:23 UTC | **random forest** | `treinando modelo random forest (tuning desativado)` |\n| 2026-10-31 23:21:23 UTC | **svr** | `treinando modelo svr (tuning desativado)` |\n| 2026-10-31 23:21:24 UTC | **rede neural** | `treinando modelo rede neural (tuning desativado)` |\n| 2026-10-31 23:21:26 UTC | **xgboost** | `treinando modelo xgboost (tuning desativado)` |\n| 2026-10-31 23:22:13 UTC | **lightgbm** | `treinando modelo lightgbm (tuning desativado)` |"
+        "content": "### Linha do Tempo e Eventos de Tuning de Modelos *(Fuso Horário: Brasília / America/Sao_Paulo -03)*\n\n| Horário (SP) | Modelo | Evento de Execução Registrado |\n| :--- | :--- | :--- |\n| 2026-10-31 20:28:06 | **regressão linear** | `realizando tuning de parâmetros regressão linear` |\n| 2026-10-31 20:28:06 | **lasso** | `realizando tuning de parâmetros lasso` |\n| 2026-10-31 20:28:06 | **random forest** | `realizando tuning de parâmetros random forest` |\n| 2026-10-31 20:28:07 | **lasso** | `treinando modelo lasso (tuning desativado)` |\n| 2026-10-31 20:28:07 | **ridge** | `treinando modelo ridge (tuning desativado)` |"
       },
-      "description": "Feed em tempo real dos eventos de tuning emitidos para cada modelo de regressão."
+      "description": "Feed em tempo real dos eventos de tuning emitidos no fuso horário de Brasília/São Paulo."
     },
     {
-      "id": 6,
+      "id": 3,
       "title": "Desempenho dos Modelos e Hiperparâmetros de Tuning",
-      "type": "table",
+      "type": "text",
       "gridPos": {
         "x": 0,
         "y": 12,
         "w": 24,
-        "h": 10
+        "h": 9
       },
       "options": {
-        "sortBy": [
-          {
-            "displayName": "RMSE",
-            "desc": false
-          }
-        ]
+        "mode": "markdown",
+        "content": "### Desempenho Comparativo dos Modelos & Hiperparâmetros de Tuning\n\n| Ranking | Modelo | Status Tuning | Melhores Hiperparâmetros | RMSE (CV) | MAE | R² | Duração |\n| :---: | :--- | :---: | :--- | :---: | :---: | :---: | :---: |\n| 🥇 1º | **Lasso** | Desativado (Padrão) | *Parâmetros baseline* | **R$ 12,848.72** | R$ 9,987.09 | 0.9940 | 0.01s |\n| 🥈 2º | Ridge | Desativado (Padrão) | *Parâmetros baseline* | **R$ 21,759.20** | R$ 17,483.94 | 0.9828 | 0.01s |"
       },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "left",
-            "filterable": true
-          }
-        }
-      },
-      "description": "Mapeamento completo dos hiperparâmetros ajustados, status e métricas.",
-      "custom": {
-        "dados_modelos": [
-          {
-            "modelo": "regressão linear",
-            "status_tuning": "Ativo (Otimizado)",
-            "evento_tuning": "realizando tuning de parâmetros regressão linear",
-            "rmse": "R$ 107,135.17",
-            "mae": "R$ 81,564.41",
-            "r2": "0.9412",
-            "melhores_parametros": "fit_intercept=True",
-            "duracao_segundos": "7.92s"
-          },
-          {
-            "modelo": "lasso",
-            "status_tuning": "Desativado (Padrão)",
-            "evento_tuning": "treinando modelo lasso (tuning desativado)",
-            "rmse": "R$ 108,234.28",
-            "mae": "R$ 82,275.45",
-            "r2": "0.9398",
-            "melhores_parametros": "Parâmetros baseline",
-            "duracao_segundos": "0.25s"
-          },
-          {
-            "modelo": "ridge",
-            "status_tuning": "Desativado (Padrão)",
-            "evento_tuning": "treinando modelo ridge (tuning desativado)",
-            "rmse": "R$ 107,451.12",
-            "mae": "R$ 81,519.23",
-            "r2": "0.9407",
-            "melhores_parametros": "Parâmetros baseline",
-            "duracao_segundos": "0.23s"
-          },
-          {
-            "modelo": "elasticnet",
-            "status_tuning": "Desativado (Padrão)",
-            "evento_tuning": "treinando modelo elasticnet (tuning desativado)",
-            "rmse": "R$ 148,263.88",
-            "mae": "R$ 110,449.49",
-            "r2": "0.8864",
-            "melhores_parametros": "Parâmetros baseline",
-            "duracao_segundos": "0.22s"
-          },
-          {
-            "modelo": "árvore de decisão",
-            "status_tuning": "Desativado (Padrão)",
-            "evento_tuning": "treinando modelo árvore de decisão (tuning desativado)",
-            "rmse": "R$ 156,629.90",
-            "mae": "R$ 118,365.10",
-            "r2": "0.8735",
-            "melhores_parametros": "Parâmetros baseline",
-            "duracao_segundos": "0.25s"
-          },
-          {
-            "modelo": "random forest",
-            "status_tuning": "Desativado (Padrão)",
-            "evento_tuning": "treinando modelo random forest (tuning desativado)",
-            "rmse": "R$ 129,712.38",
-            "mae": "R$ 98,952.36",
-            "r2": "0.9128",
-            "melhores_parametros": "Parâmetros baseline",
-            "duracao_segundos": "0.62s"
-          },
-          {
-            "modelo": "svr",
-            "status_tuning": "Desativado (Padrão)",
-            "evento_tuning": "treinando modelo svr (tuning desativado)",
-            "rmse": "R$ 423,887.35",
-            "mae": "R$ 362,107.47",
-            "r2": "0.0871",
-            "melhores_parametros": "Parâmetros baseline",
-            "duracao_segundos": "0.23s"
-          },
-          {
-            "modelo": "rede neural",
-            "status_tuning": "Desativado (Padrão)",
-            "evento_tuning": "treinando modelo rede neural (tuning desativado)",
-            "rmse": "R$ 349,448.89",
-            "mae": "R$ 274,582.90",
-            "r2": "0.2382",
-            "melhores_parametros": "Parâmetros baseline",
-            "duracao_segundos": "0.64s"
-          },
-          {
-            "modelo": "xgboost",
-            "status_tuning": "Desativado (Padrão)",
-            "evento_tuning": "treinando modelo xgboost (tuning desativado)",
-            "rmse": "R$ 126,094.23",
-            "mae": "R$ 93,883.26",
-            "r2": "0.9162",
-            "melhores_parametros": "Parâmetros baseline",
-            "duracao_segundos": "2.15s"
-          },
-          {
-            "modelo": "lightgbm",
-            "status_tuning": "Desativado (Padrão)",
-            "evento_tuning": "treinando modelo lightgbm (tuning desativado)",
-            "rmse": "R$ 136,219.99",
-            "mae": "R$ 103,711.84",
-            "r2": "0.9023",
-            "melhores_parametros": "Parâmetros baseline",
-            "duracao_segundos": "47.00s"
-          }
-        ]
-      }
+      "description": "Tabela comparativa ranqueada por menor RMSE na validação cruzada."
     }
   ],
   "time": {

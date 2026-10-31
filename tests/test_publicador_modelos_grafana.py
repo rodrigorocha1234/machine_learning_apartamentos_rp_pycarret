@@ -91,11 +91,13 @@ def test_geracao_dashboard_grafana_modelos(tmp_path: Path) -> None:
     conteudo_json = json.loads(caminho_dash.read_text(encoding="utf-8"))
 
     assert conteudo_json["uid"] == "modelos-apartamentos-rp"
-    assert len(conteudo_json["panels"]) >= 5
+    assert conteudo_json["timezone"] == "America/Sao_Paulo"
+    assert len(conteudo_json["panels"]) >= 3
 
     # Painel de logs/eventos
-    painel_logs = next(p for p in conteudo_json["panels"] if p["id"] == 5)
+    painel_logs = next(p for p in conteudo_json["panels"] if p["id"] == 2)
     markdown_content = painel_logs["options"]["content"]
     assert "realizando tuning de parâmetros regressão linear" in markdown_content
     assert "realizando tuning de parâmetros lasso" in markdown_content
+    assert "UTC" not in markdown_content
 

@@ -1,7 +1,7 @@
 """Publicador e gerador de dashboard do Grafana para modelos de regressão e tuning.
 
 Gerencia o provisionamento automático do dashboard de modelos em config_ob/dashboards/dashboard_modelos.json
-e a emissão de logs de tuning para o terminal e integração com Loki/Grafana.
+com fuso horário ajustado para América/São Paulo (Brasília, UTC-3) e emissão de logs para terminal e Loki/Grafana.
 """
 
 from __future__ import annotations
@@ -12,8 +12,11 @@ from pathlib import Path
 import threading
 from typing import cast
 import urllib.request
+from zoneinfo import ZoneInfo
 
 from app.contratos_modelagem.motor_treinador import ResultadoTuning
+
+FUSO_HORARIO_PADRAO = ZoneInfo("America/Sao_Paulo")
 
 MAPA_NOMES_LEGIVEIS: dict[str, str] = {
     "regressao_linear": "regressão linear",
@@ -34,6 +37,14 @@ def formatar_nome_modelo(nome: str) -> str:
     return MAPA_NOMES_LEGIVEIS.get(nome, nome.replace("_", " "))
 
 
+def obter_timestamp_sao_paulo() -> str:
+    """Retorna a data e hora atual no fuso horário de Brasília/São Paulo (UTC-3)."""
+    try:
+        return datetime.now(FUSO_HORARIO_PADRAO).strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
 class PublicadorModelosGrafana:
     """Publicador de métricas e gerador de dashboard para acompanhamento de modelos e tuning no Grafana."""
 
@@ -50,10 +61,10 @@ class PublicadorModelosGrafana:
 
     @classmethod
     def registrar_log(cls, nome_modelo: str, mensagem: str) -> None:
-        """Registra um evento de tuning no histórico e envia de forma resiliente ao Loki."""
-        timestamp_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        """Registra um evento de tuning no histórico em horário de Brasília e envia ao Loki."""
+        timestamp_sp = obter_timestamp_sao_paulo()
         registro: dict[str, str] = {
-            "timestamp": timestamp_iso,
+            "timestamp": timestamp_sp,
             "modelo": nome_modelo,
             "mensagem": mensagem,
         }
@@ -133,12 +144,37 @@ class PublicadorModelosGrafana:
     ) -> dict[str, object]:
         """Gera o schema JSON completo do Grafana com painéis analíticos e eventos de tuning."""
         nome_campeao_formatado = formatar_nome_modelo(resultado_tuning.modelo_campeao).capitalize()
+        horario_atual_sp = obter_timestamp_sao_paulo()
 
-        # Montagem do texto markdown de eventos/logs de tuning
+        # 1. Painel de Indicadores Chave (KPIs) com design estilizado
+        kpi_markdown = f"""<div style="display: flex; gap: 14px; width: 100%; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 220px; background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; border-radius: 8px; padding: 14px 18px;">
+    <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px;">🏆 Modelo Campeão do Tuning</div>
+    <div style="font-size: 1.6rem; font-weight: 700; color: #10b981;">{nome_campeao_formatado}</div>
+    <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">Menor erro médio na validação cruzada</div>
+  </div>
+  <div style="flex: 1; min-width: 220px; background: rgba(59, 130, 246, 0.12); border: 1px solid #3b82f6; border-radius: 8px; padding: 14px 18px;">
+    <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px;">📉 Melhor RMSE (Validação Cruzada)</div>
+    <div style="font-size: 1.6rem; font-weight: 700; color: #60a5fa;">R$ {resultado_tuning.melhor_rmse:,.2f}</div>
+    <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">Métrica em moeda brasileira (R$)</div>
+  </div>
+  <div style="flex: 1; min-width: 220px; background: rgba(168, 85, 247, 0.12); border: 1px solid #a855f7; border-radius: 8px; padding: 14px 18px;">
+    <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px;">📊 Modelos Avaliados</div>
+    <div style="font-size: 1.6rem; font-weight: 700; color: #c084fc;">{len(resultado_tuning.modelos_treinados)} modelos</div>
+    <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">Bateria de regressão comparativa</div>
+  </div>
+  <div style="flex: 1; min-width: 220px; background: rgba(245, 158, 11, 0.12); border: 1px solid #f59e0b; border-radius: 8px; padding: 14px 18px;">
+    <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px;">⚙️ Motor & Busca</div>
+    <div style="font-size: 1.6rem; font-weight: 700; color: #fbbf24;">{motor.upper()} • {resultado_tuning.metodo_tuning.upper()}</div>
+    <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">{resultado_tuning.iteracoes} iterações • Fuso: América/São Paulo (-03)</div>
+  </div>
+</div>"""
+
+        # 2. Montagem da Linha do Tempo e Eventos de Tuning (Fuso Horário Brasília / SP)
         linhas_tabela_logs: list[str] = [
-            "### Linha do Tempo e Eventos de Tuning de Modelos",
+            f"### Linha do Tempo e Eventos de Tuning de Modelos *(Fuso Horário: Brasília / America/Sao_Paulo -03)*",
             "",
-            "| Horário | Modelo | Evento de Execução Registrado |",
+            "| Horário (SP) | Modelo | Evento de Execução Registrado |",
             "| :--- | :--- | :--- |",
         ]
 
@@ -156,121 +192,61 @@ class PublicadorModelosGrafana:
                 mod_legivel = formatar_nome_modelo(mod.nome_modelo)
                 msg = mod.mensagem_tuning or f"realizando tuning de parâmetros {mod_legivel}"
                 linhas_tabela_logs.append(
-                    f"| Concluído | **{mod_legivel}** | `{msg}` |"
+                    f"| {horario_atual_sp} | **{mod_legivel}** | `{msg}` |"
                 )
 
         conteudo_markdown_logs = "\n".join(linhas_tabela_logs)
 
-        # Montagem das linhas estruturadas de métricas por modelo para a tabela
-        dados_tabela_modelos: list[dict[str, object]] = []
-        for mod in resultado_tuning.modelos_treinados:
+        # 3. Montagem da Tabela de Desempenho e Hiperparâmetros
+        modelos_ordenados = sorted(
+            resultado_tuning.modelos_treinados,
+            key=lambda m: m.metricas.get("RMSE", float("inf")),
+        )
+
+        linhas_tabela_performance: list[str] = [
+            "### Desempenho Comparativo dos Modelos & Hiperparâmetros de Tuning",
+            "",
+            "| Ranking | Modelo | Status Tuning | Melhores Hiperparâmetros | RMSE (CV) | MAE | R² | Duração |",
+            "| :---: | :--- | :---: | :--- | :---: | :---: | :---: | :---: |",
+        ]
+
+        for i, mod in enumerate(modelos_ordenados, start=1):
             mod_legivel = formatar_nome_modelo(mod.nome_modelo)
             rmse = mod.metricas.get("RMSE", 0.0)
             mae = mod.metricas.get("MAE", 0.0)
             r2 = mod.metricas.get("R2", 0.0)
             status_tuning = "Ativo (Otimizado)" if mod.tuning_ativo else "Desativado (Padrão)"
-            msg = mod.mensagem_tuning or f"realizando tuning de parâmetros {mod_legivel}"
+            medalha = "🥇 1º" if i == 1 else ("🥈 2º" if i == 2 else ("🥉 3º" if i == 3 else f"{i}º"))
+            destaque_modelo = f"**{mod_legivel.capitalize()}**" if i == 1 else mod_legivel.capitalize()
+
             params_str = (
-                ", ".join(f"{k}={v}" for k, v in mod.melhores_parametros.items())
+                ", ".join(f"`{k}={v}`" for k, v in mod.melhores_parametros.items())
                 if mod.melhores_parametros
-                else "Parâmetros baseline"
+                else "*Parâmetros baseline*"
             )
 
-            dados_tabela_modelos.append(
-                {
-                    "modelo": mod_legivel,
-                    "status_tuning": status_tuning,
-                    "evento_tuning": msg,
-                    "rmse": f"R$ {rmse:,.2f}",
-                    "mae": f"R$ {mae:,.2f}",
-                    "r2": f"{r2:.4f}",
-                    "melhores_parametros": params_str,
-                    "duracao_segundos": f"{mod.duracao_segundos:.2f}s",
-                }
+            linhas_tabela_performance.append(
+                f"| {medalha} | {destaque_modelo} | {status_tuning} | {params_str} | **R$ {rmse:,.2f}** | R$ {mae:,.2f} | {r2:.4f} | {mod.duracao_segundos:.2f}s |"
             )
+
+        conteudo_markdown_performance = "\n".join(linhas_tabela_performance)
 
         paineis: list[dict[str, object]] = [
-            # Painel 1: Stat Modelo Campeão
+            # Painel 1: Indicadores Chave de Performance (KPI Cards)
             {
                 "id": 1,
-                "title": "Modelo Campeão do Tuning",
-                "type": "stat",
-                "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+                "title": "Indicadores Gerais da Modelagem",
+                "type": "text",
+                "gridPos": {"x": 0, "y": 0, "w": 24, "h": 4},
                 "options": {
-                    "colorMode": "background",
-                    "graphMode": "none",
-                    "justifyMode": "auto",
-                    "textMode": "auto",
+                    "mode": "html",
+                    "content": kpi_markdown,
                 },
-                "fieldConfig": {
-                    "defaults": {
-                        "color": {"mode": "fixed", "fixedColor": "green"},
-                        "thresholds": {"mode": "absolute", "steps": []},
-                    }
-                },
-                "description": f"Modelo selecionado com o menor erro de CV: {nome_campeao_formatado}",
+                "description": f"Resumo dos resultados da etapa de modelagem e tuning de hiperparâmetros.",
             },
-            # Painel 2: Stat Melhor RMSE
+            # Painel 2: Eventos e Logs de Tuning no Grafana
             {
                 "id": 2,
-                "title": "Melhor RMSE (Validação Cruzada)",
-                "type": "stat",
-                "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
-                "options": {
-                    "colorMode": "value",
-                    "graphMode": "none",
-                    "justifyMode": "auto",
-                },
-                "fieldConfig": {
-                    "defaults": {
-                        "unit": "currencyBRL",
-                        "color": {"mode": "fixed", "fixedColor": "blue"},
-                        "thresholds": {"mode": "absolute", "steps": []},
-                    }
-                },
-                "description": f"RMSE R$ {resultado_tuning.melhor_rmse:,.2f}",
-            },
-            # Painel 3: Stat Total de Modelos
-            {
-                "id": 3,
-                "title": "Modelos Avaliados",
-                "type": "stat",
-                "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
-                "options": {
-                    "colorMode": "value",
-                    "graphMode": "none",
-                    "justifyMode": "auto",
-                },
-                "fieldConfig": {
-                    "defaults": {
-                        "color": {"mode": "fixed", "fixedColor": "purple"},
-                        "thresholds": {"mode": "absolute", "steps": []},
-                    }
-                },
-                "description": f"Total de {len(resultado_tuning.modelos_treinados)} modelos avaliados",
-            },
-            # Painel 4: Stat Motor e Método
-            {
-                "id": 4,
-                "title": "Motor & Busca",
-                "type": "stat",
-                "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
-                "options": {
-                    "colorMode": "value",
-                    "graphMode": "none",
-                    "justifyMode": "auto",
-                },
-                "fieldConfig": {
-                    "defaults": {
-                        "color": {"mode": "fixed", "fixedColor": "orange"},
-                        "thresholds": {"mode": "absolute", "steps": []},
-                    }
-                },
-                "description": f"Motor: {motor.upper()} | Busca: {resultado_tuning.metodo_tuning.upper()} ({resultado_tuning.iteracoes} iterações)",
-            },
-            # Painel 5: Painel de Logs e Eventos de Tuning (Loki / Texto formatado)
-            {
-                "id": 5,
                 "title": "Eventos e Logs de Tuning no Grafana",
                 "type": "text",
                 "gridPos": {"x": 0, "y": 4, "w": 24, "h": 8},
@@ -278,29 +254,19 @@ class PublicadorModelosGrafana:
                     "mode": "markdown",
                     "content": conteudo_markdown_logs,
                 },
-                "description": "Feed em tempo real dos eventos de tuning emitidos para cada modelo de regressão.",
+                "description": "Feed em tempo real dos eventos de tuning emitidos no fuso horário de Brasília/São Paulo.",
             },
-            # Painel 6: Tabela Detalhada de Modelos e Hiperparâmetros
+            # Painel 3: Desempenho dos Modelos e Hiperparâmetros
             {
-                "id": 6,
+                "id": 3,
                 "title": "Desempenho dos Modelos e Hiperparâmetros de Tuning",
-                "type": "table",
-                "gridPos": {"x": 0, "y": 12, "w": 24, "h": 10},
+                "type": "text",
+                "gridPos": {"x": 0, "y": 12, "w": 24, "h": 9},
                 "options": {
-                    "sortBy": [{"displayName": "RMSE", "desc": False}],
+                    "mode": "markdown",
+                    "content": conteudo_markdown_performance,
                 },
-                "fieldConfig": {
-                    "defaults": {
-                        "custom": {
-                            "align": "left",
-                            "filterable": True,
-                        }
-                    }
-                },
-                "description": "Mapeamento completo dos hiperparâmetros ajustados, status e métricas.",
-                "custom": {
-                    "dados_modelos": dados_tabela_modelos,
-                },
+                "description": "Tabela comparativa ranqueada por menor RMSE na validação cruzada.",
             },
         ]
 
