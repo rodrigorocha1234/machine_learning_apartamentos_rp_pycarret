@@ -105,7 +105,7 @@ class TreinadorSklearn(MotorTreinador):
                 prefixo_param = "regressor__"
 
             # Grade de busca
-            grade_configurada = config.tuning.parametros.get(item_modelo.nome, {})
+            grade_configurada = config.tuning.obter_grade_modelo(item_modelo.nome)
             grade_sklearn: dict[str, list[object]] = {
                 f"{prefixo_param}{k}": cast(list[object], v)
                 for k, v in grade_configurada.items()

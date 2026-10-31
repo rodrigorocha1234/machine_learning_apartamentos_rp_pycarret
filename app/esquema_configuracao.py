@@ -6,7 +6,8 @@ sem nenhuma utilização de Any.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from typing import cast
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.enums_dominio import (
     CriterioDesempate,
@@ -305,6 +306,51 @@ class ConfiguracaoFolds(BaseModel):
     )
 
 
+class ParametrosTuningModelo(BaseModel):
+    """Configuração e grade de hiperparâmetros de um modelo específico para tuning."""
+
+    model_config = ConfigDict(extra="allow")
+
+    ativo: bool = Field(default=True, description="Flag para ativar/desativar o tuning deste modelo")
+
+    def obter_grade(self) -> dict[str, list[ValorParametro]]:
+        """Retorna os hiperparâmetros configurados caso o tuning do modelo esteja ativo."""
+        if not self.ativo:
+            return {}
+        grade: dict[str, list[ValorParametro]] = {}
+        if self.model_extra:
+            for chave, valor in self.model_extra.items():
+                if isinstance(valor, list):
+                    grade[chave] = cast(list[ValorParametro], valor)
+        return grade
+
+    def get(
+        self, chave: str, padrao: list[ValorParametro] | None = None
+    ) -> list[ValorParametro] | bool | None:
+        """Obtém um parâmetro da grade ou flag de ativação por chave."""
+        if chave == "ativo":
+            return self.ativo
+        if self.model_extra and chave in self.model_extra:
+            valor = self.model_extra[chave]
+            if isinstance(valor, list):
+                return cast(list[ValorParametro], valor)
+            if isinstance(valor, bool):
+                return valor
+        return padrao
+
+    def __contains__(self, chave: object) -> bool:
+        if chave == "ativo":
+            return True
+        return bool(self.model_extra and chave in self.model_extra)
+
+    def __getitem__(self, chave: str) -> object:
+        if chave == "ativo":
+            return self.ativo
+        if self.model_extra and chave in self.model_extra:
+            return self.model_extra[chave]
+        raise KeyError(chave)
+
+
 class ConfiguracaoTuning(BaseModel):
     """Configurações de otimização de hiperparâmetros (tuning)."""
 
@@ -324,9 +370,31 @@ class ConfiguracaoTuning(BaseModel):
     early_stopping: bool = Field(
         default=False, description="Ativa parada antecipada caso não haja ganho na busca"
     )
-    parametros: dict[str, dict[str, list[ValorParametro]]] = Field(
-        default_factory=dict, description="Espaços de busca parametrizados por modelo"
+    parametros: dict[str, ParametrosTuningModelo] = Field(
+        default_factory=dict, description="Espaços de busca parametrizados por modelo com flag de ativação"
     )
+
+    def obter_grade_modelo(self, nome_modelo: str) -> dict[str, list[ValorParametro]]:
+        """Retorna os hiperparâmetros a ajustar para o modelo especificado.
+
+        Retorna dicionário vazio caso o tuning geral ou o modelo específico estejam desativados.
+        """
+        if not self.ativo:
+            return {}
+        modelo_cfg = self.parametros.get(nome_modelo)
+        if modelo_cfg is None:
+            return {}
+        if isinstance(modelo_cfg, ParametrosTuningModelo):
+            return modelo_cfg.obter_grade()
+        if isinstance(modelo_cfg, dict):
+            if modelo_cfg.get("ativo") is False:
+                return {}
+            return {
+                str(k): cast(list[ValorParametro], v)
+                for k, v in modelo_cfg.items()
+                if k != "ativo" and isinstance(v, list)
+            }
+        return {}
 
 
 class ConfiguracaoMlflow(BaseModel):

@@ -85,7 +85,7 @@ class TreinadorPycaret(MotorTreinador):
                 modelo_base: object = create_model(pycaret_id, verbose=False)
 
                 # 3. Tuning nativo com busca configurada no YAML
-                grade = config.tuning.parametros.get(item_modelo.nome, {})
+                grade = config.tuning.obter_grade_modelo(item_modelo.nome)
                 grade_pycaret: dict[str, list[object]] = {
                     k: cast(list[object], v) for k, v in grade.items()
                 }

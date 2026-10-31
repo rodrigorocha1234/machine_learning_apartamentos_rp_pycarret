@@ -238,14 +238,36 @@ def test_erro_tuning_modelo_inexistente(diretorio_copia_modular: Path) -> None:
     conteudo = arquivo_mod.read_text(encoding="utf-8")
     arquivo_mod.write_text(
         conteudo.replace(
-            "regressao_linear:\n        fit_intercept:",
-            "modelo_fantasma:\n        fit_intercept:",
+            "regressao_linear:\n        ativo: true",
+            "modelo_fantasma:\n        ativo: true",
         ),
         encoding="utf-8",
     )
 
     with pytest.raises(ErroConfiguracao, match="referencia modelo inexistente: 'modelo_fantasma'"):
         ConfYAML(diretorio_copia_modular)
+
+
+def test_tuning_flag_ativo_por_modelo() -> None:
+    """Garante que a flag 'ativo: true/false' funciona por modelo no tuning."""
+    conf = ConfYAML()
+    config = conf.obter_configuracao_completa()
+
+    # Modelos configurados com ativo: true devem retornar suas grades
+    grade_lr = config.modelagem.tuning.obter_grade_modelo("regressao_linear")
+    assert "fit_intercept" in grade_lr
+    assert grade_lr["fit_intercept"] == [True, False]
+    assert "ativo" not in grade_lr
+    assert config.modelagem.tuning.parametros["regressao_linear"].ativo is True
+
+    # Se desativarmos o modelo via flag ativo: false
+    config.modelagem.tuning.parametros["regressao_linear"].ativo = False
+    assert config.modelagem.tuning.obter_grade_modelo("regressao_linear") == {}
+
+    # Se desativarmos o tuning globalmente
+    config.modelagem.tuning.parametros["regressao_linear"].ativo = True
+    config.modelagem.tuning.ativo = False
+    assert config.modelagem.tuning.obter_grade_modelo("regressao_linear") == {}
 
 
 def test_erro_votacao_melhores_n_excedente(diretorio_copia_modular: Path) -> None:

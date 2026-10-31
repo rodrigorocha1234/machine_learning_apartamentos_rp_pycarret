@@ -126,11 +126,18 @@ class OrquestradorImplantacao:
         )
 
         # Hiperparâmetros otimizados do LightGBM
-        params_lgb = config_modelagem.tuning.parametros.get("lightgbm", {})
-        n_estimators = int(str(params_lgb.get("n_estimators", [150])[0])) if "n_estimators" in params_lgb else 150
-        learning_rate = float(str(params_lgb.get("learning_rate", [0.05])[0])) if "learning_rate" in params_lgb else 0.05
-        max_depth = int(str(params_lgb.get("max_depth", [6])[0])) if "max_depth" in params_lgb else 6
-        num_leaves = int(str(params_lgb.get("num_leaves", [31])[0])) if "num_leaves" in params_lgb else 31
+        params_lgb = config_modelagem.tuning.parametros.get("lightgbm")
+        n_est_raw = params_lgb.get("n_estimators") if params_lgb else None
+        n_estimators = int(str(n_est_raw[0])) if isinstance(n_est_raw, list) and n_est_raw else 150
+
+        lr_raw = params_lgb.get("learning_rate") if params_lgb else None
+        learning_rate = float(str(lr_raw[0])) if isinstance(lr_raw, list) and lr_raw else 0.05
+
+        depth_raw = params_lgb.get("max_depth") if params_lgb else None
+        max_depth = int(str(depth_raw[0])) if isinstance(depth_raw, list) and depth_raw else 6
+
+        leaves_raw = params_lgb.get("num_leaves") if params_lgb else None
+        num_leaves = int(str(leaves_raw[0])) if isinstance(leaves_raw, list) and leaves_raw else 31
 
         estimador_lgb = lgb.LGBMRegressor(
             n_estimators=n_estimators,

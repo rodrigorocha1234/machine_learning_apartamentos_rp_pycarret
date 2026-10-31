@@ -740,6 +740,8 @@
       <a href="#diagrama-fluxo" class="nav-item">Diagrama de Fluxo & Sequência</a>
       <a href="#explicacao-multiplicidades" class="nav-item">Guia de Multiplicidades UML</a>
       <div class="nav-label">Componentes</div>
+      <a href="#modulos-sistema" class="nav-item">Estrutura de Módulos (app/)</a>
+      <a href="#execucao-cli" class="nav-item">Guia CLI (disparar_projeto.sh)</a>
       <a href="#etapas-pipeline" class="nav-item">7 Etapas do Pipeline</a>
       <a href="#dicionario-transformacoes" class="nav-item">Dicionário Pandas & Polars</a>
       <a href="#modelos-regressao" class="nav-item">Modelos de Regressão</a>
@@ -1674,6 +1676,459 @@ sequenceDiagram
               <li>Estado compartilhado fortemente tipado em <code>ContextoPipeline</code> sem variáveis globais.</li>
               <li>Permite disparo completo contínuo ou cirúrgico de etapas individuais.</li>
             </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <!-- Architecture & Modules Explanation Section -->
+    <section id="modulos-sistema" class="doc-section">
+      <div class="section-header">
+        <div class="badge-bar" style="margin-bottom: 8px;">
+          <span class="badge primary">Arquitetura Hexagonal (Ports & Adapters)</span>
+          <span class="badge accent">Padrões GoF</span>
+          <span class="badge success">Regra de Duas Palavras</span>
+        </div>
+        <h2 class="section-title">Estrutura e Responsabilidade dos Módulos (app/)</h2>
+        <p class="doc-subtitle">
+          Mapeamento completo dos <strong>21 subpacotes</strong> e <strong>6 módulos centrais</strong> do pacote <code>app/</code>. A arquitetura segue rigorosamente a convenção de <strong>exatamente duas palavras por módulo/pacote</strong>, tipagem forte no Python 3.12+ (sem <code>typing.Any</code>) e desacoplamento total entre contratos abstratos (<em>Ports</em>), implementações concretas (<em>Adapters</em>) e serviços de aplicação (<em>Use Cases</em>).
+        </p>
+      </div>
+
+      <!-- Resumo Visual em Cards das 4 Camadas Arquiteturais -->
+      <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 28px;">
+        <div style="background: rgba(15, 23, 42, 0.7); padding: 18px; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.3); border-top: 4px solid var(--primary);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-size: 1.1rem; font-weight: 700; color: var(--primary);">1. Núcleo & Domínio</span>
+            <span class="badge primary">Raiz app/</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+            Orquestrador CLI geral via Cadeia de Responsabilidade (GoF Chain), leitura singleton/facade de configurações YAML, modelos Pydantic v2 com tipagem estrita, enums centrais e validador de expressões AST.
+          </p>
+          <div style="margin-top: 10px; font-family: monospace; font-size: 0.78rem; color: var(--accent-cyan);">
+            executar_pipeline • conf_yaml • esquema_configuracao • validador_ast • enums_dominio
+          </div>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.7); padding: 18px; border-radius: 10px; border: 1px solid rgba(129, 140, 248, 0.3); border-top: 4px solid #818cf8;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-size: 1.1rem; font-weight: 700; color: #818cf8;">2. Contratos & Interfaces</span>
+            <span class="badge" style="background: rgba(129, 140, 248, 0.15); color: #818cf8;">Ports (Protocols)</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+            Protocolos abstratos (GoF Strategy/Repository/Observer) que blindam a regra de negócio contra dependências de frameworks externos (Pandas, Polars, Sklearn, PyCaret, SQLite ou Grafana).
+          </p>
+          <div style="margin-top: 10px; font-family: monospace; font-size: 0.78rem; color: #a5b4fc;">
+            contratos_dados • contratos_modelagem • contratos_avaliacao • contratos_implantacao • contratos_drift • contratos_visualizacao
+          </div>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.7); padding: 18px; border-radius: 10px; border: 1px solid rgba(245, 158, 11, 0.3); border-top: 4px solid var(--accent-amber);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-amber);">3. Motores & Adaptadores</span>
+            <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">Adapters Concretos</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+            Implementações concretas intercambiáveis instanciadas por GoF Factories: processamento Pandas/Polars, trilhas de ML Sklearn/PyCaret, SQLite, KS-Test/PSI e renderizadores Grafana.
+          </p>
+          <div style="margin-top: 10px; font-family: monospace; font-size: 0.78rem; color: #fde68a;">
+            fontes_dados • repositorios_dados • motores_tabela • motores_modelagem • motores_regras • comites_votacao • detectores_drift • adaptadores_visualizacao
+          </div>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.7); padding: 18px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.3); border-top: 4px solid var(--success);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-size: 1.1rem; font-weight: 700; color: var(--success);">4. Serviços de Aplicação</span>
+            <span class="badge success">Use Cases (7 Etapas)</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+            Orquestradores específicos de cada uma das 7 etapas do pipeline de ML, coordenando ingestão, preparação, EDA, tuning, testes de Friedman/Nemenyi, serving FastAPI e observabilidade.
+          </p>
+          <div style="margin-top: 10px; font-family: monospace; font-size: 0.78rem; color: #6ee7b7;">
+            servicos_coleta • servicos_preparacao • servicos_eda • servicos_modelagem • servicos_avaliacao • servicos_implantacao • servicos_observabilidade
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Analítica Completa dos 21 Pacotes e 6 Módulos Raiz -->
+      <h3 style="color: var(--accent-cyan); font-size: 1.2rem; margin: 28px 0 14px;">
+        Tabela Analítica Completa dos Componentes de <code>app/</code>
+      </h3>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 220px;">Diretório / Módulo</th>
+              <th style="width: 260px;">Arquivos Python</th>
+              <th style="width: 140px;">Camada</th>
+              <th>Padrão de Projeto & Responsabilidade no Sistema</th>
+              <th style="width: 120px;">Etapa Alvo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Raiz app/ -->
+            <tr style="background: rgba(30, 41, 59, 0.4);">
+              <td><code>executar_pipeline.py</code></td>
+              <td><code>executar_pipeline.py</code></td>
+              <td><span class="badge primary">Orquestração</span></td>
+              <td>Ponto de entrada CLI (<code>main()</code>). Implementa o padrão GoF <strong>Chain of Responsibility</strong> (<code>EloCadeiaPipeline</code> e <code>ConstrutorCadeiaPipeline</code>) com estado compartilhado em <code>ContextoPipeline</code>. Permite executar o ciclo completo (1 a 7) ou qualquer etapa cirurgicamente.</td>
+              <td><span class="badge accent">Global (1..7)</span></td>
+            </tr>
+            <tr style="background: rgba(30, 41, 59, 0.4);">
+              <td><code>conf_yaml.py</code></td>
+              <td><code>conf_yaml.py</code></td>
+              <td><span class="badge primary">Configuração</span></td>
+              <td>Padrão GoF <strong>Singleton / Facade</strong> (<code>ConfYAML</code>). Centraliza a descoberta, carregamento unificado e cache dos 7 arquivos YAML de configuração, expondo getters tipados para cada subsistema.</td>
+              <td><span class="badge accent">Global (1..7)</span></td>
+            </tr>
+            <tr style="background: rgba(30, 41, 59, 0.4);">
+              <td><code>esquema_configuracao.py</code></td>
+              <td><code>esquema_configuracao.py</code></td>
+              <td><span class="badge primary">Configuração</span></td>
+              <td>Contratos e esquemas de dados em <strong>Pydantic v2</strong> com tipagem forte e validação estrita em runtime (<code>ConfiguracaoCompleta</code>, <code>ConfiguracaoModelagem</code>, etc.), impedindo parâmetros inválidos ou fora de catálogo.</td>
+              <td><span class="badge accent">Global (1..7)</span></td>
+            </tr>
+            <tr style="background: rgba(30, 41, 59, 0.4);">
+              <td><code>validador_ast.py</code></td>
+              <td><code>validador_ast.py</code></td>
+              <td><span class="badge warning">Segurança</span></td>
+              <td>Avaliador de segurança em <strong>AST (Abstract Syntax Tree)</strong> com lista positiva restrita de nós e operadores matemáticos/lógicos. Bloqueia chamadas inseguras, imports (<code>__import__</code>), I/O de arquivos e rede em filtros <code>where</code> e fórmulas de negócio.</td>
+              <td><span class="badge accent">Etapas 2, 3, 6</span></td>
+            </tr>
+            <tr style="background: rgba(30, 41, 59, 0.4);">
+              <td><code>enums_dominio.py</code></td>
+              <td><code>enums_dominio.py</code></td>
+              <td><span class="badge primary">Domínio</span></td>
+              <td>Enumerações imutáveis de domínio estrito do ecossistema: <code>EtapaPipeline</code>, <code>TecnicaValidacaoCruzada</code>, <code>MetodoTuning</code>, <code>TipoGrafico</code>, <code>MotorTabular</code>, <code>TipoDrift</code> e <code>ClassificacaoDrift</code>.</td>
+              <td><span class="badge accent">Global (1..7)</span></td>
+            </tr>
+
+            <!-- Contratos (Ports) -->
+            <tr>
+              <td><code>contratos_dados/</code></td>
+              <td><code>fonte_dados.py</code><br><code>motor_tabela.py</code><br><code>repositorio_dados.py</code></td>
+              <td><span class="badge" style="background: rgba(129, 140, 248, 0.15); color: #818cf8;">Ports</span></td>
+              <td>Padrão GoF <strong>Strategy & Repository</strong>. Protocolos abstratos de dados tabulares: <code>FonteDados</code> (ingestão), <code>MotorTabela</code> (transformações vetorizadas) e <code>RepositorioDados</code> (gravação/leitura no banco de staging).</td>
+              <td><span class="badge accent">Etapas 1 e 2</span></td>
+            </tr>
+            <tr>
+              <td><code>contratos_modelagem/</code></td>
+              <td><code>motor_treinador.py</code></td>
+              <td><span class="badge" style="background: rgba(129, 140, 248, 0.15); color: #818cf8;">Ports</span></td>
+              <td>Padrão GoF <strong>Strategy</strong>. Define a interface abstrata <code>MotorTreinador</code> com métodos obrigatórios <code>obter_nome_motor()</code> e <code>treinar_e_ajustar()</code>, padronizando a saída de tuning e métricas.</td>
+              <td><span class="badge accent">Etapa 4</span></td>
+            </tr>
+            <tr>
+              <td><code>contratos_avaliacao/</code></td>
+              <td><code>avaliador_estatistico.py</code><br><code>construtor_comite.py</code></td>
+              <td><span class="badge" style="background: rgba(129, 140, 248, 0.15); color: #818cf8;">Ports</span></td>
+              <td>Padrão GoF <strong>Strategy / Builder</strong>. Protocolos para execução dos testes pareados não-paramétricos (Friedman e Nemenyi) e para construção de comitês de votação por ensemble.</td>
+              <td><span class="badge accent">Etapa 5</span></td>
+            </tr>
+            <tr>
+              <td><code>contratos_implantacao/</code></td>
+              <td><code>provedor_campeao.py</code><br><code>avaliador_regras.py</code></td>
+              <td><span class="badge" style="background: rgba(129, 140, 248, 0.15); color: #818cf8;">Ports</span></td>
+              <td>Padrão GoF <strong>Bridge / Strategy</strong>. Contratos para carregamento do artefato do modelo promovido (<code>ProvedorCampeao</code>) e para aplicação dinâmica das fórmulas de regras de negócio (<code>AvaliadorRegras</code>).</td>
+              <td><span class="badge accent">Etapa 6</span></td>
+            </tr>
+            <tr>
+              <td><code>contratos_drift/</code></td>
+              <td><code>detector_drift.py</code><br><code>publicador_metricas.py</code></td>
+              <td><span class="badge" style="background: rgba(129, 140, 248, 0.15); color: #818cf8;">Ports</span></td>
+              <td>Padrão GoF <strong>Strategy & Observer</strong>. Contratos para computação taxonômica de desvio estatístico de distribuições (<code>DetectorDrift</code>) e publicação em time-series (<code>PublicadorMetricas</code>).</td>
+              <td><span class="badge accent">Etapa 7</span></td>
+            </tr>
+            <tr>
+              <td><code>contratos_visualizacao/</code></td>
+              <td><code>adaptador_visualizacao.py</code></td>
+              <td><span class="badge" style="background: rgba(129, 140, 248, 0.15); color: #818cf8;">Ports</span></td>
+              <td>Padrão GoF <strong>Adapter</strong>. Interface abstrata unificada <code>AdaptadorVisualizacao</code> para geração e exportação de gráficos de EDA para múltiplos motores visuais (Grafana, relatórios estáticos, Plotly, etc.).</td>
+              <td><span class="badge accent">Etapa 3</span></td>
+            </tr>
+
+            <!-- Motores & Infraestrutura (Adapters) -->
+            <tr>
+              <td><code>fontes_dados/</code></td>
+              <td><code>fonte_excel.py</code><br><code>fabrica_fontes.py</code></td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">Adapters</span></td>
+              <td>Padrão GoF <strong>Factory Method</strong>. <code>FonteExcel</code> executa a leitura da planilha <code>.xlsx</code> preservando tipos e tratando exceções. <code>FabricaFontes</code> instancia a fonte adequada conforme configuração YAML.</td>
+              <td><span class="badge accent">Etapa 1</span></td>
+            </tr>
+            <tr>
+              <td><code>repositorios_dados/</code></td>
+              <td><code>repositorio_sqlite.py</code><br><code>fabrica_repositorios.py</code></td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">Adapters</span></td>
+              <td>Padrão GoF <strong>Repository & Factory</strong>. <code>RepositorioSqlite</code> gerencia tabelas no banco intermediário SQLite (<code>imoveis_preparados</code>, <code>imoveis_limpos</code>). <code>FabricaRepositorios</code> permite substituição por PostgreSQL/MySQL sem tocar no pipeline.</td>
+              <td><span class="badge accent">Etapas 1 e 2</span></td>
+            </tr>
+            <tr>
+              <td><code>motores_tabela/</code></td>
+              <td><code>motor_pandas.py</code><br><code>motor_polars.py</code><br><code>fabrica_motores.py</code></td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">Adapters</span></td>
+              <td>Padrão GoF <strong>Strategy & Factory Method</strong>. Implementa operações tabulares vetorizadas puras em <strong>Pandas</strong> (Series/Vectorized) ou <strong>Polars</strong> (LazyFrame/Expressions), eliminando loops manuais (<code>iterrows</code>). Selecionável via YAML.</td>
+              <td><span class="badge accent">Etapa 2</span></td>
+            </tr>
+            <tr>
+              <td><code>motores_modelagem/</code></td>
+              <td><code>treinador_sklearn.py</code><br><code>treinador_pycaret.py</code><br><code>fabrica_treinadores.py</code><br><code>fabrica_folds.py</code></td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">Adapters</span></td>
+              <td>Padrão GoF <strong>Strategy & Abstract Factory</strong>. Isolamento físico estrito entre a trilha Scikit-Learn nativa e PyCaret nativo (<code>RegressionExperiment</code>). <code>FabricaFolds</code> constrói divisores (<code>KFold</code>, <code>RepeatedKFold</code>, etc.) sem vazamento de dados.</td>
+              <td><span class="badge accent">Etapa 4</span></td>
+            </tr>
+            <tr>
+              <td><code>motores_regras/</code></td>
+              <td><code>avaliador_pandas.py</code><br><code>avaliador_polars.py</code></td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">Adapters</span></td>
+              <td>Padrão GoF <strong>Strategy</strong>. Aplica as fórmulas das regras de negócio (ex: preço mínimo sugerido, comissão imobiliária) de forma vetorizada após a predição, avaliadas de modo seguro com o validador AST.</td>
+              <td><span class="badge accent">Etapa 6</span></td>
+            </tr>
+            <tr>
+              <td><code>comites_votacao/</code></td>
+              <td><code>comite_sklearn.py</code></td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">Adapters</span></td>
+              <td>Padrão GoF <strong>Composite</strong>. Combina os $ melhores modelos selecionados pelo teste de Friedman/Nemenyi através de <code>VotingRegressor</code>, média ponderada por inverso de RMSE ou média simples.</td>
+              <td><span class="badge accent">Etapa 5</span></td>
+            </tr>
+            <tr>
+              <td><code>detectores_drift/</code></td>
+              <td><code>calculador_drift.py</code><br><code>avaliador_qualidade.py</code></td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">Adapters</span></td>
+              <td>Computação estatística de desvio populacional: teste bi-amostral de <strong>Kolmogorov-Smirnov</strong> para variáveis contínuas, <strong>PSI (Population Stability Index)</strong> para categorias, e checagens de completude e integridade de schema.</td>
+              <td><span class="badge accent">Etapa 7</span></td>
+            </tr>
+            <tr>
+              <td><code>adaptadores_visualizacao/</code></td>
+              <td><code>adaptador_grafana.py</code><br><code>adaptador_relatorios.py</code><br><code>fabrica_visualizadores.py</code></td>
+              <td><span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">Adapters</span></td>
+              <td>Padrão GoF <strong>Adapter & Factory</strong>. <code>AdaptadorGrafana</code> sintetiza métricas em formatos compatíveis com dashboards Grafana. <code>AdaptadorRelatorios</code> exporta relatórios autônomos em JSON e HTML interativo.</td>
+              <td><span class="badge accent">Etapa 3</span></td>
+            </tr>
+
+            <!-- Serviços de Aplicação (Use Cases) -->
+            <tr>
+              <td><code>servicos_coleta/</code></td>
+              <td><code>coletor_dados.py</code></td>
+              <td><span class="badge success">Use Case</span></td>
+              <td>Orquestrador da <strong>Etapa 1</strong>. Conecta a fonte de dados (XLSX), valida a presença das colunas obrigatórias e persiste a carga inicial no banco SQLite de staging. Retorna <code>ResultadoColeta</code>.</td>
+              <td><span class="badge accent">Etapa 1: Coleta</span></td>
+            </tr>
+            <tr>
+              <td><code>servicos_preparacao/</code></td>
+              <td><code>preparador_dados.py</code></td>
+              <td><span class="badge success">Use Case</span></td>
+              <td>Orquestrador da <strong>Etapa 2</strong>. Aplica seleção de colunas ativas, filtros <code>where</code> validados por AST, imputação de nulos (mediana/moda) e derivação de novos atributos. Salva a tabela tratada. Retorna <code>ResultadoPreparacao</code>.</td>
+              <td><span class="badge accent">Etapa 2: Preparação</span></td>
+            </tr>
+            <tr>
+              <td><code>servicos_eda/</code></td>
+              <td><code>analisador_eda.py</code><br><code>calculador_estatistico.py</code></td>
+              <td><span class="badge success">Use Case</span></td>
+              <td>Orquestrador da <strong>Etapa 3</strong>. Computa análises univariadas, histogramas, boxplots por bairro/zona, dispersão metragem vs preço e matriz de correlação de Pearson. Exporta relatórios. Retorna <code>ResultadoEda</code>.</td>
+              <td><span class="badge accent">Etapa 3: EDA</span></td>
+            </tr>
+            <tr>
+              <td><code>servicos_modelagem/</code></td>
+              <td><code>orquestrador_modelagem.py</code><br><code>rastreador_mlflow.py</code></td>
+              <td><span class="badge success">Use Case</span></td>
+              <td>Orquestrador da <strong>Etapa 4</strong>. Executa o ciclo de tuning dos modelos ativos conforme o motor selecionado (PyCaret ou Sklearn) e gerencia o rastreamento hierárquico no MLflow com runs pai e filhos. Retorna <code>ResultadoModelagem</code>.</td>
+              <td><span class="badge accent">Etapa 4: Modelagem</span></td>
+            </tr>
+            <tr>
+              <td><code>servicos_avaliacao/</code></td>
+              <td><code>orquestrador_avaliacao.py</code><br><code>validador_cruzado.py</code><br><code>testador_friedman.py</code><br><code>avaliador_holdout.py</code></td>
+              <td><span class="badge success">Use Case</span></td>
+              <td>Orquestrador da <strong>Etapa 5</strong>. Segrega holdout cego (20%), executa validação cruzada pareada em matriz idêntica de folds, aplica testes não-paramétricos de <strong>Friedman e Nemenyi</strong>, avalia ensemble opcional e recomenda o campeão. Retorna <code>ResultadoEtapaAvaliacao</code>.</td>
+              <td><span class="badge accent">Etapa 5: Avaliação</span></td>
+            </tr>
+            <tr>
+              <td><code>servicos_implantacao/</code></td>
+              <td><code>orquestrador_implantacao.py</code><br><code>carregador_campeao.py</code><br><code>servico_inferencia.py</code><br><code>aplicacao_fastapi.py</code></td>
+              <td><span class="badge success">Use Case</span></td>
+              <td>Orquestrador da <strong>Etapa 6</strong>. Realiza o retreinamento final com pipeline encapsulado (One-Hot, Imputer, Scaler e TransformedTargetRegressor log1p), valida no holdout cego, serializa artefatos em <code>production_artifacts/campeao/</code>, registra no MLflow e expõe a API FastAPI. Retorna <code>ResultadoImplantacao</code>.</td>
+              <td><span class="badge accent">Etapa 6: Implantação</span></td>
+            </tr>
+            <tr>
+              <td><code>servicos_observabilidade/</code></td>
+              <td><code>orquestrador_drift.py</code><br><code>publicador_grafana.py</code></td>
+              <td><span class="badge success">Use Case</span></td>
+              <td>Orquestrador da <strong>Etapa 7</strong>. Compara a base de referência (treino) com a base de produção/inferência, identifica a taxonomia do desvio (Covariate, Concept, Prediction Drift) e emite telemetria com limiares para alertas. Retorna <code>ResultadoRelatorioDrift</code>.</td>
+              <td><span class="badge accent">Etapa 7: Drift</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Guia Operacional & CLI (disparar_projeto.sh) Section -->
+    <section id="execucao-cli" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">Guia Operacional & CLI (disparar_projeto.sh)</h2>
+        <p class="section-desc">
+          O script <code>disparar_projeto.sh</code> é o orquestrador unificado de linha de comando (CLI) do projeto. Ele automatiza a verificação do ambiente virtual Python, a subida dos containers Docker (PostgreSQL, MLflow, Prometheus e Grafana), a execução do pipeline de ML, o retreinamento e promoção do modelo campeão, a suíte de qualidade de código e o servidor FastAPI.
+        </p>
+      </div>
+
+      <!-- Cards de Pilares Operacionais -->
+      <div class="cards-grid">
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--primary);">●</span> Automação Idempotente & Ambiente
+          </div>
+          <div class="card-body">
+            Garante execução segura e determinística via Bash estruturado (<code>set -e</code>):
+            <ul class="feature-list">
+              <li>Valida a existência do ambiente virtual <code>.venv</code> na raiz do projeto.</li>
+              <li>Ativa o ambiente virtual automaticamente (<code>source .venv/bin/activate</code>).</li>
+              <li>Injeta o diretório do projeto no <code>PYTHONPATH</code> para resolução de módulos canônicos.</li>
+              <li>Exibe banner explicativo com paleta de cores ANSI para monitoramento visual no terminal.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--secondary);">●</span> Gestão de Infraestrutura Docker
+          </div>
+          <div class="card-body">
+            Verificação e subida automática dos serviços de observabilidade e tracking:
+            <ul class="feature-list">
+              <li>Verifica a disponibilidade do Docker Daemon no sistema operacional.</li>
+              <li>Se os containers não estiverem rodando, dispara <code>docker compose up -d</code>.</li>
+              <li><strong>MLflow Tracking Server:</strong> disponível em <code>http://localhost:5000</code>.</li>
+              <li><strong>Grafana Dashboards:</strong> telemetria e métricas em <code>http://localhost:3000</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="card-title">
+            <span style="color: var(--accent);">●</span> Quality Gates & Tipagem Estrita
+          </div>
+          <div class="card-body">
+            Garante conformidade completa antes de qualquer avanço de código ou deploy:
+            <ul class="feature-list">
+              <li><strong>Pytest:</strong> executa 134 testes automatizados cobrindo todas as 7 etapas.</li>
+              <li><strong>MyPy:</strong> validação de tipos estrita em 109 arquivos-fonte sem <code>Any</code>.</li>
+              <li><strong>Pyright:</strong> checagem estrita de interfaces, protocolos GoF e contratos.</li>
+              <li>Interrompe o script imediatamente se houver qualquer regressão funcional ou de tipagem.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de Comandos CLI -->
+      <h3 style="margin: 2rem 0 1rem; color: var(--text-heading); font-size: 1.15rem;">
+        Catálogo Completo de Comandos do <code>disparar_projeto.sh</code>
+      </h3>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Comando</th>
+              <th>Sintaxe</th>
+              <th>Ação Executada</th>
+              <th>Serviços & Pré-requisitos</th>
+              <th>Evidências / Portas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge primary">Pipeline Completo</span></td>
+              <td><code>./disparar_projeto.sh</code> ou<br><code>./disparar_projeto.sh pipeline</code></td>
+              <td>Executa as <strong>7 etapas completas</strong> do pipeline sequencialmente via Cadeia de Responsabilidade (Coleta, Preparação, EDA, Modelagem, Avaliação, Implantação e Drift).</td>
+              <td>Ativa <code>.venv</code>, valida Docker (sobe MLflow/Grafana se inativos).</td>
+              <td>Logs estruturados no terminal, runs no MLflow (<code>:5000</code>), artefatos em <code>production_artifacts/</code>.</td>
+            </tr>
+            <tr>
+              <td><span class="badge success">Modelo Campeão</span></td>
+              <td><code>./disparar_projeto.sh campeao</code></td>
+              <td>Executa a <strong>Etapa 6</strong>: treina o pipeline campeão (LightGBM com One-Hot, Imputação e Log1p), avalia no holdout cego de 20%, aplica regras de negócio e promove os artefatos.</td>
+              <td>Ativa <code>.venv</code>, checa Docker para registro do artefato campeão.</td>
+              <td><code>production_artifacts/campeao/pipeline.pkl</code>, <code>metadata.json</code> e métricas de holdout.</td>
+            </tr>
+            <tr>
+              <td><span class="badge accent">Etapa Específica</span></td>
+              <td><code>./disparar_projeto.sh etapa &lt;N&gt;</code><br><em>(ex: <code>./disparar_projeto.sh etapa 4</code>)</em></td>
+              <td>Executa isoladamente uma etapa de 1 a 7 (1: Coleta, 2: Preparação, 3: EDA, 4: Modelagem/Tuning, 5: Avaliação CV, 6: Implantação, 7: Drift).</td>
+              <td>Ativa <code>.venv</code> e Docker. Requer que os dados das etapas anteriores estejam no staging.</td>
+              <td>Saída específica da etapa no terminal e persistência intermediária (SQLite/MLflow).</td>
+            </tr>
+            <tr>
+              <td><span class="badge success">API FastAPI</span></td>
+              <td><code>./disparar_projeto.sh api</code></td>
+              <td>Inicia o servidor de inferência REST em tempo real com live-reload (Uvicorn). Carrega o pipeline campeão promovido e o motor seguro de regras de negócio.</td>
+              <td>Ativa <code>.venv</code>. Requer artefatos em <code>production_artifacts/campeao/</code>.</td>
+              <td>Servidor em <code>http://localhost:8000</code><br>Swagger UI em <code>http://localhost:8000/docs</code>.</td>
+            </tr>
+            <tr>
+              <td><span class="badge warning">Quality Gate / Testes</span></td>
+              <td><code>./disparar_projeto.sh testes</code></td>
+              <td>Dispara a bateria rigorosa de qualidade: (1) <code>pytest tests/ -v</code>, (2) <code>mypy app tests conf_yaml.py</code> e (3) <code>pyright app/ tests/</code>.</td>
+              <td>Ativa <code>.venv</code>.</td>
+              <td>Relatório detalhado de 134 testes e garantia de 0 erros de tipagem estrita.</td>
+            </tr>
+            <tr>
+              <td><span class="badge primary">Infraestrutura Docker</span></td>
+              <td><code>./disparar_projeto.sh docker</code></td>
+              <td>Verifica e inicializa os containers do Docker Compose (PostgreSQL, MLflow Server, Prometheus e Grafana).</td>
+              <td>Docker Daemon rodando no host.</td>
+              <td>Postgres (<code>:5432</code>), MLflow (<code>:5000</code>), Prometheus (<code>:9090</code>), Grafana (<code>:3000</code>).</td>
+            </tr>
+            <tr>
+              <td><span class="badge accent">Documentação HTML</span></td>
+              <td><code>./disparar_projeto.sh docs</code></td>
+              <td>Exibe os caminhos locais dos relatórios HTML e abre automaticamente a documentação técnica no navegador padrão via <code>xdg-open</code>.</td>
+              <td>Navegador web ou visualizador HTML local.</td>
+              <td><code>documentacao_projeto.html</code> e <code>docs/index.html</code>.</td>
+            </tr>
+            <tr>
+              <td><span class="badge">Ajuda & Menu</span></td>
+              <td><code>./disparar_projeto.sh ajuda</code></td>
+              <td>Exibe o menu de opções, comandos suportados e sintaxes no terminal.</td>
+              <td>Bash compatível.</td>
+              <td>Saída de texto colorida formatada.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Exemplos Práticos de Workflows -->
+      <h3 style="margin: 2rem 0 1rem; color: var(--text-heading); font-size: 1.15rem;">
+        Fluxos Práticos de Trabalho com a CLI
+      </h3>
+
+      <div class="cards-grid">
+        <div class="info-card">
+          <div class="card-title">Fluxo 1: Ciclo de Desenvolvimento & Qualidade</div>
+          <div class="card-body">
+            Ao alterar código, esquemas YAML ou contratos arquiteturais:
+            <pre class="code-block">
+# 1. Executar os testes automatizados e checagem de tipos estrita (Pytest + MyPy + Pyright)
+./disparar_projeto.sh testes
+
+# 2. Testar isoladamente a etapa modificada (exemplo: Etapa 4 - Modelagem & Tuning)
+./disparar_projeto.sh etapa 4</pre>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="card-title">Fluxo 2: Treinamento & Publicação da API</div>
+          <div class="card-body">
+            Para retreinar o modelo campeão com dados atualizados e servir inferências:
+            <pre class="code-block">
+# 1. Treinar, validar no holdout intocado e promover o campeão LightGBM
+./disparar_projeto.sh campeao
+
+# 2. Iniciar o servidor HTTP FastAPI com documentação Swagger
+./disparar_projeto.sh api
+
+# 3. Testar a inferência via cURL:
+curl -X POST "http://localhost:8000/invocations" \
+     -H "Content-Type: application/json" \
+     -d '{"Metragem": 75.0, "Quartos": 2, "Bairro": "Centro", "Vagas": 1, "Banheiros": 2}'</pre>
           </div>
         </div>
       </div>

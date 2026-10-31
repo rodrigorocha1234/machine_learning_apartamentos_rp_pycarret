@@ -1,4 +1,6 @@
 <svg id="my-svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 519px; background-color: transparent;" viewBox="4 4 519 7547.5" role="graphics-document document" aria-roledescription="flowchart-v2"><style>
+#my-svg text, #my-svg tspan, #my-svg foreignObject { font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif !important; }
+
 #my-svg {
   shape-rendering: geometricPrecision !important;
   text-rendering: geometricPrecision !important;
