@@ -14,7 +14,7 @@ from app.motores_modelagem.treinador_pycaret import TreinadorPycaret
 from app.motores_modelagem.treinador_sklearn import TreinadorSklearn
 
 
-def test_fabrica_folds_kfold():
+def test_fabrica_folds_kfold() -> None:
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=True,
@@ -28,7 +28,7 @@ def test_fabrica_folds_kfold():
     assert divisor.random_state == 123
 
 
-def test_fabrica_folds_repeated_kfold():
+def test_fabrica_folds_repeated_kfold() -> None:
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=True,
@@ -40,7 +40,7 @@ def test_fabrica_folds_repeated_kfold():
     assert divisor.get_n_splits() == 10  # 5 splits * 2 repeats
 
 
-def test_fabrica_folds_shuffle_split():
+def test_fabrica_folds_shuffle_split() -> None:
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=True,
@@ -53,7 +53,7 @@ def test_fabrica_folds_shuffle_split():
     assert divisor.test_size == 0.25
 
 
-def test_fabrica_folds_time_series_split():
+def test_fabrica_folds_time_series_split() -> None:
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=True,
@@ -66,7 +66,7 @@ def test_fabrica_folds_time_series_split():
     assert divisor.max_train_size == 100
 
 
-def test_fabrica_folds_inativo_retorna_fallback():
+def test_fabrica_folds_inativo_retorna_fallback() -> None:
     fabrica = FabricaFolds()
     config = ConfiguracaoFolds(
         ativo=False,
@@ -79,13 +79,13 @@ def test_fabrica_folds_inativo_retorna_fallback():
     assert divisor.shuffle is True
 
 
-def test_treinador_sklearn_com_fabrica_folds_injetada():
+def test_treinador_sklearn_com_fabrica_folds_injetada() -> None:
     fabrica = FabricaFolds()
     treinador = TreinadorSklearn(fabrica_folds=fabrica)
     assert treinador.obter_nome_motor() == "sklearn"
 
 
-def test_treinador_pycaret_com_fabrica_folds_injetada():
+def test_treinador_pycaret_com_fabrica_folds_injetada() -> None:
     fabrica = FabricaFolds()
     treinador = TreinadorPycaret(fabrica_folds=fabrica)
     assert treinador.obter_nome_motor() == "pycaret"

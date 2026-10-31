@@ -386,18 +386,31 @@
       cursor: grabbing !important;
     }
 
-    .svg-diagram {
+    .svg-diagram,
+    .diagram-viewport svg {
       max-width: 100%;
       height: auto;
-      filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
       border-radius: 8px;
       transition: transform 0.08s ease-out;
       transform-origin: center center;
       will-change: transform;
       pointer-events: none;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      shape-rendering: geometricPrecision;
+      text-rendering: geometricPrecision;
     }
 
-    #tab-atividades .svg-diagram {
+    /* Modo Tamanho Real (1:1) com nitidez nativa vetorial sem compressão */
+    .diagram-viewport.modo-tamanho-real .svg-diagram,
+    .diagram-viewport.modo-tamanho-real svg {
+      max-width: none !important;
+      width: auto !important;
+      height: auto !important;
+    }
+
+    #tab-atividades .svg-diagram,
+    #tab-atividades svg {
       max-width: 980px;
       width: 100%;
       height: auto;
@@ -1326,6 +1339,14 @@ sequenceDiagram
           </div>
 
           <div class="actions-toolbar">
+            <button class="ctrl-btn" onclick="alternarTamanhoReal()" title="Alternar entre Ajustar à Tela e Resolução Nativa 1:1 (Nitidez Máxima)">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+              Nitidez 1:1
+            </button>
+            <button class="ctrl-btn" onclick="abrirSvgNovaAba()" title="Abrir imagem vetorial pura SVG em nova guia para zoom de alta resolução">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/></svg>
+              Abrir SVG
+            </button>
             <button class="ctrl-btn" onclick="copiarMermaid()">
               <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>
               Copiar Código Mermaid
@@ -4248,15 +4269,15 @@ params:
       const pane = document.getElementById(tabId);
       if (!pane) return;
       const estado = estadoZoom[tabId] || { zoom: 1.0, panX: 0, panY: 0 };
-      const img = pane.querySelector('.svg-diagram');
+      const elDiagrama = pane.querySelector('.svg-diagram') || pane.querySelector('svg');
       const viewport = pane.querySelector('.diagram-viewport');
 
-      if (img) {
-        img.style.transform = `translate(${estado.panX}px, ${estado.panY}px) scale(${estado.zoom})`;
+      if (elDiagrama) {
+        elDiagrama.style.transform = `translate(${estado.panX}px, ${estado.panY}px) scale(${estado.zoom})`;
       }
 
       if (viewport) {
-        if (estado.zoom > 1.0) {
+        if (estado.zoom > 1.0 || viewport.classList.contains('modo-tamanho-real')) {
           viewport.classList.add('panning');
         } else {
           viewport.classList.remove('panning');
@@ -4267,9 +4288,75 @@ params:
       if (tabId === obterAbaAtivaId()) {
         const badge = document.getElementById('badge-zoom-nivel');
         if (badge) {
-          badge.textContent = `${Math.round(estado.zoom * 100)}%`;
+          const sufixo = (viewport && viewport.classList.contains('modo-tamanho-real')) ? ' (1:1)' : '';
+          badge.textContent = `${Math.round(estado.zoom * 100)}%${sufixo}`;
         }
       }
+    }
+
+    function alternarTamanhoReal() {
+      const tabId = obterAbaAtivaId();
+      const pane = document.getElementById(tabId);
+      if (!pane) return;
+      const viewport = pane.querySelector('.diagram-viewport');
+      if (!viewport) return;
+      const estado = estadoZoom[tabId];
+
+      const estaReal = viewport.classList.toggle('modo-tamanho-real');
+      if (estaReal) {
+        estado.zoom = 1.0;
+        estado.panX = 0;
+        estado.panY = 0;
+      }
+      atualizarTransformAba(tabId);
+    }
+
+    function abrirSvgNovaAba() {
+      const tabId = obterAbaAtivaId();
+      const mapeamento = {
+        'tab-uml': 'diagramas/diagrama_classes.svg',
+        'tab-atividades': 'diagramas/diagrama_atividades.svg',
+        'tab-fluxo': 'diagramas/diagrama_sequencia.svg'
+      };
+      const url = mapeamento[tabId] || 'diagramas/diagrama_classes.svg';
+      window.open(url, '_blank');
+    }
+
+    // Carregamento vetorial transparente dos arquivos SVG diretamente no DOM para nitidez subpixel
+    function carregarSvgsVetoriais() {
+      const mapeamento = {
+        'tab-uml': 'diagramas/diagrama_classes.svg',
+        'tab-atividades': 'diagramas/diagrama_atividades.svg',
+        'tab-fluxo': 'diagramas/diagrama_sequencia.svg'
+      };
+
+      Object.entries(mapeamento).forEach(([tabId, url]) => {
+        fetch(url)
+          .then(res => {
+            if (!res.ok) throw new Error('Não foi possível carregar SVG');
+            return res.text();
+          })
+          .then(svgText => {
+            const pane = document.getElementById(tabId);
+            if (!pane) return;
+            const viewport = pane.querySelector('.diagram-viewport');
+            if (!viewport) return;
+            viewport.innerHTML = svgText;
+            const svgEl = viewport.querySelector('svg');
+            if (svgEl) {
+              svgEl.classList.add('svg-diagram');
+              svgEl.setAttribute('shape-rendering', 'geometricPrecision');
+              svgEl.setAttribute('text-rendering', 'geometricPrecision');
+              svgEl.style.maxWidth = '100%';
+              svgEl.style.height = 'auto';
+              svgEl.style.pointerEvents = 'none';
+            }
+            atualizarTransformAba(tabId);
+          })
+          .catch(() => {
+            // Em visualizações locais restritas de file://, o elemento <img> existente é mantido
+          });
+      });
     }
 
     function zoomIn() {
@@ -4390,10 +4477,15 @@ params:
       });
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', inicializarInteracoesDiagramas);
-    } else {
+    function iniciarTudo() {
       inicializarInteracoesDiagramas();
+      carregarSvgsVetoriais();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', iniciarTudo);
+    } else {
+      iniciarTudo();
     }
 
     // Copiar código Mermaid original da aba ativa

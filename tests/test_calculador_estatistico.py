@@ -76,7 +76,9 @@ def test_calculador_boxplot(dados_teste: pd.DataFrame) -> None:
     resultado = calculador.calcular_analise(dados_teste, item)
 
     assert resultado.tipo_grafico == "boxplot"
-    assert "Centro" in resultado.dados_estruturados["categorias"]  # pyright: ignore[reportOperatorIssue]
+    categorias = resultado.dados_estruturados.get("categorias")
+    assert isinstance(categorias, list)
+    assert "Centro" in categorias
     assert resultado.metricas_resumo["total_categorias"] == 3.0
 
 

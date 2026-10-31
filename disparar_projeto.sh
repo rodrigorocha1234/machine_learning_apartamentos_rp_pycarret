@@ -100,6 +100,8 @@ executar_testes() {
     verificar_ambiente
     echo -e "\n${C_AZUL}Executando suíte completa de testes automatizados com Pytest...${C_RESET}"
     pytest tests/ -v
+    echo -e "\n${C_AZUL}Executando verificação de tipagem com MyPy...${C_RESET}"
+    mypy app tests conf_yaml.py
     echo -e "\n${C_AZUL}Executando verificação de tipagem estrita com Pyright...${C_RESET}"
     pyright app/ tests/
     echo -e "\n${C_VERDE}✓ Todos os testes e validações de tipagem passaram com sucesso!${C_RESET}"

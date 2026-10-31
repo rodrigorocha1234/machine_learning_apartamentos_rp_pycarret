@@ -283,6 +283,15 @@ type TecnicaFolds = TecnicaValidacaoCruzada
 type ValorParametroFolds = int | float | bool | str | None
 
 
+def _obter_parametros_folds_padrao() -> dict[str, dict[str, ValorParametroFolds]]:
+    return {
+        "kfold": {"n_splits": 3, "shuffle": True, "random_state": 42},
+        "repeated_kfold": {"n_splits": 5, "n_repeats": 3, "random_state": 42},
+        "shuffle_split": {"n_splits": 5, "test_size": 0.2, "random_state": 42},
+        "time_series_split": {"n_splits": 3, "max_train_size": None},
+    }
+
+
 class ConfiguracaoFolds(BaseModel):
     """Configurações da técnica e parâmetros de particionamento em folds."""
 
@@ -291,12 +300,7 @@ class ConfiguracaoFolds(BaseModel):
         default=TecnicaValidacaoCruzada.KFOLD, description="Técnica de particionamento em folds selecionada"
     )
     parametros: dict[str, dict[str, ValorParametroFolds]] = Field(
-        default_factory=lambda: {
-            "kfold": {"n_splits": 3, "shuffle": True, "random_state": 42},
-            "repeated_kfold": {"n_splits": 5, "n_repeats": 3, "random_state": 42},
-            "shuffle_split": {"n_splits": 5, "test_size": 0.2, "random_state": 42},
-            "time_series_split": {"n_splits": 3, "max_train_size": None},
-        },
+        default_factory=_obter_parametros_folds_padrao,
         description="Mapeamento de parâmetros para cada técnica de folds",
     )
 

@@ -6,7 +6,7 @@ dependencies = ["PyYAML>=6.0,<7", "pandas>=2.2,<3", "openpyxl>=3.1,<4", "pydanti
 [project.optional-dependencies]
 # Versão 4.0.0a0 ALPHA: validar instalação e APIs antes de uso real.
 pycaret4 = ["pycaret==4.0.0a0"]
-dev = ["pytest>=8,<10", "pyright>=1.1"]
+dev = ["pytest>=8,<10", "pyright>=1.1", "mypy>=1.10"]
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["app", "tests", "conf_yaml.py"]
@@ -14,6 +14,19 @@ venvPath = "."
 venv = ".venv"
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+follow_imports = "silent"
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+exclude = ["grafana_data", "pgdata", ".venv", "storage-data"]
 
 
 [tool.pytest.ini_options]

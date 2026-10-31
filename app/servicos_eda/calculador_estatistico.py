@@ -255,7 +255,7 @@ class CalculadorEstatistico:
             for i in range(limite_len):
                 grupos.setdefault(cats[i], []).append(vals[i])
 
-            categorias_dados: dict[str, object] = {}
+            categorias_dados = {}
             total_outliers = 0
 
             for cat, valores_cat in grupos.items():
