@@ -3184,6 +3184,215 @@ atributos_novos:
         </table>
       </div>
 
+      <!-- Subseção Executiva: Guia de Interpretação dos Parâmetros para a Equipe de Negócio -->
+      <div class="info-card" style="margin-bottom: 30px; border-left: 4px solid var(--accent-emerald);">
+        <div class="card-title" style="display: flex; align-items: center; justify-content: space-between;">
+          <span>🏢 Guia de Interpretação dos Hiperparâmetros de Tuning para a Equipe de Negócio & Risco Imobiliário</span>
+          <span class="badge success">Visão Executiva & Mercado Imobiliário</span>
+        </div>
+        <div class="card-body">
+          <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: 18px;">
+            Para diretores de crédito, gestores de fundos imobiliários, corretores e analistas de risco, termos matemáticos como <em>regularização L1</em> ou <em>learning rate</em> podem parecer abstratos. No entanto, cada parâmetro configurado em <code>configuracoes/04_modelagem_regressao.yaml</code> atua diretamente como uma <strong>alavanca de prudência, agressividade comercial ou estabilidade de preços</strong>. Abaixo, traduzimos a função de cada modelo e seus hiperparâmetros para a dinâmica prática de mercado de apartamentos em Ribeirão Preto.
+          </p>
+
+          <div class="cards-grid" style="margin-bottom: 24px;">
+            <!-- 1. Regressão Linear -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                1. Regressão Linear — <code>fit_intercept</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "O Preço Mínimo de Entrada e Infraestrutura Urbana".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li><strong>fit_intercept = true:</strong> Estima o custo base irredutível de um imóvel no município (fração do terreno, portaria, infraestrutura de água e energia), garantindo que apartamentos compactos (ex: studios de 35m²) não sejam subavaliados de forma irreal.</li>
+                  <li><strong>fit_intercept = false:</strong> Força a precificação a ser 100% proporcional à área. Se a área dobrar, o preço dobra rigorosamente. Usado apenas se quisermos avaliar custo estrito de metro quadrado sem considerar o valor intrínseco de entrada do condomínio.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 2. Lasso -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                2. Lasso (L1) — <code>alpha</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "O Auditor Antirruído de Características Secundárias".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li><strong>alpha baixo (0.01 - 0.1):</strong> Permite que pequenas características cadastradas (ex: andar do apartamento, número de suítes, taxa de condomínio baixa) tenham um impacto marginal no preço estimado.</li>
+                  <li><strong>alpha alto (1.0 - 10.0):</strong> Atua como um auditor implacável. Zera sumariamente o peso de qualquer atributo que não seja crucial para a precificação, focando apenas nos pilares sólidos: metragem e localização (bairros valorizados como Jardim Botânico, Bonfim Paulista ou Fiusa). Evita distorções causadas por descrições subjetivas dos anúncios.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 3. Ridge -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                3. Ridge (L2) — <code>alpha</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "O Apaziguador de Fatores Redundantes e Multicolineares".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li>No mercado imobiliário, boas características andam juntas: apartamentos com maior metragem privativa costumam ter mais dormitórios, mais banheiros e mais vagas de garagem. Sem controle, o modelo somaria esses bônus repetidamente e geraria um preço astronômico.</li>
+                  <li><strong>alpha alto (1.0 - 10.0):</strong> Encolhe os coeficientes conjuntamente, distribuindo a contribuição de cada fator de forma conservadora e prevenindo estimativas excessivamente infladas em unidades de padrão elevado.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 4. ElasticNet -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                4. ElasticNet — <code>alpha</code> e <code>l1_ratio</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "O Gestor Balanceado de Risco e Limpeza Cadastral".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li><strong>l1_ratio próximo a 1.0 (ex: 0.8):</strong> Postura próxima ao Lasso, descartando campos secundários irrelevantes da base de dados imobiliários.</li>
+                  <li><strong>l1_ratio balanceado (0.5):</strong> Equilíbrio ótimo para carteiras imobiliárias heterogêneas: retém o grupo de variáveis correlacionadas essenciais (metragem + vagas), mas impede que ruídos pontuais desviem o preço alvo.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 5. Árvore de Decisão -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                5. Árvore de Decisão — <code>max_depth</code> e <code>min_samples_split</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "O Manual de Regras de Avaliação e Segmentação Rápida".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li><strong>max_depth (3 a 5):</strong> Limite de perguntas sequenciais do corretor (ex: <em>"Bairro é Zona Sul? Metragem > 80m²? Possui 2 vagas?"</em>). Gera regras transparentes e auditáveis perante clientes, comitês de crédito e tabelas de vendas.</li>
+                  <li><strong>min_samples_split (2 a 5):</strong> Exige um quórum mínimo de apartamentos similares na base para justificar a criação de uma subfaixa de preço. Evita criar uma precificação exclusiva baseada em um único anúncio fora da curva (ex: apartamento vendido às pressas com desconto atípico).</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 6. Random Forest -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                6. Random Forest — <code>n_estimators</code> e <code>max_depth</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "A Junta Consultiva de Corretores Independentes".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li>Em vez de confiar na opinião de uma única árvore de decisão, cria de 50 a 100 corretores virtuais independentes, cada um treinado com amostras ligeiramente diferentes do mercado de Ribeirão Preto.</li>
+                  <li><strong>n_estimators = 100:</strong> Proporciona um consenso altamente estável e robusto contra outliers, tornando a estimativa de preço imune a variações voláteis de um bairro em um determinado mês.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 7. SVR -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                7. SVR (Support Vector Regression) — <code>C</code> e <code>kernel</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "O Balizador de Margem de Negociação e Zonas Não-Lineares".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li><strong>C (0.1 a 10.0):</strong> Controla o rigor com desvios fora da margem aceitável de negociação. Um <code>C</code> moderado (1.0) ignora pequenos descontos ou sobrepreços comuns em transações imobiliárias de balcão, focando na curva de valor sólida.</li>
+                  <li><strong>kernel = "rbf":</strong> Captura a valorização em <em>bolhas concêntricas</em>. Em Ribeirão Preto, a valorização não é linear: ela explode perto de avenidas icônicas (como Prof. João Fiúsa) ou polos comerciais (Ribeirão Shopping) e arrefece em raios de poucos quarteirões. O kernel RBF modela com precisão esse comportamento espacial não-linear.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 8. Rede Neural MLP -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                8. Rede Neural (MLP) — <code>hidden_layer_sizes</code> e <code>max_iter</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "O Analista de Sinergias Complexas e Efeitos de Luxo".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li>Identifica quando a combinação de múltiplos fatores vale muito mais do que a soma individual de cada um: por exemplo, ter 3 vagas de garagem em um prédio padrão agrega valor linear, mas 3 vagas combinadas a um apartamento no Jardim Canadá com varanda gourmet e condomínio de resort gera uma valorização sinérgica exponencial.</li>
+                  <li><strong>hidden_layer_sizes = [100]:</strong> Camada densa com alta capacidade de abstração para capturar relações sutis de mercado sem exigir parametrização manual de interações.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 9. XGBoost -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                9. XGBoost — <code>n_estimators</code>, <code>max_depth</code> e <code>learning_rate</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "O Perito em Correção Sucessiva de Erros Residuais".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li>Diferente do Random Forest (onde todos votam juntos), o XGBoost treina árvores sequencialmente, onde cada nova árvore foca em acertar o valor daqueles apartamentos que as árvores anteriores erraram.</li>
+                  <li><strong>learning_rate (0.05 a 0.1):</strong> É o freio de prudência. Uma taxa baixa como 0.05 impede que o modelo dê saltos especulativos e superestime imóveis atípicos, garantindo uma convergência segura e consistente para precificação de carteiras.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- 10. LightGBM -->
+            <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
+              <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
+                10. LightGBM — <code>n_estimators</code>, <code>max_depth</code> e <code>learning_rate</code>
+              </div>
+              <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
+                <p><strong>Conceito de Negócio:</strong> "O Motor de Ultra Performance para dezenas de Micro-regiões".</p>
+                <ul class="feature-list" style="margin-top: 8px;">
+                  <li>Construído para máxima velocidade e acurácia ao lidar com muitas categorias de bairros. Em bases com dezenas de bairros distintos de Ribeirão Preto (Centro, Ipiranga, Nova Aliança, Vila Tibério), o LightGBM particiona as árvores por folha (<em>leaf-wise</em>), garantindo precificação hiper-localizada com tempos de resposta de milissegundos na API de produção.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matriz de Decisão Executiva por Apetite a Risco -->
+          <h4 style="color: var(--accent-cyan); font-size: 1.05rem; margin: 20px 0 12px;">
+            🎯 Matriz de Decisão: Como Calibrar os Hiperparâmetros Conforme o Objetivo de Negócio
+          </h4>
+          <div class="table-container">
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 220px;">Cenário / Linha de Negócio</th>
+                  <th style="width: 230px;">Apetite a Risco & Perfil</th>
+                  <th style="min-width: 260px;">Diretriz de Calibração nos Hiperparâmetros</th>
+                  <th style="min-width: 260px;">Efeito Prático no Preço Predito e Carteira</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Concessão de Crédito & Garantia Hipotecária</strong></td>
+                  <td><span class="badge danger">Ultraconservador</span><br>Risco zero de superavaliação</td>
+                  <td>
+                    • <code>alpha</code> elevado (1.0 ou 10.0) em Ridge/Lasso.<br>
+                    • <code>max_depth</code> limitado (3 a 5) em árvores.<br>
+                    • <code>learning_rate</code> baixa (0.05).
+                  </td>
+                  <td>
+                    Evita avaliar imóveis acima do valor de liquidação forçada. Protege a carteira bancária de inadimplência em caso de execução de hipoteca.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Tabela de Vendas & Lançamento de Construtora</strong></td>
+                  <td><span class="badge warning">Moderado / Comercial</span><br>Maximização de VGV e giro rápido</td>
+                  <td>
+                    • Random Forest com <code>n_estimators: 100</code>.<br>
+                    • ElasticNet com <code>l1_ratio: 0.5</code>.<br>
+                    • <code>fit_intercept: true</code> obrigatório.
+                  </td>
+                  <td>
+                    Preço de mercado competitivo e alinhado aos concorrentes do mesmo bairro. Estimativas equilibradas que mantêm a velocidade de vendas estável.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Aquisição de Oportunidades & Flipping Imobiliário</strong></td>
+                  <td><span class="badge success">Oportunista / Agressivo</span><br>Caça a imóveis subprecificados</td>
+                  <td>
+                    • XGBoost / LightGBM com <code>max_depth: 6</code>.<br>
+                    • SVR com <code>kernel: "rbf"</code> e <code>C: 10.0</code>.<br>
+                    • <code>min_samples_split: 2</code>.
+                  </td>
+                  <td>
+                    Identifica micro-vantagens e distorções pontuais de bairros onde o preço real supera a média geral, permitindo capturar unidades com alta margem de reforma e revenda.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Cards dos Parâmetros Globais de Regressão do Pipeline -->
       <h4 style="color: var(--accent-cyan); font-size: 1.1rem; margin: 24px 0 14px;">
         🌐 Parâmetros Estruturais de Pré-processamento & Otimização do YAML
@@ -3973,13 +4182,41 @@ modelagem:
     manter_melhor: true
     parametros:
       regressao_linear:
-        ativo: true            # Quando true, modelo é treinado/tunado e validado em CV
+        ativo: true
         fit_intercept: [true, false]
       lasso:
-        ativo: false           # Quando false, modelo é IGNORADO (sem tuning nem CV)
+        ativo: true
         alpha: [0.01, 0.1, 1.0, 10.0]
+      ridge:
+        ativo: true
+        alpha: [0.01, 0.1, 1.0, 10.0]
+      elasticnet:
+        ativo: true
+        alpha: [0.01, 0.1, 1.0]
+        l1_ratio: [0.2, 0.5, 0.8]
+      arvore_decisao:
+        ativo: true
+        max_depth: [3, 5, 10]
+        min_samples_split: [2, 5]
+      random_forest:
+        ativo: true
+        n_estimators: [50, 100]
+        max_depth: [5, 10]
+      svr:
+        ativo: true
+        C: [0.1, 1.0, 10.0]
+        kernel: ["rbf", "linear"]
+      rede_neural:
+        ativo: true
+        hidden_layer_sizes: [[50], [100]]
+        max_iter: [200]
+      xgboost:
+        ativo: true
+        n_estimators: [50, 100]
+        max_depth: [3, 6]
+        learning_rate: [0.05, 0.1]
       lightgbm:
-        ativo: false           # Ignorado se false
+        ativo: true
         n_estimators: [50, 100]
         max_depth: [3, 6]
         learning_rate: [0.05, 0.1]</pre>
