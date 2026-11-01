@@ -15,9 +15,11 @@ def test_orquestrador_executa_implantacao(tmp_path: Path, monkeypatch: pytest.Mo
     orquestrador = OrquestradorImplantacao.da_configuracao(conf)
 
     # Execução real apontando para diretório temporário para isolamento do teste
-    resultado = orquestrador.executar_implantacao(diretorio_artefatos=tmp_path / "campeao")
+    resultado = orquestrador.executar_implantacao(
+        diretorio_artefatos=tmp_path / "campeao")
 
-    nomes_modelos_catalogo = tuple(m.nome for m in conf.obter_modelagem().modelos)
+    nomes_modelos_catalogo = tuple(
+        m.nome for m in conf.obter_modelagem().modelos)
     assert resultado.modelo_promovido in nomes_modelos_catalogo
     assert resultado.versao_modelo == "1.0.0-champion"
     assert resultado.r2_holdout > 0.70
@@ -33,7 +35,8 @@ def test_orquestrador_executa_implantacao(tmp_path: Path, monkeypatch: pytest.Mo
     assert ex.preco_predito > 100_000.0
     assert "preco_minimo_sugerido" in ex.regras_calculadas
     assert "valor_comissao_estimada" in ex.regras_calculadas
-    assert ex.regras_calculadas["valor_comissao_estimada"] == round(ex.preco_predito * 0.06, 2)
+    assert ex.regras_calculadas["valor_comissao_estimada"] == round(
+        ex.preco_predito * 0.06, 2)
 
 
 def test_orquestrador_implantacao_modelo_dinamico(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
