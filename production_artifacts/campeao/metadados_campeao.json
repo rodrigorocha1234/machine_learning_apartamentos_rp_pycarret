@@ -1,10 +1,10 @@
 {
-  "nome_modelo": "regressao_linear",
+  "nome_modelo": "random_forest",
   "versao": "1.0.0-champion",
-  "algoritmo": "LinearRegression(fit_intercept=True)",
+  "algoritmo": "RandomForestRegressor(n=50, depth=5)",
   "transformacao_alvo": "log1p_embutida",
   "rmse_cv": 0.0,
-  "rmse_holdout": 130979.0,
-  "r2_holdout": 0.9023,
-  "data_promocao": "2026-11-01T17:14:47.240620+00:00"
+  "rmse_holdout": 148272.59,
+  "r2_holdout": 0.8785,
+  "data_promocao": "2026-11-01T20:14:51.752460+00:00"
 }
