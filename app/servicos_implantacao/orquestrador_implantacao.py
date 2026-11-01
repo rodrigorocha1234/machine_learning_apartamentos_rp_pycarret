@@ -36,21 +36,15 @@ from app.servicos_implantacao.servico_inferencia import ServicoInferencia
 class ResultadoImplantacao(BaseModel):
     """Resultado oficial consolidado da execução da Etapa de Implantação."""
 
-    modelo_promovido: str = Field(
-        description="Nome do algoritmo promovido a produção")
+    modelo_promovido: str = Field(description="Nome do algoritmo promovido a produção")
     versao_modelo: str = Field(description="Identificador da versão promovida")
-    caminho_artefato_modelo: str = Field(
-        description="Caminho do arquivo serializado do modelo")
-    caminho_metadados: str = Field(
-        description="Caminho do arquivo de metadados")
-    rmse_holdout: float = Field(
-        description="RMSE em reais sobre o holdout cego")
+    caminho_artefato_modelo: str = Field(description="Caminho do arquivo serializado do modelo")
+    caminho_metadados: str = Field(description="Caminho do arquivo de metadados")
+    rmse_holdout: float = Field(description="RMSE em reais sobre o holdout cego")
     mae_holdout: float = Field(description="MAE em reais sobre o holdout cego")
     r2_holdout: float = Field(description="R² sobre o holdout cego")
-    total_regras_ativas: int = Field(
-        description="Quantidade de regras dinâmicas ativas")
-    exemplo_predicao: RespostaPredicao = Field(
-        description="Resultado de inferência de teste executada")
+    total_regras_ativas: int = Field(description="Quantidade de regras dinâmicas ativas")
+    exemplo_predicao: RespostaPredicao = Field(description="Resultado de inferência de teste executada")
     mlflow_run_id: str = Field(description="ID do run de promoção no MLflow")
     data_implantacao: str = Field(description="Timestamp da implantação")
 
@@ -228,23 +222,23 @@ class OrquestradorImplantacao:
 
         # Teste com uma requisição canônica de apartamento em Ribeirão Preto
         req_exemplo = RequisicaoImovel(
-            Metragem=85.0,
+            Metragem=85.5,
             Quartos=3,
             Banheiros=2,
             Vagas=2,
-            Bairro="Jardim Botanico",
+            Bairro="Jardim Botânico",
             Zona="Sul",
         )
         resposta_exemplo = servico.predizer_imovel(req_exemplo)
 
         total_regras_ativas = len(
-            [r for r in config_implantacao.regras if r.ativo])
+            [r for r in config_implantacao.regras if r.ativo]
+        )
 
         resultado = ResultadoImplantacao(
             modelo_promovido=nome_campeao,
             versao_modelo=versao_modelo,
-            caminho_artefato_modelo=str(
-                dir_artefatos / "modelo_campeao.joblib"),
+            caminho_artefato_modelo=str(dir_artefatos / "modelo_campeao.joblib"),
             caminho_metadados=str(dir_artefatos / "metadados_campeao.json"),
             rmse_holdout=round(rmse_holdout, 2),
             mae_holdout=round(mae_holdout, 2),
@@ -268,31 +262,31 @@ class OrquestradorImplantacao:
         """Resolve dinamicamente o modelo campeão e seu RMSE estimado de CV."""
         from app.esquema_configuracao import ConfiguracaoModelagem
 
-        config_mod = cast(ConfiguracaoModelagem, config_modelagem)
+        config_mod=cast(ConfiguracaoModelagem, config_modelagem)
 
         if modelo_campeao_override:
             return modelo_campeao_override, 0.0
 
         # 1. Tenta obter do relatório de avaliação estatística (Etapa 5)
-        caminho_aval = Path("storage-data/relatorio_avaliacao.json")
+        caminho_aval=Path("storage-data/relatorio_avaliacao.json")
         if caminho_aval.exists():
             try:
                 with open(caminho_aval, "r", encoding="utf-8") as f:
-                    dados_aval = cast(dict[str, object], json.load(f))
-                rec = str(dados_aval.get("modelo_final_recomendado", ""))
-                comp = cast(dict[str, object], dados_aval.get(
+                    dados_aval=cast(dict[str, object], json.load(f))
+                rec=str(dados_aval.get("modelo_final_recomendado", ""))
+                comp=cast(dict[str, object], dados_aval.get(
                     "comparacao_estatistica", {}))
-                campeao_est = str(comp.get("modelo_campeao_estatistico", ""))
-                alvo_nome = campeao_est if (
+                campeao_est=str(comp.get("modelo_campeao_estatistico", ""))
+                alvo_nome=campeao_est if (
                     rec.startswith("ensemble_") or not rec) else rec
 
                 # Tenta obter rmse_cv pareado ou rmse holdout
-                rmse_cv = 0.0
-                metricas_holdout = cast(
+                rmse_cv=0.0
+                metricas_holdout=cast(
                     dict[str, dict[str, float]], dados_aval.get("metricas_holdout", {}))
                 if alvo_nome in metricas_holdout:
-                    val_rmse = metricas_holdout[alvo_nome].get("rmse", 0.0)
-                    rmse_cv = float(str(val_rmse))
+                    val_rmse=metricas_holdout[alvo_nome].get("rmse", 0.0)
+                    rmse_cv=float(str(val_rmse))
 
                 if alvo_nome:
                     return alvo_nome, rmse_cv
@@ -300,22 +294,22 @@ class OrquestradorImplantacao:
                 pass
 
         # 2. Tenta obter do relatório da modelagem (Etapa 4)
-        caminho_mod = Path("storage-data/relatorio_modelagem.json")
+        caminho_mod=Path("storage-data/relatorio_modelagem.json")
         if caminho_mod.exists():
             try:
                 with open(caminho_mod, "r", encoding="utf-8") as f:
-                    dados_mod = cast(dict[str, object], json.load(f))
-                dict_tuning = cast(dict[str, object],
+                    dados_mod=cast(dict[str, object], json.load(f))
+                dict_tuning=cast(dict[str, object],
                                    dados_mod.get("res_tuning", {}))
-                campeao_mod = str(dict_tuning.get("modelo_campeao", ""))
-                melhor_rmse = float(str(dict_tuning.get("melhor_rmse", 0.0)))
+                campeao_mod=str(dict_tuning.get("modelo_campeao", ""))
+                melhor_rmse=float(str(dict_tuning.get("melhor_rmse", 0.0)))
                 if campeao_mod:
                     return campeao_mod, melhor_rmse
             except Exception:
                 pass
 
         # 3. Fallback: primeiro modelo ativo na configuração
-        modelos_ativos = config_mod.obter_modelos_ativos()
+        modelos_ativos=config_mod.obter_modelos_ativos()
         if modelos_ativos:
             return modelos_ativos[0].nome, 0.0
 
@@ -329,12 +323,12 @@ class OrquestradorImplantacao:
         """Instancia o algoritmo concreto com base nos hiperparâmetros configurados."""
         from app.esquema_configuracao import ConfiguracaoModelagem
 
-        config_mod = cast(ConfiguracaoModelagem, config_modelagem)
-        params_grade = config_mod.tuning.parametros.get(nome_modelo)
+        config_mod=cast(ConfiguracaoModelagem, config_modelagem)
+        params_grade=config_mod.tuning.parametros.get(nome_modelo)
 
         def _primeiro(chave: str, fallback: object) -> object:
             if params_grade is not None:
-                val = params_grade.get(chave)
+                val=params_grade.get(chave)
                 if isinstance(val, list) and len(val) > 0:
                     return val[0]
                 if val is not None and not isinstance(val, list):
@@ -342,52 +336,52 @@ class OrquestradorImplantacao:
             return fallback
 
         if nome_modelo in {"regressao_linear", "regressao_multipla"}:
-            fit_int = bool(_primeiro("fit_intercept", True))
+            fit_int=bool(_primeiro("fit_intercept", True))
             return LinearRegression(fit_intercept=fit_int), f"LinearRegression(fit_intercept={fit_int})"
 
         if nome_modelo == "lasso":
-            alpha = float(str(_primeiro("alpha", 1.0)))
+            alpha=float(str(_primeiro("alpha", 1.0)))
             return Lasso(alpha=alpha, random_state=42), f"Lasso(alpha={alpha})"
 
         if nome_modelo == "ridge":
-            alpha = float(str(_primeiro("alpha", 1.0)))
+            alpha=float(str(_primeiro("alpha", 1.0)))
             return Ridge(alpha=alpha, random_state=42), f"Ridge(alpha={alpha})"
 
         if nome_modelo == "elasticnet":
-            alpha = float(str(_primeiro("alpha", 1.0)))
-            l1 = float(str(_primeiro("l1_ratio", 0.5)))
+            alpha=float(str(_primeiro("alpha", 1.0)))
+            l1=float(str(_primeiro("l1_ratio", 0.5)))
             return ElasticNet(alpha=alpha, l1_ratio=l1, random_state=42), f"ElasticNet(alpha={alpha}, l1={l1})"
 
         if nome_modelo == "arvore_decisao":
-            depth = int(str(_primeiro("max_depth", 5)))
-            split = int(str(_primeiro("min_samples_split", 2)))
+            depth=int(str(_primeiro("max_depth", 5)))
+            split=int(str(_primeiro("min_samples_split", 2)))
             return DecisionTreeRegressor(max_depth=depth, min_samples_split=split, random_state=42), f"DecisionTreeRegressor(depth={depth})"
 
         if nome_modelo == "random_forest":
-            n_est = int(str(_primeiro("n_estimators", 100)))
-            depth_val = _primeiro("max_depth", 10)
-            depth_int = int(str(depth_val)) if depth_val is not None else None
+            n_est=int(str(_primeiro("n_estimators", 100)))
+            depth_val=_primeiro("max_depth", 10)
+            depth_int=int(str(depth_val)) if depth_val is not None else None
             return RandomForestRegressor(n_estimators=n_est, max_depth=depth_int, random_state=42), f"RandomForestRegressor(n={n_est}, depth={depth_int})"
 
         if nome_modelo == "svr":
-            c_val = float(str(_primeiro("C", 1.0)))
-            k_val = str(_primeiro("kernel", "rbf"))
+            c_val=float(str(_primeiro("C", 1.0)))
+            k_val=str(_primeiro("kernel", "rbf"))
             return SVR(C=c_val, kernel=k_val), f"SVR(C={c_val}, kernel={k_val})"
 
         if nome_modelo == "rede_neural":
-            iter_val = int(str(_primeiro("max_iter", 200)))
+            iter_val=int(str(_primeiro("max_iter", 200)))
             return MLPRegressor(max_iter=iter_val, random_state=42), f"MLPRegressor(iter={iter_val})"
 
         if nome_modelo == "xgboost":
-            n_est = int(str(_primeiro("n_estimators", 100)))
-            depth = int(str(_primeiro("max_depth", 6)))
-            lr = float(str(_primeiro("learning_rate", 0.1)))
+            n_est=int(str(_primeiro("n_estimators", 100)))
+            depth=int(str(_primeiro("max_depth", 6)))
+            lr=float(str(_primeiro("learning_rate", 0.1)))
             return xgb.XGBRegressor(n_estimators=n_est, max_depth=depth, learning_rate=lr, random_state=42, verbosity=0), f"XGBRegressor(n={n_est}, lr={lr})"
 
         if nome_modelo == "lightgbm":
-            n_est = int(str(_primeiro("n_estimators", 100)))
-            depth = int(str(_primeiro("max_depth", 6)))
-            lr = float(str(_primeiro("learning_rate", 0.05)))
+            n_est=int(str(_primeiro("n_estimators", 100)))
+            depth=int(str(_primeiro("max_depth", 6)))
+            lr=float(str(_primeiro("learning_rate", 0.05)))
             return lgb.LGBMRegressor(n_estimators=n_est, max_depth=depth, learning_rate=lr, random_state=42, verbosity=-1), f"LGBMRegressor(n={n_est}, lr={lr})"
 
         return LinearRegression(), "LinearRegression(fallback)"
@@ -398,14 +392,14 @@ class OrquestradorImplantacao:
         dir_artefatos: Path,
     ) -> str:
         """Registra o run de promoção oficial no MLflow."""
-        config_mlflow = self._conf.obter_modelagem().mlflow
-        os.environ["MLFLOW_DISABLE_AGENT_HINT"] = "1"
+        config_mlflow=self._conf.obter_modelagem().mlflow
+        os.environ["MLFLOW_DISABLE_AGENT_HINT"]="1"
         try:
             mlflow.set_tracking_uri(config_mlflow.tracking_uri)
             mlflow.set_experiment(config_mlflow.experimento)
 
             with mlflow.start_run(run_name=f"promocao_modelo_campeao_{metadados.nome_modelo}") as run:
-                run_id = str(run.info.run_id)
+                run_id=str(run.info.run_id)
                 mlflow.set_tag("pipeline.etapa", "implantacao_regras")
                 mlflow.set_tag("modelo.status", "Production")
                 mlflow.set_tag("modelo.alias", "champion")
@@ -417,8 +411,8 @@ class OrquestradorImplantacao:
                 mlflow.log_metric("r2_holdout", metadados.r2_holdout)
 
                 # Log dos arquivos de artefato
-                caminho_joblib = dir_artefatos / "modelo_campeao.joblib"
-                caminho_meta = dir_artefatos / "metadados_campeao.json"
+                caminho_joblib=dir_artefatos / "modelo_campeao.joblib"
+                caminho_meta=dir_artefatos / "metadados_campeao.json"
                 if caminho_joblib.exists():
                     mlflow.log_artifact(str(caminho_joblib),
                                         artifact_path="model")
@@ -453,17 +447,17 @@ class OrquestradorImplantacao:
 
         conteudo_md = f"""# Relatório de Entrega — Etapa 6: Implantação e Regras de Negócio Dinâmicas
 
-**Data de Execução:** {resultado.data_implantacao}  
-**Responsáveis:** @ml_engineer, @ml_architect, @pm  
-**Status:** CONCLUÍDO COM SUCESSO  
-**Evidências Persistidas:** [storage-data/relatorio_implantacao.json](file:///{caminho_json.resolve()})  
-**Run de Promoção no MLflow:** `{resultado.mlflow_run_id}`  
+**Data de Execução:** {resultado.data_implantacao}
+**Responsáveis:** @ml_engineer, @ml_architect, @pm
+**Status:** CONCLUÍDO COM SUCESSO
+**Evidências Persistidas:** [storage-data/relatorio_implantacao.json](file:///{caminho_json.resolve()})
+**Run de Promoção no MLflow:** `{resultado.mlflow_run_id}`
 
 ---
 
 ## 1. Visão Geral da Promoção
 
-O modelo campeão **LightGBM** (`LGBMRegressor`), validado na Etapa 5 como superior e de menor rank médio pelo Teste de Friedman, foi promovido para o ambiente de produção.
+O modelo campeão **{resultado.modelo_promovido.upper()}**, validado nas etapas anteriores como superior e selecionado por métricas de generalização, foi promovido para o ambiente de produção.
 
 - **Identificador:** `{resultado.modelo_promovido}`
 - **Versão:** `{resultado.versao_modelo}`
@@ -484,7 +478,7 @@ As regras de negócio configuradas em [configuracoes/06_implantacao_regras.yaml]
 
 ### Regras em Vigor e Exemplo de Inferência
 
-**Entrada de Teste:** Apartamento de 85m², 3 quartos, 2 banheiros, 2 vagas, Jardim Botânico (Zona Sul).  
+**Entrada de Teste:** Apartamento de 85.5m², 3 quartos, 2 banheiros, 2 vagas, Jardim Botânico (Zona Sul).
 **Preço Previsto pelo Modelo:** **R$ {ex.preco_predito:,.2f}**
 
 | Variável Destino | Regra | Descrição de Negócio | Valor Calculado |
@@ -505,7 +499,7 @@ A aplicação FastAPI desacopla transporte HTTP, serialização, inferência e c
 
 ## 4. Conformidade de Engenharia e Governança
 
-- **Tipagem Estrita (Pyright):** 0 erros, modo estrito preservado sem utilização de `Any`.
+- **Tipagem Estrita (MyPy / Pyright):** 0 erros, modo estrito preservado sem utilização de `Any`.
 - **Validação de Expressões:** Nenhuma expressão fora da whitelist do `ValidadorAst` é aceita.
 - **Isolamento de Código:** Módulos e pacotes com exatamente duas palavras separadas por underscore.
 """
