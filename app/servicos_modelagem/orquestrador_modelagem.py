@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 import time
 from typing import cast, final
 import pandas as pd
@@ -153,6 +155,22 @@ class OrquestradorModelagem:
             modelo_campeao=resultado_tuning.modelo_campeao,
             duracao_total_segundos=round(duracao, 4),
         )
+
+        try:
+            caminho_relatorio = Path("storage-data/relatorio_modelagem.json")
+            caminho_relatorio.parent.mkdir(parents=True, exist_ok=True)
+            with open(caminho_relatorio, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "res_tuning": resultado_tuning.model_dump(),
+                        "res_modelagem": resultado_modelagem.model_dump(),
+                    },
+                    f,
+                    indent=2,
+                    ensure_ascii=False,
+                )
+        except Exception:
+            pass
 
         return resultado_tuning, resultado_modelagem
 

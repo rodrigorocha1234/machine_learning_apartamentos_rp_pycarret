@@ -119,5 +119,4 @@ modelagem:
     tracking_uri: "${MLFLOW_TRACKING_URI:http://localhost:5000}"
     experimento: "imoveis_apartamento_rp_regressao"
     modelo_registrado: "previsao_preco_imoveis"
-    modelo_campeao: "random_forest"
     registrar_modelo_campeao: true

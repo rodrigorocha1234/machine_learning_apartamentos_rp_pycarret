@@ -239,7 +239,21 @@ class EloImplantacaoRegras(EloCadeiaPipeline):
     @override
     def _executar_etapa(self, contexto: ContextoPipeline) -> None:
         orquestrador = OrquestradorImplantacao(contexto.conf)
-        resultado = orquestrador.executar_implantacao()
+        modelo_campeao: str | None = None
+        if contexto.resultado_avaliacao is not None:
+            rec = contexto.resultado_avaliacao.modelo_final_recomendado
+            if rec.startswith("ensemble_"):
+                modelo_campeao = (
+                    contexto.resultado_avaliacao.comparacao_estatistica.modelo_campeao_estatistico
+                )
+            else:
+                modelo_campeao = rec
+        elif contexto.resultado_modelagem is not None:
+            modelo_campeao = contexto.resultado_modelagem.modelo_campeao
+
+        resultado = orquestrador.executar_implantacao(
+            modelo_campeao_override=modelo_campeao
+        )
         contexto.resultado_implantacao = resultado
         print(f"✓ Modelo promovido: {resultado.modelo_promovido} (Versão {resultado.versao_modelo})")
         print(f"✓ RMSE Holdout cego: R$ {resultado.rmse_holdout:,.2f}")

@@ -13,9 +13,15 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
 from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import ElasticNet, Lasso, LinearRegression, Ridge
+from sklearn.neural_network import MLPRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.svm import SVR
+from sklearn.tree import DecisionTreeRegressor
+import xgboost as xgb
 
 from app.conf_yaml import ConfYAML
 from app.contratos_implantacao.avaliador_regras import AvaliadorRegras, RequisicaoImovel, RespostaPredicao
@@ -67,6 +73,7 @@ class OrquestradorImplantacao:
     def executar_implantacao(
         self,
         diretorio_artefatos: Path | str = "production_artifacts/campeao",
+        modelo_campeao_override: str | None = None,
     ) -> ResultadoImplantacao:
         """Executa o pipeline completo de promoção do campeão e validação das regras."""
         config_completa = self._conf.obter_configuracao_completa()
@@ -81,7 +88,12 @@ class OrquestradorImplantacao:
         if df_completo.empty:
             raise ErroOrquestradorImplantacao("Tabela 'imoveis_limpos' está vazia.")
 
-        # 2. Separação idêntica à Etapa 5 (treino 80% / holdout 20%)
+        # 2. Resolução dinâmica do modelo campeão
+        nome_campeao, rmse_cv_estimado = self._resolver_modelo_campeao(
+            modelo_campeao_override, config_modelagem
+        )
+
+        # 3. Separação idêntica à Etapa 5 (treino 80% / holdout 20%)
         holdout_pct = config_completa.avaliacao.validacao.holdout
         n_total = len(df_completo)
         n_holdout = int(n_total * holdout_pct)
@@ -97,7 +109,7 @@ class OrquestradorImplantacao:
         X_holdout = cast(pd.DataFrame, df_holdout[X_cols])
         y_holdout = cast(pd.Series, df_holdout[coluna_alvo])
 
-        # 3. Construção do pré-processador e pipeline do LightGBM campeão
+        # 4. Construção do pré-processador tabular
         cols_num: list[str] = []
         cols_cat: list[str] = []
         for c in X_cols:
@@ -125,33 +137,15 @@ class OrquestradorImplantacao:
             ]
         )
 
-        # Hiperparâmetros otimizados do LightGBM
-        params_lgb = config_modelagem.tuning.parametros.get("lightgbm")
-        n_est_raw = params_lgb.get("n_estimators") if params_lgb else None
-        n_estimators = int(str(n_est_raw[0])) if isinstance(n_est_raw, list) and n_est_raw else 150
-
-        lr_raw = params_lgb.get("learning_rate") if params_lgb else None
-        learning_rate = float(str(lr_raw[0])) if isinstance(lr_raw, list) and lr_raw else 0.05
-
-        depth_raw = params_lgb.get("max_depth") if params_lgb else None
-        max_depth = int(str(depth_raw[0])) if isinstance(depth_raw, list) and depth_raw else 6
-
-        leaves_raw = params_lgb.get("num_leaves") if params_lgb else None
-        num_leaves = int(str(leaves_raw[0])) if isinstance(leaves_raw, list) and leaves_raw else 31
-
-        estimador_lgb = lgb.LGBMRegressor(
-            n_estimators=n_estimators,
-            learning_rate=learning_rate,
-            max_depth=max_depth,
-            num_leaves=num_leaves,
-            random_state=42,
-            verbosity=-1,
+        # 5. Instanciação dinâmica do regressor concreto campeão
+        estimador_base, desc_algoritmo = self._instanciar_regressor_concreto(
+            nome_campeao, config_modelagem
         )
 
         pipeline_base = Pipeline(
             [
                 ("preprocessor", preprocessor),
-                ("regressor", estimador_lgb),
+                ("regressor", estimador_base),
             ]
         )
 
@@ -162,10 +156,10 @@ class OrquestradorImplantacao:
             inverse_func=np.expm1,
         )
 
-        # 4. Ajuste sobre os dados de treino
+        # 6. Ajuste sobre os dados de treino
         estimador_campeao.fit(X_treino, y_treino)
 
-        # 5. Avaliação de validação cega sobre o holdout
+        # 7. Avaliação de validação cega sobre o holdout
         predicoes_holdout = cast(
             np.ndarray[tuple[int, ...], np.dtype[np.float64]],
             np.asarray(estimador_campeao.predict(X_holdout), dtype=np.float64),
@@ -182,39 +176,39 @@ class OrquestradorImplantacao:
         timestamp_iso = datetime.now(timezone.utc).isoformat()
         versao_modelo = "1.0.0-champion"
 
-        # 6. Metadados do campeão
+        # 8. Metadados do campeão dinâmico
         metadados = MetadadosModelo(
-            nome_modelo="lightgbm",
+            nome_modelo=nome_campeao,
             versao=versao_modelo,
-            algoritmo="LGBMRegressor(log1p_target)",
+            algoritmo=desc_algoritmo,
             transformacao_alvo="log1p_embutida",
-            rmse_cv=84599.21,
+            rmse_cv=round(rmse_cv_estimado, 2),
             rmse_holdout=round(rmse_holdout, 2),
             r2_holdout=round(r2_holdout, 4),
             data_promocao=timestamp_iso,
         )
 
-        # 7. Serialização dos artefatos em disco
+        # 9. Serialização dos artefatos em disco
         carregador = CarregadorCampeao.salvar_modelo_e_metadados(
             estimador=estimador_campeao,
             metadados=metadados,
             diretorio_destino=dir_artefatos,
         )
 
-        # 8. Registro de promoção e governança no MLflow
+        # 10. Registro de promoção e governança no MLflow
         run_id_mlflow = self._registrar_promocao_mlflow(
             metadados=metadados,
             dir_artefatos=dir_artefatos,
         )
 
-        # 9. Inicialização do motor de regras conforme o motor tabular configurado
+        # 11. Inicialização do motor de regras conforme o motor tabular configurado
         avaliador_regras: AvaliadorRegras
         if config_completa.tabular.motor == "polars":
             avaliador_regras = AvaliadorPolars(config_implantacao)
         else:
             avaliador_regras = AvaliadorPandas(config_implantacao)
 
-        # 10. Instanciação do serviço de inferência e teste de validação
+        # 12. Instanciação do serviço de inferência e teste de validação
         servico = ServicoInferencia(
             provedor_campeao=carregador,
             avaliador_regras=avaliador_regras,
@@ -238,7 +232,7 @@ class OrquestradorImplantacao:
         total_regras_ativas = len([r for r in config_implantacao.regras if r.ativo])
 
         resultado = ResultadoImplantacao(
-            modelo_promovido="lightgbm",
+            modelo_promovido=nome_campeao,
             versao_modelo=versao_modelo,
             caminho_artefato_modelo=str(dir_artefatos / "modelo_campeao.joblib"),
             caminho_metadados=str(dir_artefatos / "metadados_campeao.json"),
@@ -251,10 +245,138 @@ class OrquestradorImplantacao:
             data_implantacao=timestamp_iso,
         )
 
-        # 11. Geração de relatórios
+        # 13. Geração de relatórios
         self._gerar_relatorios(resultado)
 
         return resultado
+
+    def _resolver_modelo_campeao(
+        self,
+        modelo_campeao_override: str | None,
+        config_modelagem: object,
+    ) -> tuple[str, float]:
+        """Resolve dinamicamente o modelo campeão e seu RMSE estimado de CV."""
+        from app.esquema_configuracao import ConfiguracaoModelagem
+
+        config_mod = cast(ConfiguracaoModelagem, config_modelagem)
+
+        if modelo_campeao_override:
+            return modelo_campeao_override, 0.0
+
+        # 1. Tenta obter do relatório de avaliação estatística (Etapa 5)
+        caminho_aval = Path("storage-data/relatorio_avaliacao.json")
+        if caminho_aval.exists():
+            try:
+                with open(caminho_aval, "r", encoding="utf-8") as f:
+                    dados_aval = cast(dict[str, object], json.load(f))
+                rec = str(dados_aval.get("modelo_final_recomendado", ""))
+                comp = cast(dict[str, object], dados_aval.get("comparacao_estatistica", {}))
+                campeao_est = str(comp.get("modelo_campeao_estatistico", ""))
+                alvo_nome = campeao_est if (rec.startswith("ensemble_") or not rec) else rec
+
+                # Tenta obter rmse_cv pareado ou rmse holdout
+                rmse_cv = 0.0
+                metricas_holdout = cast(dict[str, dict[str, float]], dados_aval.get("metricas_holdout", {}))
+                if alvo_nome in metricas_holdout:
+                    val_rmse = metricas_holdout[alvo_nome].get("rmse", 0.0)
+                    rmse_cv = float(str(val_rmse))
+
+                if alvo_nome:
+                    return alvo_nome, rmse_cv
+            except Exception:
+                pass
+
+        # 2. Tenta obter do relatório da modelagem (Etapa 4)
+        caminho_mod = Path("storage-data/relatorio_modelagem.json")
+        if caminho_mod.exists():
+            try:
+                with open(caminho_mod, "r", encoding="utf-8") as f:
+                    dados_mod = cast(dict[str, object], json.load(f))
+                dict_tuning = cast(dict[str, object], dados_mod.get("res_tuning", {}))
+                campeao_mod = str(dict_tuning.get("modelo_campeao", ""))
+                melhor_rmse = float(str(dict_tuning.get("melhor_rmse", 0.0)))
+                if campeao_mod:
+                    return campeao_mod, melhor_rmse
+            except Exception:
+                pass
+
+        # 3. Fallback: primeiro modelo ativo na configuração
+        modelos_ativos = config_mod.obter_modelos_ativos()
+        if modelos_ativos:
+            return modelos_ativos[0].nome, 0.0
+
+        return "regressao_linear", 0.0
+
+    def _instanciar_regressor_concreto(
+        self,
+        nome_modelo: str,
+        config_modelagem: object,
+    ) -> tuple[object, str]:
+        """Instancia o algoritmo concreto com base nos hiperparâmetros configurados."""
+        from app.esquema_configuracao import ConfiguracaoModelagem
+
+        config_mod = cast(ConfiguracaoModelagem, config_modelagem)
+        params_grade = config_mod.tuning.parametros.get(nome_modelo)
+
+        def _primeiro(chave: str, fallback: object) -> object:
+            if params_grade is not None:
+                val = params_grade.get(chave)
+                if isinstance(val, list) and len(val) > 0:
+                    return val[0]
+                if val is not None and not isinstance(val, list):
+                    return val
+            return fallback
+
+        if nome_modelo in {"regressao_linear", "regressao_multipla"}:
+            fit_int = bool(_primeiro("fit_intercept", True))
+            return LinearRegression(fit_intercept=fit_int), f"LinearRegression(fit_intercept={fit_int})"
+
+        if nome_modelo == "lasso":
+            alpha = float(str(_primeiro("alpha", 1.0)))
+            return Lasso(alpha=alpha, random_state=42), f"Lasso(alpha={alpha})"
+
+        if nome_modelo == "ridge":
+            alpha = float(str(_primeiro("alpha", 1.0)))
+            return Ridge(alpha=alpha, random_state=42), f"Ridge(alpha={alpha})"
+
+        if nome_modelo == "elasticnet":
+            alpha = float(str(_primeiro("alpha", 1.0)))
+            l1 = float(str(_primeiro("l1_ratio", 0.5)))
+            return ElasticNet(alpha=alpha, l1_ratio=l1, random_state=42), f"ElasticNet(alpha={alpha}, l1={l1})"
+
+        if nome_modelo == "arvore_decisao":
+            depth = int(str(_primeiro("max_depth", 5)))
+            split = int(str(_primeiro("min_samples_split", 2)))
+            return DecisionTreeRegressor(max_depth=depth, min_samples_split=split, random_state=42), f"DecisionTreeRegressor(depth={depth})"
+
+        if nome_modelo == "random_forest":
+            n_est = int(str(_primeiro("n_estimators", 100)))
+            depth_val = _primeiro("max_depth", 10)
+            depth_int = int(str(depth_val)) if depth_val is not None else None
+            return RandomForestRegressor(n_estimators=n_est, max_depth=depth_int, random_state=42), f"RandomForestRegressor(n={n_est}, depth={depth_int})"
+
+        if nome_modelo == "svr":
+            c_val = float(str(_primeiro("C", 1.0)))
+            k_val = str(_primeiro("kernel", "rbf"))
+            return SVR(C=c_val, kernel=k_val), f"SVR(C={c_val}, kernel={k_val})"
+
+        if nome_modelo == "rede_neural":
+            iter_val = int(str(_primeiro("max_iter", 200)))
+            return MLPRegressor(max_iter=iter_val, random_state=42), f"MLPRegressor(iter={iter_val})"
+
+        if nome_modelo == "xgboost":
+            n_est = int(str(_primeiro("n_estimators", 100)))
+            depth = int(str(_primeiro("max_depth", 6)))
+            lr = float(str(_primeiro("learning_rate", 0.1)))
+            return xgb.XGBRegressor(n_estimators=n_est, max_depth=depth, learning_rate=lr, random_state=42, verbosity=0), f"XGBRegressor(n={n_est}, lr={lr})"
+
+        if nome_modelo == "lightgbm":
+            n_est = int(str(_primeiro("n_estimators", 100)))
+            depth = int(str(_primeiro("max_depth", 6)))
+            lr = float(str(_primeiro("learning_rate", 0.05)))
+            return lgb.LGBMRegressor(n_estimators=n_est, max_depth=depth, learning_rate=lr, random_state=42, verbosity=-1), f"LGBMRegressor(n={n_est}, lr={lr})"
+
+        return LinearRegression(), "LinearRegression(fallback)"
 
     def _registrar_promocao_mlflow(
         self,
@@ -267,7 +389,7 @@ class OrquestradorImplantacao:
         mlflow.set_tracking_uri(config_mlflow.tracking_uri)
         mlflow.set_experiment(config_mlflow.experimento)
 
-        with mlflow.start_run(run_name="promocao_modelo_campeao_lightgbm") as run:
+        with mlflow.start_run(run_name=f"promocao_modelo_campeao_{metadados.nome_modelo}") as run:
             run_id = str(run.info.run_id)
             mlflow.set_tag("pipeline.etapa", "implantacao_regras")
             mlflow.set_tag("modelo.status", "Production")

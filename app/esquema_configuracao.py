@@ -407,8 +407,9 @@ class ConfiguracaoMlflow(BaseModel):
     modelo_registrado: str = Field(
         default="previsao_preco_imoveis", description="Nome do modelo no MLflow Registry"
     )
-    modelo_campeao: str = Field(
-        default="random_forest", description="Identificador padrão ou fallback do campeão"
+    modelo_campeao: str | None = Field(
+        default=None,
+        description="Identificador do modelo campeão resolvido dinamicamente durante a execução",
     )
     registrar_modelo_campeao: bool = Field(
         default=True, description="Indica se o campeão deve ser versionado no Registry"
