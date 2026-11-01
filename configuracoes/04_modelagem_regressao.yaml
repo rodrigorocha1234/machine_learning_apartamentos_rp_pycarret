@@ -76,38 +76,38 @@ modelagem:
         ativo: true
         fit_intercept: [true, false]
       lasso:
-        ativo: false
+        ativo: true
         alpha: [0.01, 0.1, 1.0, 10.0]
       ridge:
-        ativo: false
+        ativo: true
         alpha: [0.01, 0.1, 1.0, 10.0]
       elasticnet:
-        ativo: false
+        ativo: true
         alpha: [0.01, 0.1, 1.0]
         l1_ratio: [0.2, 0.5, 0.8]
       arvore_decisao:
-        ativo: false
+        ativo: true
         max_depth: [3, 5, 10]
         min_samples_split: [2, 5]
       random_forest:
-        ativo: false
+        ativo: true
         n_estimators: [50, 100]
         max_depth: [5, 10]
       svr:
-        ativo: false
+        ativo: true
         C: [0.1, 1.0, 10.0]
         kernel: ["rbf", "linear"]
       rede_neural:
-        ativo: false
+        ativo: true
         hidden_layer_sizes: [[50], [100]]
         max_iter: [200]
       xgboost:
-        ativo: false
+        ativo: true
         n_estimators: [50, 100]
         max_depth: [3, 6]
         learning_rate: [0.05, 0.1]
       lightgbm:
-        ativo: false
+        ativo: true
         n_estimators: [50, 100]
         max_depth: [3, 6]
         learning_rate: [0.05, 0.1]

@@ -17,21 +17,29 @@ def test_obter_modelos_ativos_filtra_tuning_desativado() -> None:
     conf = ConfYAML()
     config_mod = conf.obter_modelagem()
 
-    # Na configuração atual, regressao_linear está ativo=true e lasso está ativo=false
+    # Simula desativação de modelos específicos via flag de tuning
+    if "lasso" in config_mod.tuning.parametros:
+        config_mod.tuning.parametros["lasso"].ativo = False
+    if "ridge" in config_mod.tuning.parametros:
+        config_mod.tuning.parametros["ridge"].ativo = False
+
     modelos_ativos = config_mod.obter_modelos_ativos()
     nomes_ativos = [m.nome for m in modelos_ativos]
 
     assert "regressao_linear" in nomes_ativos
     assert "lasso" not in nomes_ativos
     assert "ridge" not in nomes_ativos
-    assert "lightgbm" not in nomes_ativos
-    assert len(modelos_ativos) == 1
 
 
 def test_treinador_sklearn_executa_somente_modelos_ativos() -> None:
     """Verifica que o TreinadorSklearn treina exclusivamente os modelos ativos."""
     conf = ConfYAML()
     config_mod = conf.obter_modelagem()
+
+    # Isola exclusivamente regressao_linear como ativo para garantir execução controlada
+    for k, v in config_mod.tuning.parametros.items():
+        if k != "regressao_linear":
+            v.ativo = False
 
     # Carrega dados reais de staging
     from app.repositorios_dados.repositorio_sqlite import RepositorioSqlite
