@@ -2375,20 +2375,20 @@ curl -X POST "http://localhost:8000/invocations" \
               <td>Mede conforto sanitário por dormitório. Índices &ge; 1.0 indicam padrão alto ou suítes completas.</td>
             </tr>
 
-            <!-- 3. Área Privativa por Quarto -->
+            <!-- 3. Metragem por Quarto -->
             <tr data-category="engenharia">
               <td><span class="tag-cat cat-eng">Engenharia</span></td>
-              <td><code>Area_Por_Quarto</code></td>
+              <td><code>Metragem_Por_Quarto</code></td>
               <td>
                 <span class="tag-pandas">Pandas</span>
-                <div class="code-pill">df['Area_Privativa'] / df['Quartos']</div>
+                <div class="code-pill">df['Metragem'] / df['Quartos']</div>
               </td>
               <td>
                 <span class="tag-polars">Polars</span>
-                <div class="code-pill">df['Area_Privativa'] / df['Quartos']</div>
+                <div class="code-pill">df['Metragem'] / df['Quartos']</div>
               </td>
               <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
-              <td>Média de espaço privativo útil disponível para cada dormitório da unidade.</td>
+              <td>Média de metragem útil disponível para cada dormitório da unidade.</td>
             </tr>
 
             <!-- 4. Vagas por Quarto -->
@@ -2404,71 +2404,71 @@ curl -X POST "http://localhost:8000/invocations" \
                 <div class="code-pill">df['Vagas'] / df['Quartos']</div>
               </td>
               <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
-              <td>Razão de capacidade de estacionamento por dormitório, diferencial em bairros nobres como Zona Sul.</td>
+              <td>Razão de capacidade de estacionamento por dormitório, diferencial em bairros nobres de Ribeirão Preto.</td>
             </tr>
 
-            <!-- 5. Custo Mensal Total de Manutenção -->
+            <!-- 5. Preço por Metro Quadrado -->
             <tr data-category="engenharia">
               <td><span class="tag-cat cat-eng">Engenharia</span></td>
-              <td><code>Custo_Manutencao_Mensal</code></td>
+              <td><code>Preco_M2</code></td>
               <td>
                 <span class="tag-pandas">Pandas</span>
-                <div class="code-pill">df['Valor_Condominio'] + (df['Valor_Iptu'] / 12)</div>
+                <div class="code-pill">df['Valor_da_Venda'] / df['Metragem']</div>
               </td>
               <td>
                 <span class="tag-polars">Polars</span>
-                <div class="code-pill">df['Valor_Condominio'] + (df['Valor_Iptu'] / 12)</div>
+                <div class="code-pill">df['Valor_da_Venda'] / df['Metragem']</div>
               </td>
               <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
-              <td>Encargo fixo mensal real do proprietário (condomínio mensal + cota proporcional de IPTU).</td>
+              <td>Indicador de valor unitário em R$/m² para calibrar o perfil de precificação por bairro.</td>
             </tr>
 
-            <!-- 6. Condomínio por m² -->
+            <!-- 6. Metragem por Vaga -->
             <tr data-category="engenharia">
               <td><span class="tag-cat cat-eng">Engenharia</span></td>
-              <td><code>Condominio_M2</code></td>
+              <td><code>Metragem_Por_Vaga</code></td>
               <td>
                 <span class="tag-pandas">Pandas</span>
-                <div class="code-pill">df['Valor_Condominio'] / df['Metragem']</div>
+                <div class="code-pill">df['Metragem'] / df['Vagas']</div>
               </td>
               <td>
                 <span class="tag-polars">Polars</span>
-                <div class="code-pill">df['Valor_Condominio'] / df['Metragem']</div>
+                <div class="code-pill">df['Metragem'] / df['Vagas']</div>
               </td>
               <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
-              <td>Eficiência de taxa condominial por metro quadrado construído (detecta condomínios onerosos).</td>
+              <td>Relação entre área total e quantidade de vagas de garagem cobertas.</td>
             </tr>
 
-            <!-- 7. Custo Anual de Manutenção vs Preço de Venda -->
+            <!-- 7. Preço por Quarto -->
             <tr data-category="engenharia">
               <td><span class="tag-cat cat-eng">Engenharia</span></td>
-              <td><code>Razao_Manutencao_Preco</code></td>
+              <td><code>Preco_Por_Quarto</code></td>
               <td>
                 <span class="tag-pandas">Pandas</span>
-                <div class="code-pill">((df['Valor_Condominio'] * 12) + df['Valor_Iptu']) / df['Valor_da_Venda']</div>
+                <div class="code-pill">df['Valor_da_Venda'] / df['Quartos']</div>
               </td>
               <td>
                 <span class="tag-polars">Polars</span>
-                <div class="code-pill">((df['Valor_Condominio'] * 12) + df['Valor_Iptu']) / df['Valor_da_Venda']</div>
+                <div class="code-pill">df['Valor_da_Venda'] / df['Quartos']</div>
               </td>
               <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
-              <td>Percentual do valor do imóvel consumido anualmente em despesas tributárias e condominiais.</td>
+              <td>Valor médio atribuído por dormitório, útil para comparação entre tipologias.</td>
             </tr>
 
-            <!-- 8. Razão Área Privativa vs Metragem Total -->
+            <!-- 8. Razão Banheiro por Quarto -->
             <tr data-category="engenharia">
               <td><span class="tag-cat cat-eng">Engenharia</span></td>
-              <td><code>Aproveitamento_Area</code></td>
+              <td><code>Razao_Banheiro_Quarto</code></td>
               <td>
                 <span class="tag-pandas">Pandas</span>
-                <div class="code-pill">df['Area_Privativa'] / df['Metragem']</div>
+                <div class="code-pill">df['Banheiros'] / df['Quartos']</div>
               </td>
               <td>
                 <span class="tag-polars">Polars</span>
-                <div class="code-pill">df['Area_Privativa'] / df['Metragem']</div>
+                <div class="code-pill">df['Banheiros'] / df['Quartos']</div>
               </td>
               <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
-              <td>Fração de área privativa efetiva vs metragem total registrada.</td>
+              <td>Proporção de sanitários em relação aos quartos (suítes e comodidade).</td>
             </tr>
 
             <!-- 9. Estimativa de Suítes via Divisão Inteira -->
@@ -2567,20 +2567,20 @@ curl -X POST "http://localhost:8000/invocations" \
               <td>Remove a influência deletéria de outliers extremos no treinamento de regressores lineares.</td>
             </tr>
 
-            <!-- 15. Truncamento Superior de Taxa de Condomínio -->
+            <!-- 15. Truncamento Superior de Metragem -->
             <tr data-category="clipping">
               <td><span class="tag-cat cat-clip">Clipping</span></td>
-              <td><code>Valor_Condominio</code></td>
+              <td><code>Metragem</code></td>
               <td>
                 <span class="tag-pandas">Pandas</span>
-                <div class="code-pill">df['Valor_Condominio'].clip(upper=15000)</div>
+                <div class="code-pill">df['Metragem'].clip(upper=500)</div>
               </td>
               <td>
                 <span class="tag-polars">Polars</span>
-                <div class="code-pill">df['Valor_Condominio'].clip(upper_bound=15000)</div>
+                <div class="code-pill">df['Metragem'].clip(upper_bound=500)</div>
               </td>
               <td><span style="color: var(--accent-purple); font-weight: 600;">transformacoes</span></td>
-              <td>Poda valores digitados com erro de escala (ex: digitação de 150.000 em vez de 1.500).</td>
+              <td>Poda metragens atípicas ou erros cadastrais acima de 500 m².</td>
             </tr>
 
             <!-- 16. Truncamento Superior de Vagas -->
@@ -2599,20 +2599,20 @@ curl -X POST "http://localhost:8000/invocations" \
               <td>Normaliza vagas entre 0 e 6, eliminando erros de cadastro pontuais.</td>
             </tr>
 
-            <!-- 17. Desvio Absoluto de Condomínio (abs) -->
+            <!-- 17. Desvio Absoluto de Metragem (abs) -->
             <tr data-category="clipping">
               <td><span class="tag-cat cat-clip">Clipping</span></td>
-              <td><code>Desvio_Condominio_Medio</code></td>
+              <td><code>Desvio_Metragem_Media</code></td>
               <td>
                 <span class="tag-pandas">Pandas</span>
-                <div class="code-pill">(df['Valor_Condominio'] - 550).abs()</div>
+                <div class="code-pill">(df['Metragem'] - 80).abs()</div>
               </td>
               <td>
                 <span class="tag-polars">Polars</span>
-                <div class="code-pill">(df['Valor_Condominio'] - 550).abs()</div>
+                <div class="code-pill">(df['Metragem'] - 80).abs()</div>
               </td>
               <td><span style="color: var(--accent-cyan); font-weight: 600;">atributos_novos</span></td>
-              <td>Calcula distância euclidiana da taxa condominial em relação à mediana estimada de Ribeirão Preto.</td>
+              <td>Calcula distância euclidiana da metragem em relação à mediana estimada de Ribeirão Preto.</td>
             </tr>
 
             <!-- 18. Arredondamento de Preço Médio (round) -->
@@ -2679,20 +2679,20 @@ curl -X POST "http://localhost:8000/invocations" \
               <td>Limita a amostra ao escopo de apartamentos residenciais urbanos reais no município.</td>
             </tr>
 
-            <!-- 22. Filtro Consistência Área Privativa -->
+            <!-- 22. Filtro Consistência Metragem Urbana -->
             <tr data-category="filtros">
               <td><span class="tag-cat cat-filt">Filtro Where</span></td>
-              <td><code>area_privativa_valida</code></td>
+              <td><code>metragem_urbana_valida</code></td>
               <td>
                 <span class="tag-pandas">Pandas</span>
-                <div class="code-pill">df['Area_Privativa'] <= df['Metragem']</div>
+                <div class="code-pill">(df['Metragem'] >= 15) & (df['Metragem'] <= 600)</div>
               </td>
               <td>
                 <span class="tag-polars">Polars</span>
-                <div class="code-pill">df['Area_Privativa'] <= df['Metragem']</div>
+                <div class="code-pill">(df['Metragem'] >= 15) & (df['Metragem'] <= 600)</div>
               </td>
               <td><span style="color: var(--accent-amber); font-weight: 600;">filtros</span></td>
-              <td>Regra física de consistência cadastral (área privativa nunca pode exceder a metragem total).</td>
+              <td>Regra física de consistência cadastral (apartamentos entre 15 m² e 600 m²).</td>
             </tr>
 
             <!-- 23. Filtro Faixa Habitacional de Quartos -->
@@ -2711,20 +2711,20 @@ curl -X POST "http://localhost:8000/invocations" \
               <td>Filtra erros tipográficos de quantidade de dormitórios (ex: 22 quartos).</td>
             </tr>
 
-            <!-- 24. Filtro Taxa de Condomínio Válida -->
+            <!-- 24. Filtro Quantidade de Banheiros Válida -->
             <tr data-category="filtros">
               <td><span class="tag-cat cat-filt">Filtro Where</span></td>
-              <td><code>condominio_valido</code></td>
+              <td><code>banheiros_validos</code></td>
               <td>
                 <span class="tag-pandas">Pandas</span>
-                <div class="code-pill">(df['Valor_Condominio'] >= 0) & (df['Valor_Condominio'] <= 25000)</div>
+                <div class="code-pill">(df['Banheiros'] >= 1) & (df['Banheiros'] <= 8)</div>
               </td>
               <td>
                 <span class="tag-polars">Polars</span>
-                <div class="code-pill">(df['Valor_Condominio'] >= 0) & (df['Valor_Condominio'] <= 25000)</div>
+                <div class="code-pill">(df['Banheiros'] >= 1) & (df['Banheiros'] <= 8)</div>
               </td>
               <td><span style="color: var(--accent-amber); font-weight: 600;">filtros</span></td>
-              <td>Elimina registros com taxas de condomínio espúrias antes do treinamento.</td>
+              <td>Elimina registros com quantidades irreais de banheiros antes do treinamento.</td>
             </tr>
 
             <!-- 25. Filtro Exclusivo de Studios / Compactos -->
@@ -2773,17 +2773,12 @@ filtros:
       expressao:
         pandas: "df['Valor_da_Venda'] > 0"
         polars: "df['Valor_da_Venda'] > 0"
-    - nome: "consistencia_area"
-      ativo: true
-      expressao:
-        pandas: "df['Area_Privativa'] <= df['Metragem']"
-        polars: "df['Area_Privativa'] <= df['Metragem']"
 
 transformacoes:
   ativo: true
   expressoes:
     - nome: "metragem_ajustada"
-      ativo: true
+      ativo: false
       destino: "Metragem"
       expressao:
         pandas: "df['Metragem'].clip(lower=1)"
@@ -2799,17 +2794,11 @@ atributos_novos:
         pandas: "df['Valor_da_Venda'] / df['Metragem']"
         polars: "df['Valor_da_Venda'] / df['Metragem']"
     - nome: "razao_banheiro_quarto"
-      ativo: true
+      ativo: false
       destino: "Razao_Banheiro_Quarto"
       expressao:
         pandas: "df['Banheiros'] / df['Quartos']"
-        polars: "df['Banheiros'] / df['Quartos']"
-    - nome: "custo_manutencao_mensal"
-      ativo: true
-      destino: "Custo_Manutencao_Mensal"
-      expressao:
-        pandas: "df['Valor_Condominio'] + (df['Valor_Iptu'] / 12)"
-        polars: "df['Valor_Condominio'] + (df['Valor_Iptu'] / 12)"</pre>
+        polars: "df['Banheiros'] / df['Quartos']"</pre>
         </div>
       </div>
     </section>
@@ -3596,8 +3585,8 @@ atributos_novos:
             <tr>
               <td><code>RequisicaoImovel</code></td>
               <td><code>contratos_implantacao/avaliador_regras.py</code></td>
-              <td><code>Metragem > 0</code>, <code>Quartos >= 0</code>, <code>Bairro != ""</code>, <code>Valor_Condominio >= 0</code></td>
-              <td>Payload de entrada validado da rota <code>POST /predict</code> na API FastAPI.</td>
+              <td><code>Metragem > 0</code>, <code>Quartos >= 0</code>, <code>Banheiros >= 0</code>, <code>Vagas >= 0</code>, <code>Bairro != ""</code></td>
+              <td>Payload de entrada validado da rota <code>POST /predict</code> e <code>POST /invocations</code>.</td>
             </tr>
             <tr>
               <td><code>RespostaPredicao</code></td>
@@ -3645,14 +3634,11 @@ class RequisicaoImovel(BaseModel):
     Vagas: int = Field(ge=0, description="Quantidade de vagas de garagem")
     Bairro: str = Field(min_length=1, description="Bairro de localização em Ribeirão Preto")
     Zona: str = Field(default="Sul", description="Zona da cidade (Sul, Leste, Oeste, Norte, Centro)")
-    Valor_Condominio: float = Field(default=0.0, ge=0.0, description="Taxa condominial em R$")
-    Valor_Iptu: float = Field(default=0.0, ge=0.0, description="Valor do IPTU em R$")
-    Area_Privativa: float = Field(default=0.0, ge=0.0, description="Área privativa útil em m²")
 
 # Cenário 1: Payload Válido -> Instanciação instantânea
 imovel = RequisicaoImovel(
     Metragem=85.5, Quartos=3, Banheiros=2, Vagas=2,
-    Bairro="Jardim Botânico", Zona="Sul", Valor_Condominio=650.0
+    Bairro="Jardim Botânico", Zona="Sul"
 )
 
 # Cenário 2: Payload com Metragem Negativa (-10) -> Erro Imediato HTTP 422:
@@ -3853,7 +3839,6 @@ selecao:
     - {nome: "Vagas", ativo: true, tipo: "quantitativa_discreta", papel: "numerica"}
     - {nome: "Bairro", ativo: true, tipo: "qualitativa_nominal", papel: "categorica"}
     - {nome: "Zona", ativo: true, tipo: "qualitativa_nominal", papel: "categorica"}
-    - {nome: "Valor_Condominio", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
 
 filtros:
   ativo: true
@@ -3959,9 +3944,9 @@ modelagem:
     transformar_alvo: true
     metodo_transformacao_alvo: "log1p"   # Corrige assimetria positiva do preço
     transformar_atributos:
-      ativo: true
+      ativo: false
       metodo: "log1p"
-      colunas: ["Metragem", "Area_Privativa", "Valor_Condominio", "Valor_Iptu"]
+      colunas: ["Metragem"]
 
   modelos:                     # Catálogo de modelos candidatos (ative ou desative individualmente)
     - {nome: "regressao_linear", ativo: true, pycaret_id: "lr", sklearn_class: "LinearRegression"}
@@ -4454,10 +4439,7 @@ params:
   "Banheiros": 2,
   "Vagas": 2,
   "Bairro": "Jardim Botânico",
-  "Zona": "Sul",
-  "Valor_Condominio": 650.0,
-  "Valor_Iptu": 120.0,
-  "Area_Privativa": 82.0
+  "Zona": "Sul"
 }</pre>
               <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 10px;">
                 ✓ Tipologia: Apartamento padrão intermediário<br>
@@ -4726,7 +4708,7 @@ params:
           </div>
           <div class="card-body">
             <p>
-              Aplicado a todas as variáveis preditoras contínuas (<code>Metragem</code>, <code>Area_Privativa</code>, <code>Valor_Condominio</code>, <code>Valor_Iptu</code>) e às predições (<code>preco_predito</code>).
+              Aplicado a todas as variáveis preditoras contínuas (<code>Metragem</code>) e às predições (<code>preco_predito</code>).
             </p>
             <p style="font-size: 0.9rem;">
               O teste avalia a hipótese nula $H_0$ de que as amostras de referência $F_{\text{ref}}(x)$ e de produção $F_{\text{prod}}(x)$ foram geradas a partir da mesma distribuição acumulada contínua:

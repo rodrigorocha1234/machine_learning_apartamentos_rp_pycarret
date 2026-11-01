@@ -36,15 +36,21 @@ from app.servicos_implantacao.servico_inferencia import ServicoInferencia
 class ResultadoImplantacao(BaseModel):
     """Resultado oficial consolidado da execução da Etapa de Implantação."""
 
-    modelo_promovido: str = Field(description="Nome do algoritmo promovido a produção")
+    modelo_promovido: str = Field(
+        description="Nome do algoritmo promovido a produção")
     versao_modelo: str = Field(description="Identificador da versão promovida")
-    caminho_artefato_modelo: str = Field(description="Caminho do arquivo serializado do modelo")
-    caminho_metadados: str = Field(description="Caminho do arquivo de metadados")
-    rmse_holdout: float = Field(description="RMSE em reais sobre o holdout cego")
+    caminho_artefato_modelo: str = Field(
+        description="Caminho do arquivo serializado do modelo")
+    caminho_metadados: str = Field(
+        description="Caminho do arquivo de metadados")
+    rmse_holdout: float = Field(
+        description="RMSE em reais sobre o holdout cego")
     mae_holdout: float = Field(description="MAE em reais sobre o holdout cego")
     r2_holdout: float = Field(description="R² sobre o holdout cego")
-    total_regras_ativas: int = Field(description="Quantidade de regras dinâmicas ativas")
-    exemplo_predicao: RespostaPredicao = Field(description="Resultado de inferência de teste executada")
+    total_regras_ativas: int = Field(
+        description="Quantidade de regras dinâmicas ativas")
+    exemplo_predicao: RespostaPredicao = Field(
+        description="Resultado de inferência de teste executada")
     mlflow_run_id: str = Field(description="ID do run de promoção no MLflow")
     data_implantacao: str = Field(description="Timestamp da implantação")
 
@@ -86,7 +92,8 @@ class OrquestradorImplantacao:
         # 1. Carregamento da base tratada
         df_completo = self._repositorio.ler_dados()
         if df_completo.empty:
-            raise ErroOrquestradorImplantacao("Tabela 'imoveis_limpos' está vazia.")
+            raise ErroOrquestradorImplantacao(
+                "Tabela 'imoveis_limpos' está vazia.")
 
         # 2. Resolução dinâmica do modelo campeão
         nome_campeao, rmse_cv_estimado = self._resolver_modelo_campeao(
@@ -98,11 +105,15 @@ class OrquestradorImplantacao:
         n_total = len(df_completo)
         n_holdout = int(n_total * holdout_pct)
 
-        df_embaralhado = df_completo.sample(frac=1.0, random_state=42).reset_index(drop=True)
-        df_holdout = cast(pd.DataFrame, df_embaralhado.iloc[:n_holdout]).copy().reset_index(drop=True)
-        df_treino = cast(pd.DataFrame, df_embaralhado.iloc[n_holdout:]).copy().reset_index(drop=True)
+        df_embaralhado = df_completo.sample(
+            frac=1.0, random_state=42).reset_index(drop=True)
+        df_holdout = cast(
+            pd.DataFrame, df_embaralhado.iloc[:n_holdout]).copy().reset_index(drop=True)
+        df_treino = cast(
+            pd.DataFrame, df_embaralhado.iloc[n_holdout:]).copy().reset_index(drop=True)
 
-        todas_colunas: list[str] = [str(c) for c in cast(list[object], list(df_treino.columns))]
+        todas_colunas: list[str] = [str(c) for c in cast(
+            list[object], list(df_treino.columns))]
         X_cols: list[str] = [c for c in todas_colunas if c != coluna_alvo]
         X_treino = cast(pd.DataFrame, df_treino[X_cols])
         y_treino = cast(pd.Series, df_treino[coluna_alvo])
@@ -217,21 +228,23 @@ class OrquestradorImplantacao:
 
         # Teste com uma requisição canônica de apartamento em Ribeirão Preto
         req_exemplo = RequisicaoImovel(
-            Metragem=85.5,
+            Metragem=85.0,
             Quartos=3,
             Banheiros=2,
             Vagas=2,
-            Bairro="Jardim Botânico",
+            Bairro="Jardim Botanico",
             Zona="Sul",
         )
         resposta_exemplo = servico.predizer_imovel(req_exemplo)
 
-        total_regras_ativas = len([r for r in config_implantacao.regras if r.ativo])
+        total_regras_ativas = len(
+            [r for r in config_implantacao.regras if r.ativo])
 
         resultado = ResultadoImplantacao(
             modelo_promovido=nome_campeao,
             versao_modelo=versao_modelo,
-            caminho_artefato_modelo=str(dir_artefatos / "modelo_campeao.joblib"),
+            caminho_artefato_modelo=str(
+                dir_artefatos / "modelo_campeao.joblib"),
             caminho_metadados=str(dir_artefatos / "metadados_campeao.json"),
             rmse_holdout=round(rmse_holdout, 2),
             mae_holdout=round(mae_holdout, 2),
@@ -267,13 +280,16 @@ class OrquestradorImplantacao:
                 with open(caminho_aval, "r", encoding="utf-8") as f:
                     dados_aval = cast(dict[str, object], json.load(f))
                 rec = str(dados_aval.get("modelo_final_recomendado", ""))
-                comp = cast(dict[str, object], dados_aval.get("comparacao_estatistica", {}))
+                comp = cast(dict[str, object], dados_aval.get(
+                    "comparacao_estatistica", {}))
                 campeao_est = str(comp.get("modelo_campeao_estatistico", ""))
-                alvo_nome = campeao_est if (rec.startswith("ensemble_") or not rec) else rec
+                alvo_nome = campeao_est if (
+                    rec.startswith("ensemble_") or not rec) else rec
 
                 # Tenta obter rmse_cv pareado ou rmse holdout
                 rmse_cv = 0.0
-                metricas_holdout = cast(dict[str, dict[str, float]], dados_aval.get("metricas_holdout", {}))
+                metricas_holdout = cast(
+                    dict[str, dict[str, float]], dados_aval.get("metricas_holdout", {}))
                 if alvo_nome in metricas_holdout:
                     val_rmse = metricas_holdout[alvo_nome].get("rmse", 0.0)
                     rmse_cv = float(str(val_rmse))
@@ -289,7 +305,8 @@ class OrquestradorImplantacao:
             try:
                 with open(caminho_mod, "r", encoding="utf-8") as f:
                     dados_mod = cast(dict[str, object], json.load(f))
-                dict_tuning = cast(dict[str, object], dados_mod.get("res_tuning", {}))
+                dict_tuning = cast(dict[str, object],
+                                   dados_mod.get("res_tuning", {}))
                 campeao_mod = str(dict_tuning.get("modelo_campeao", ""))
                 melhor_rmse = float(str(dict_tuning.get("melhor_rmse", 0.0)))
                 if campeao_mod:
@@ -403,9 +420,11 @@ class OrquestradorImplantacao:
                 caminho_joblib = dir_artefatos / "modelo_campeao.joblib"
                 caminho_meta = dir_artefatos / "metadados_campeao.json"
                 if caminho_joblib.exists():
-                    mlflow.log_artifact(str(caminho_joblib), artifact_path="model")
+                    mlflow.log_artifact(str(caminho_joblib),
+                                        artifact_path="model")
                 if caminho_meta.exists():
-                    mlflow.log_artifact(str(caminho_meta), artifact_path="model")
+                    mlflow.log_artifact(str(caminho_meta),
+                                        artifact_path="model")
 
                 return run_id
         except Exception:
