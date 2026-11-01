@@ -1,6 +1,6 @@
 # Relatório de Entrega — Etapa 7: Monitoramento de Drift e Observabilidade
 
-**Data de Execução:** 2026-11-01T00:10:23.641502+00:00  
+**Data de Execução:** 2026-11-01T01:00:02.290463+00:00  
 **Responsáveis:** @observability, @statistician, @devops  
 **Status:** CONCLUÍDO COM SUCESSO  
 **Evidências Persistidas:** [storage-data/relatorio_drift.json](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/storage-data/relatorio_drift.json)  
@@ -18,8 +18,8 @@ O sistema de observabilidade contínua executou os testes de hipóteses bicaudai
 - **Prediction Drift (ŷ):** `NÃO DETECTADO`
 - **Target Drift (y):** `NÃO DETECTADO`
 - **Concept Drift Real (P(Y|X)):** `DETECTADO`
-- **Degradação de Performance (RMSE):** **+46.09%**
-- **Orientação Operacional:** ALERTA CRÍTICO: Concept Drift Real detectado com degradação de erro RMSE de 46.1%. Recomenda-se acionar pipeline de retreinamento do modelo com dados recentes e reavaliação de hipóteses.
+- **Degradação de Performance (RMSE):** **+144.31%**
+- **Orientação Operacional:** ALERTA CRÍTICO: Concept Drift Real detectado com degradação de erro RMSE de 144.3%. Recomenda-se acionar pipeline de retreinamento do modelo com dados recentes e reavaliação de hipóteses.
 
 ---
 
@@ -28,7 +28,7 @@ O sistema de observabilidade contínua executou os testes de hipóteses bicaudai
 - **Total de Amostras Avaliadas:** 70
 - **Taxa Geral de Nulos:** **0.00%**
 - **Novas Categorias Não Mapeadas:** 0
-- **Valores Fora dos Limites Históricos:** 3
+- **Valores Fora dos Limites Históricos:** 1
 
 ---
 
@@ -42,10 +42,7 @@ O sistema de observabilidade contínua executou os testes de hipóteses bicaudai
 | `Vagas` | numerica | kolmogorov_smirnov | 0.0679 | 0.9503 | 0.05 | NÃO |
 | `Bairro` | categorica | psi | 0.2499 | - | 0.2 | **SIM (ALERTA)** |
 | `Zona` | categorica | psi | 0.0115 | - | 0.2 | NÃO |
-| `Valor_Condominio` | numerica | kolmogorov_smirnov | 0.1000 | 0.6097 | 0.05 | NÃO |
-| `Valor_Iptu` | numerica | kolmogorov_smirnov | 0.1143 | 0.4390 | 0.05 | NÃO |
-| `Area_Privativa` | numerica | kolmogorov_smirnov | 0.0893 | 0.7442 | 0.05 | NÃO |
-| `preco_predito` | predicao | kolmogorov_smirnov | 0.1429 | 0.1921 | 0.1 | NÃO |
+| `preco_predito` | predicao | kolmogorov_smirnov | 0.1286 | 0.2980 | 0.1 | NÃO |
 | `Valor_da_Venda` | alvo | kolmogorov_smirnov | 0.1036 | 0.5651 | 0.05 | NÃO |
 
 ---

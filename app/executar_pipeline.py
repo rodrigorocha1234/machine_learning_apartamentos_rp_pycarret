@@ -11,6 +11,7 @@ from typing import override
 from app.conf_yaml import ConfYAML
 from app.enums_dominio import EtapaPipeline
 from app.repositorios_dados.fabrica_repositorios import FabricaRepositorios
+from app.repositorios_dados.repositorio_sqlite import RepositorioSqlite
 from app.servicos_avaliacao.orquestrador_avaliacao import OrquestradorAvaliacao, ResultadoEtapaAvaliacao
 from app.servicos_coleta.coletor_dados import ColetorDados, ResultadoColeta
 from app.servicos_eda.analisador_eda import AnalisadorEda, ResultadoEda
@@ -139,7 +140,9 @@ class EloPreparacaoDados(EloCadeiaPipeline):
         repo = FabricaRepositorios.criar_repositorio(contexto.conf.obter_staging())
         dados_brutos = repo.ler_dados()
         df_limpo, resultado = preparador.preparar(dados_brutos)
-        _ = df_limpo
+        if isinstance(repo, RepositorioSqlite):
+            repo_limpos = RepositorioSqlite(caminho=repo.caminho, tabela="imoveis_limpos")
+            repo_limpos.gravar_dados(df_limpo, substituir=True)
         contexto.resultado_preparacao = resultado
         print(f"✓ Linhas removidas por filtros: {resultado.linhas_removidas_filtros}")
         print(f"✓ Colunas finais: {resultado.total_colunas_finais}")

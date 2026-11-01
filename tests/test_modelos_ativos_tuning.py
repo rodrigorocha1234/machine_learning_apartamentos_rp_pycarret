@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import pandas as pd
 import pytest
 
@@ -53,15 +54,43 @@ def test_treinador_sklearn_executa_somente_modelos_ativos() -> None:
     assert res_tuning.modelo_campeao == "regressao_linear"
 
 
-def test_testador_friedman_um_modelo_promocao_direta() -> None:
-    """Verifica que o TestadorFriedman promove diretamente quando há apenas 1 modelo."""
-    testador = TestadorFriedman()
-    matriz_cv = {"regressao_linear": [105000.0, 98000.0, 102000.0]}
+def test_avaliacao_um_modelo_promocao_direta(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verifica que o pipeline promove diretamente o único modelo ativo sem falhar no Friedman."""
+    monkeypatch.setenv("MLFLOW_ALLOW_FILE_STORE", "true")
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", f"file://{tmp_path}/mlruns")
+    from app.contratos_modelagem.motor_treinador import ResultadoTreinoModelo, ResultadoTuning
+    from app.servicos_avaliacao.orquestrador_avaliacao import OrquestradorAvaliacao
 
-    res = testador.comparar_modelos(matriz_cv=matriz_cv, metrica="RMSE")
+    conf = ConfYAML()
+    orquestrador = OrquestradorAvaliacao.da_configuracao(conf)
 
-    assert res.modelo_campeao_estatistico == "regressao_linear"
-    assert res.candidatos_selecionados == ["regressao_linear"]
-    assert res.friedman.diferenca_significativa is False
-    assert res.nemenyi is None
-    assert "Apenas o modelo 'regressao_linear' foi selecionado" in res.justificativa_decisao
+    # Simula 1 único modelo vindo do tuning
+    modelo_unico = ResultadoTreinoModelo(
+        nome_modelo="regressao_linear",
+        framework="sklearn",
+        melhores_parametros={"fit_intercept": True},
+        metricas={"RMSE": 105000.0},
+        duracao_segundos=0.1,
+    )
+    res_tuning = ResultadoTuning(
+        metodo_tuning="random",
+        iteracoes=1,
+        modelos_treinados=[modelo_unico],
+        modelo_campeao="regressao_linear",
+        melhor_rmse=105000.0,
+    )
+
+    from app.repositorios_dados.repositorio_sqlite import RepositorioSqlite
+
+    repo = RepositorioSqlite(caminho="storage-data/staging_imoveis.db", tabela="imoveis_limpos")
+    df_real = repo.ler_dados().head(50)
+
+    resultado_etapa = orquestrador.executar_avaliacao_e_selecao(
+        dados=df_real,
+        resultado_tuning=res_tuning,
+    )
+
+    assert resultado_etapa.modelo_final_recomendado == "regressao_linear"
+    assert resultado_etapa.comparacao_estatistica.modelo_campeao_estatistico == "regressao_linear"
+    assert resultado_etapa.comparacao_estatistica.friedman.diferenca_significativa is False
+    assert resultado_etapa.comparacao_estatistica.nemenyi is None

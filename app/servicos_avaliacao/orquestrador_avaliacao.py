@@ -11,7 +11,10 @@ from pydantic import BaseModel, Field
 
 from app.comites_votacao.comite_sklearn import ComiteSklearn
 from app.conf_yaml import ConfYAML
-from app.contratos_avaliacao.avaliador_estatistico import ResultadoComparacaoEstatistica
+from app.contratos_avaliacao.avaliador_estatistico import (
+    ResultadoComparacaoEstatistica,
+    ResultadoFriedman,
+)
 from app.contratos_avaliacao.construtor_comite import ResultadoComite
 from app.contratos_dados.repositorio_dados import RepositorioDados
 from app.contratos_modelagem.motor_treinador import ResultadoTreinoModelo, ResultadoTuning
@@ -129,11 +132,35 @@ class OrquestradorAvaliacao:
 
         # 5. Aplicação dos Testes Estatísticos Não-Paramétricos (Friedman e Nemenyi)
         cfg_estat = self._config_av.estatistica
-        res_estatistica = self._testador_estatistico.comparar_modelos(
-            matriz_cv=matriz_cv,
-            metrica=self._config_av.validacao.metrica,
-            alpha=cfg_estat.alpha,
-        )
+        res_estatistica: ResultadoComparacaoEstatistica
+        if len(matriz_cv) < 2:
+            nome_unico = next(iter(matriz_cv.keys())) if matriz_cv else "regressao_linear"
+            n_amostras_cv = len(matriz_cv[nome_unico]) if nome_unico in matriz_cv else 0
+            res_estatistica = ResultadoComparacaoEstatistica(
+                metrica_avaliada=self._config_av.validacao.metrica,
+                total_amostras_folds=n_amostras_cv,
+                friedman=ResultadoFriedman(
+                    estatistica_chi2=0.0,
+                    p_valor=1.0,
+                    graus_liberdade=0,
+                    diferenca_significativa=False,
+                    hipotese_nula_rejeitada=False,
+                    ranks_medios={nome_unico: 1.0},
+                ),
+                nemenyi=None,
+                modelo_campeao_estatistico=nome_unico,
+                candidatos_selecionados=[nome_unico],
+                justificativa_decisao=(
+                    f"Apenas o modelo '{nome_unico}' selecionado para validação cruzada. "
+                    "Teste pareado de Friedman/Nemenyi dispensado; modelo promovido diretamente como campeão."
+                ),
+            )
+        else:
+            res_estatistica = self._testador_estatistico.comparar_modelos(
+                matriz_cv=matriz_cv,
+                metrica=self._config_av.validacao.metrica,
+                alpha=cfg_estat.alpha,
+            )
 
         # 6. Avaliação de todos os modelos no holdout isolado
         metricas_holdout = self._avaliador_holdout.avaliar_modelos_holdout(

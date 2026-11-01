@@ -19,9 +19,6 @@ selecao:
     - {nome: "Vagas", ativo: true, tipo: "quantitativa_discreta", papel: "numerica"}
     - {nome: "Bairro", ativo: true, tipo: "qualitativa_nominal", papel: "categorica"}
     - {nome: "Zona", ativo: true, tipo: "qualitativa_nominal", papel: "categorica"}
-    - {nome: "Valor_Condominio", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
-    - {nome: "Valor_Iptu", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
-    - {nome: "Area_Privativa", ativo: true, tipo: "quantitativa_continua", papel: "numerica"}
 
 filtros:
   ativo: true

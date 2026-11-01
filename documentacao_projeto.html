@@ -2221,7 +2221,7 @@ sequenceDiagram
 # 3. Testar a inferência via cURL:
 curl -X POST "http://localhost:8000/invocations" \
      -H "Content-Type: application/json" \
-     -d '{"Metragem": 75.0, "Quartos": 2, "Bairro": "Centro", "Vagas": 1, "Banheiros": 2}'</pre>
+     -d '{"Metragem": 85.5, "Quartos": 3, "Banheiros": 2, "Vagas": 2, "Bairro": "Jardim Botânico", "Zona": "Sul"}'</pre>
           </div>
         </div>
       </div>
@@ -4252,9 +4252,39 @@ params:
           <div class="card-body">
             <p><strong>Padrão Canônico MLflow Serving:</strong></p>
             <p style="font-size: 0.88rem; color: var(--text-muted);">
-              Compatibilidade nativa com o formato de invocação de instâncias de serving do MLflow, aceitando matrizes de registros tabulares para inferência em lote.
+              Compatibilidade nativa com o formato de invocação de instâncias de serving do MLflow, aceitando registros diretos ou matrizes de registros tabulares (<code>dataframe_records</code>, <code>instances</code>) para inferência em lote.
             </p>
           </div>
+        </div>
+      </div>
+
+      <!-- Exemplo Canônico de Entrada & Saída da API -->
+      <div class="info-card" style="margin-bottom: 24px;">
+        <div class="card-title">
+          <span>🎯 Exemplo Canônico de Entrada & Saída da API (/invocations e /predict)</span>
+        </div>
+        <div class="card-body">
+          <p>Payload JSON de entrada para predição imobiliária em Ribeirão Preto:</p>
+          <pre class="code-block">{
+  "Metragem": 85.5,
+  "Quartos": 3,
+  "Banheiros": 2,
+  "Vagas": 2,
+  "Bairro": "Jardim Botânico",
+  "Zona": "Sul"
+}</pre>
+          <p style="margin-top: 12px;">Resposta estruturada com preço predito e regras de negócio avaliadas:</p>
+          <pre class="code-block">{
+  "preco_predito": 622458.43,
+  "modelo_campeao": "ridge",
+  "versao_modelo": "1.0.0-champion",
+  "regras_calculadas": {
+    "preco_minimo_sugerido": 591335.51,
+    "preco_maximo_sugerido": 653581.35,
+    "preco_m2_predito": 7280.22,
+    "valor_comissao_estimada": 37347.51
+  }
+}</pre>
         </div>
       </div>
 

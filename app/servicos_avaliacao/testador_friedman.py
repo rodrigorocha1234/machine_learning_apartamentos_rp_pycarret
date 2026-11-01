@@ -34,8 +34,8 @@ class TestadorFriedman(AvaliadorEstatistico):
         """Executa os testes de Friedman e Nemenyi sobre as medições pareadas de CV."""
         nomes_modelos = list(matriz_cv.keys())
         k = len(nomes_modelos)
-        if k < 1:
-            raise ErroTestadorFriedman("Nenhum modelo disponível para avaliação estatística.")
+        if k < 2:
+            raise ErroTestadorFriedman("O teste de Friedman requer pelo menos 2 modelos para comparação pareada.")
 
         tamanhos = [len(v) for v in matriz_cv.values()]
         if len(set(tamanhos)) > 1:
@@ -44,29 +44,6 @@ class TestadorFriedman(AvaliadorEstatistico):
         n_amostras = tamanhos[0]
         if n_amostras < 2:
             raise ErroTestadorFriedman("São necessárias pelo menos 2 dobras pareadas para teste estatístico.")
-
-        if k == 1:
-            nome_campeao = nomes_modelos[0]
-            resultado_friedman = ResultadoFriedman(
-                estatistica_chi2=0.0,
-                p_valor=1.0,
-                graus_liberdade=0,
-                diferenca_significativa=False,
-                hipotese_nula_rejeitada=False,
-                ranks_medios={nome_campeao: 1.0},
-            )
-            return ResultadoComparacaoEstatistica(
-                metrica_avaliada=metrica,
-                total_amostras_folds=n_amostras,
-                friedman=resultado_friedman,
-                nemenyi=None,
-                modelo_campeao_estatistico=nome_campeao,
-                candidatos_selecionados=[nome_campeao],
-                justificativa_decisao=(
-                    f"Apenas o modelo '{nome_campeao}' foi selecionado para validação cruzada. "
-                    "Teste comparativo de Friedman/Nemenyi dispensado; modelo promovido diretamente como campeão."
-                ),
-            )
 
         # Constrói matriz (N x k): linhas = folds, colunas = modelos
         matriz_valores = np.zeros((n_amostras, k), dtype=np.float64)

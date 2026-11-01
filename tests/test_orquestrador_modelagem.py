@@ -92,6 +92,8 @@ def test_orquestrador_fluxo_completo_anti_leakage(
     for modelo in config_dict["modelos"]:
         if modelo["nome"] in ("ridge", "lasso"):
             modelo["ativo"] = True
+            if modelo["nome"] in config_dict["tuning"]["parametros"]:
+                config_dict["tuning"]["parametros"][modelo["nome"]]["ativo"] = True
         else:
             modelo["ativo"] = False
     config_dict["tuning"]["iteracoes"] = 2

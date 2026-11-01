@@ -16,9 +16,6 @@ class RequisicaoImovel(BaseModel):
     Vagas: int = Field(ge=0, description="Quantidade de vagas de garagem")
     Bairro: str = Field(min_length=1, description="Bairro de localização em Ribeirão Preto")
     Zona: str = Field(default="Sul", description="Zona da cidade (Sul, Leste, Oeste, Norte, Centro)")
-    Valor_Condominio: float = Field(default=0.0, ge=0.0, description="Valor mensal da taxa condominial em R$")
-    Valor_Iptu: float = Field(default=0.0, ge=0.0, description="Valor anual ou mensal do IPTU em R$")
-    Area_Privativa: float = Field(default=0.0, ge=0.0, description="Área privativa útil em m² (0 se não informado)")
 
 
 class RespostaRegra(BaseModel):

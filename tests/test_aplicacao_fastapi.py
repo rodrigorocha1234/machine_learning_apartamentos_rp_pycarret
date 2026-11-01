@@ -88,9 +88,6 @@ def test_rota_predict_valida() -> None:
         "Vagas": 2,
         "Bairro": "Jardim Botanico",
         "Zona": "Sul",
-        "Valor_Condominio": 500.0,
-        "Valor_Iptu": 800.0,
-        "Area_Privativa": 85.0,
     }
     resposta = cliente.post("/predict", json=payload)
     assert resposta.status_code == 200

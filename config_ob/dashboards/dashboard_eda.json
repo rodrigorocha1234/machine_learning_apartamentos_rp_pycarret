@@ -1574,8 +1574,8 @@
       "custom": {
         "tipo_eda": "correlacao",
         "metricas_resumo": {
-          "total_variaveis_analisadas": 8.0,
-          "quantidade_pares_fortes": 15.0
+          "total_variaveis_analisadas": 5.0,
+          "quantidade_pares_fortes": 3.0
         },
         "dados_estruturados": {
           "colunas": [
@@ -1583,10 +1583,7 @@
             "Metragem",
             "Quartos",
             "Banheiros",
-            "Vagas",
-            "Valor_Condominio",
-            "Valor_Iptu",
-            "Area_Privativa"
+            "Vagas"
           ],
           "matriz": [
             [
@@ -1594,79 +1591,34 @@
               0.92,
               0.1214,
               -0.0316,
-              0.8724,
-              0.9185,
-              0.9182,
-              0.92
+              0.8724
             ],
             [
               0.92,
               1.0,
               0.0129,
               -0.0052,
-              0.9479,
-              0.9975,
-              0.9981,
-              1.0
+              0.9479
             ],
             [
               0.1214,
               0.0129,
               1.0,
               0.1276,
-              0.0261,
-              0.016,
-              0.018,
-              0.0129
+              0.0261
             ],
             [
               -0.0316,
               -0.0052,
               0.1276,
               1.0,
-              -0.0072,
-              -0.0061,
-              0.0042,
-              -0.0052
+              -0.0072
             ],
             [
               0.8724,
               0.9479,
               0.0261,
               -0.0072,
-              1.0,
-              0.9466,
-              0.9473,
-              0.9479
-            ],
-            [
-              0.9185,
-              0.9975,
-              0.016,
-              -0.0061,
-              0.9466,
-              1.0,
-              0.9953,
-              0.9975
-            ],
-            [
-              0.9182,
-              0.9981,
-              0.018,
-              0.0042,
-              0.9473,
-              0.9953,
-              1.0,
-              0.9981
-            ],
-            [
-              0.92,
-              1.0,
-              0.0129,
-              -0.0052,
-              0.9479,
-              0.9975,
-              0.9981,
               1.0
             ]
           ],
@@ -1682,69 +1634,9 @@
               "correlacao": 0.8724
             },
             {
-              "var1": "Valor_da_Venda",
-              "var2": "Valor_Condominio",
-              "correlacao": 0.9185
-            },
-            {
-              "var1": "Valor_da_Venda",
-              "var2": "Valor_Iptu",
-              "correlacao": 0.9182
-            },
-            {
-              "var1": "Valor_da_Venda",
-              "var2": "Area_Privativa",
-              "correlacao": 0.92
-            },
-            {
               "var1": "Metragem",
               "var2": "Vagas",
               "correlacao": 0.9479
-            },
-            {
-              "var1": "Metragem",
-              "var2": "Valor_Condominio",
-              "correlacao": 0.9975
-            },
-            {
-              "var1": "Metragem",
-              "var2": "Valor_Iptu",
-              "correlacao": 0.9981
-            },
-            {
-              "var1": "Metragem",
-              "var2": "Area_Privativa",
-              "correlacao": 1.0
-            },
-            {
-              "var1": "Vagas",
-              "var2": "Valor_Condominio",
-              "correlacao": 0.9466
-            },
-            {
-              "var1": "Vagas",
-              "var2": "Valor_Iptu",
-              "correlacao": 0.9473
-            },
-            {
-              "var1": "Vagas",
-              "var2": "Area_Privativa",
-              "correlacao": 0.9479
-            },
-            {
-              "var1": "Valor_Condominio",
-              "var2": "Valor_Iptu",
-              "correlacao": 0.9953
-            },
-            {
-              "var1": "Valor_Condominio",
-              "var2": "Area_Privativa",
-              "correlacao": 0.9975
-            },
-            {
-              "var1": "Valor_Iptu",
-              "var2": "Area_Privativa",
-              "correlacao": 0.9981
             }
           ]
         }

@@ -72,6 +72,8 @@ def test_sklearn_treinamento_e_tuning_rapido(dados_sinteticos: pd.DataFrame) -> 
     for modelo in config_dict["modelos"]:
         if modelo["nome"] in ("ridge", "random_forest"):
             modelo["ativo"] = True
+            if modelo["nome"] in config_dict["tuning"]["parametros"]:
+                config_dict["tuning"]["parametros"][modelo["nome"]]["ativo"] = True
         else:
             modelo["ativo"] = False
     config_dict["tuning"]["iteracoes"] = 2

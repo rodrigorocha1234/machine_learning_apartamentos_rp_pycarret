@@ -126,6 +126,7 @@ def test_validador_cruzado_com_rastreamento_mlflow(
 
         nomes_runs = [r.data.tags.get("mlflow.runName") for r in runs]
         assert "validacao_cruzada" in nomes_runs
-        assert "metodo_ridge_prepocessamento_log1p_fold_1" in nomes_runs
-        assert "metodo_ridge_prepocessamento_log1p_fold_2" in nomes_runs
+        tecnica = "log1p" if config_mod.preprocessamento.transformar_alvo else "padrao"
+        assert f"metodo_ridge_prepocessamento_{tecnica}_fold_1" in nomes_runs
+        assert f"metodo_ridge_prepocessamento_{tecnica}_fold_2" in nomes_runs
 

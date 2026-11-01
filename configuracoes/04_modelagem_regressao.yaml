@@ -31,9 +31,6 @@ modelagem:
       metodo: "log1p"
       colunas:
         - "Metragem"
-        - "Area_Privativa"
-        - "Valor_Condominio"
-        - "Valor_Iptu"
 
   modelos:
     - {nome: "regressao_linear", ativo: true, pycaret_id: "lr", sklearn_class: "LinearRegression"}

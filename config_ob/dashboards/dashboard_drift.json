@@ -46,7 +46,7 @@
           "expr": "model_drift_status"
         }
       ],
-      "description": "ALERTA CRÍTICO: Concept Drift Real detectado com degradação de erro RMSE de 46.1%. Recomenda-se acionar pipeline de retreinamento do modelo com dados recentes e reavaliação de hipóteses."
+      "description": "ALERTA CRÍTICO: Concept Drift Real detectado com degradação de erro RMSE de 144.3%. Recomenda-se acionar pipeline de retreinamento do modelo com dados recentes e reavaliação de hipóteses."
     },
     {
       "id": 2,
@@ -118,7 +118,7 @@
         }
       },
       "targets": [],
-      "description": "Variação percentual: 46.09%"
+      "description": "Variação percentual: 144.31%"
     },
     {
       "id": 4,
@@ -152,7 +152,7 @@
         }
       },
       "targets": [],
-      "description": "Taxa de Nulos: 0.00% | Fora de Limites: 3"
+      "description": "Taxa de Nulos: 0.00% | Fora de Limites: 1"
     },
     {
       "id": 5,
