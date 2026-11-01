@@ -432,6 +432,32 @@ class ConfiguracaoModelagem(BaseModel):
         default_factory=lambda: ConfiguracaoMlflow(tracking_uri="http://localhost:5000")
     )
 
+    def modelo_esta_ativo(self, nome_ou_item: str | ItemModelo) -> bool:
+        """Determina se um modelo deve ser executado no pipeline de modelagem e validação.
+
+        Critérios de filtragem:
+        1. Se `item_modelo.ativo` em `config.modelos` for False -> Desativado.
+        2. Se o tuning estiver habilitado (`self.tuning.ativo is True`):
+           Se o modelo possuir parametrização em `tuning.parametros`, sua flag `ativo`
+           define se ele deve ser executado no pipeline. Se `ativo is False`, o modelo é
+           ignorado por completo (não faz tuning nem validação cruzada).
+        """
+        nome = nome_ou_item.nome if isinstance(nome_ou_item, ItemModelo) else nome_ou_item
+        for m in self.modelos:
+            if m.nome == nome and not m.ativo:
+                return False
+        if self.tuning.ativo and nome in self.tuning.parametros:
+            cfg_p = self.tuning.parametros[nome]
+            if isinstance(cfg_p, ParametrosTuningModelo):
+                return cfg_p.ativo
+            if isinstance(cfg_p, dict):
+                return bool(cfg_p.get("ativo", True))
+        return True
+
+    def obter_modelos_ativos(self) -> list[ItemModelo]:
+        """Retorna apenas os modelos elegíveis para treinamento e avaliação."""
+        return [m for m in self.modelos if self.modelo_esta_ativo(m)]
+
 
 class CvExterna(BaseModel):
     """Configuração da validação cruzada externa de benchmark."""

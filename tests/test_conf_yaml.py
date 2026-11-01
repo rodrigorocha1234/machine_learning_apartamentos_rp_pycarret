@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import re
 import pytest
 
 from app.conf_yaml import ConfYAML, ErroConfiguracao
@@ -69,7 +70,7 @@ def test_carregar_diretorio_modular_explicito(diretorio_configuracoes: Path) -> 
     assert config.projeto.nome == "previsao_imoveis_rp"
     assert config.fonte.tipo == "xlsx"
     assert config.tabular.motor == "pandas"
-    assert config.modelagem.motor_treino == "pycaret"
+    assert config.modelagem.motor_treino in ("pycaret", "sklearn")
     assert config.avaliacao.estatistica.teste == "friedman"
     assert len(config.implantacao.regras) >= 2
     assert config.monitoramento.drift.ativo is True
@@ -173,9 +174,8 @@ def test_erro_motor_treino_invalido(diretorio_copia_modular: Path) -> None:
     """Deve rejeitar motor de treino não suportado (ex: tensorflow)."""
     arquivo_mod = diretorio_copia_modular / "04_modelagem_regressao.yaml"
     conteudo = arquivo_mod.read_text(encoding="utf-8")
-    arquivo_mod.write_text(
-        conteudo.replace('motor_treino: "pycaret"', 'motor_treino: "tensorflow"'), encoding="utf-8"
-    )
+    conteudo_invalido = re.sub(r'motor_treino:\s*"[^"]+"', 'motor_treino: "tensorflow"', conteudo)
+    arquivo_mod.write_text(conteudo_invalido, encoding="utf-8")
 
     with pytest.raises(ErroConfiguracao, match="Erro de validação do esquema"):
         ConfYAML(diretorio_copia_modular)

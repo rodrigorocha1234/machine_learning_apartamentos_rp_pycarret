@@ -840,6 +840,12 @@ classDiagram
     %% =========================================================================
     %% Camada de Orquestração do Pipeline (GoF Chain of Responsibility & Builder)
     %% =========================================================================
+    class DispararProjetoSH:::cadeia {
+        <<script disparar_projeto.sh>>
+        +executar_tudo() void
+        +subir_servicos_docker() void
+    }
+
     class ExecutarPipelineCLI:::cadeia {
         <<módulo executar_pipeline.py>>
         +main() void
@@ -875,6 +881,7 @@ classDiagram
         +EloObservabilidadeDrift (Etapa 7)
     }
 
+    DispararProjetoSH "1" ..> "1" ExecutarPipelineCLI : dispara via bash
     ExecutarPipelineCLI "1" ..> "1" ConstrutorCadeiaPipeline : dispara
     ExecutarPipelineCLI "1" ..> "1" ContextoPipeline : instancia
     ConstrutorCadeiaPipeline "1" ..> "1" EloCadeiaPipeline : retorna cabeca
@@ -899,11 +906,26 @@ classDiagram
         +obter_monitoramento() ConfiguracaoMonitoramento
     }
 
+    class ConfiguracaoTuning:::config {
+        +bool habilitado
+        +str metodo_busca
+        +int n_iteracoes
+        +dict parametros
+    }
+
+    class ParametrosTuningModelo:::config {
+        +bool ativo
+        +dict hiperparametros
+        +obter_grade() dict
+    }
+
     class ValidadorAst:::config {
         -set _nos_permitidos
         +validar_expressao(codigo) bool
     }
     ConfYAML "1" *-- "1" ValidadorAst : valida expressoes
+    ConfYAML "1" *-- "1" ConfiguracaoTuning : agrega tuning
+    ConfiguracaoTuning "1" o-- "1..*" ParametrosTuningModelo : configura modelos
 
     %% =========================================================================
     %% Etapa 1: Ingestão de Dados & Staging Intermediário
@@ -1012,12 +1034,16 @@ classDiagram
     MotorTreinador <|.. TreinadorPycaret : Strategy PyCaret
     TreinadorSklearn "1" --> "1" FabricaFolds : gera folds
     TreinadorPycaret "1" --> "1" FabricaFolds : gera folds
+    TreinadorSklearn "1" ..> "1..*" ParametrosTuningModelo : checa flag ativo
+    TreinadorPycaret "1" ..> "1..*" ParametrosTuningModelo : checa flag ativo
 
     class OrquestradorModelagem:::motor {
         -MotorTreinador _motor
+        -PublicadorModelosGrafana _publicador_grafana
         +executar_treinamento() ResultadoModelagem
     }
     OrquestradorModelagem "1" --> "1" MotorTreinador : orquestra
+    OrquestradorModelagem "1" --> "1" PublicadorModelosGrafana : emite logs e dashboard
 
     %% =========================================================================
     %% Etapa 5: Validação Cruzada, Testes Estatísticos & MLflow
@@ -1034,6 +1060,12 @@ classDiagram
         +calcular_pos_teste_nemenyi(matriz) ResultadoNemenyi
     }
 
+    class ComiteVotacao:::avaliacao {
+        <<GoF Composite>>
+        -list _estimadores_selecionados
+        +prever(X) ndarray
+    }
+
     class ValidadorCruzado:::avaliacao {
         -RastreadorMlflow _rastreador
         +executar_cv_pareada(df, modelos) tuple
@@ -1047,6 +1079,7 @@ classDiagram
     }
     OrquestradorAvaliacao "1" --> "1" ValidadorCruzado : executa CV
     OrquestradorAvaliacao "1" --> "1" TestadorFriedman : compara modelos
+    OrquestradorAvaliacao "1" ..> "0..1" ComiteVotacao : comite ensemble
 
     %% =========================================================================
     %% Etapa 6: Serving REST & Regras de Negócio Pós-Predição
@@ -1057,12 +1090,20 @@ classDiagram
         +obter_metadados() MetadadosModelo
     }
 
+    class AvaliadorRegrasAST:::implantacao {
+        <<GoF Strategy>>
+        -ValidadorAst _validador_ast
+        +aplicar_regras(df, preco) DataFrame
+    }
+
     class ServicoInferencia:::implantacao {
         -CarregadorCampeao _carregador
+        -AvaliadorRegrasAST _avaliador_regras
         -ValidadorAst _validador_ast
         +executar_predicao_e_regras(imovel) RespostaInferencia
     }
     ServicoInferencia "1" --> "1" CarregadorCampeao : inferencia
+    ServicoInferencia "1" --> "1" AvaliadorRegrasAST : avalia regras
     ServicoInferencia "1" ..> "1" ValidadorAst : seguranca regras
 
     class AplicacaoFastAPI:::implantacao {
@@ -1085,6 +1126,13 @@ classDiagram
         -calcular_psi_categorico(s_ref, s_prod) float
     }
     DetectorDrift <|.. CalculadorDrift : implementa
+
+    class PublicadorModelosGrafana:::observabilidade {
+        -Path _caminho_dashboard
+        -ZoneInfo _fuso_horario
+        +registrar_log(modelo, mensagem) void
+        +publicar_dashboard_modelos(resultado, motor) bool
+    }
 
     class PublicadorGrafana:::observabilidade {
         +publicar_relatorio_drift(relatorio) bool
@@ -1136,7 +1184,7 @@ classDiagram
   }
 }}%%
 flowchart TD
-    Start([● Início: Disparo do Pipeline]) --> InitContext[Inicializar ContextoPipeline & ConfYAML]
+    Start([● Início: disparar_projeto.sh ou executar_pipeline.py]) --> InitContext[Inicializar ContextoPipeline & ConfYAML]
     InitContext --> ChainStart[Construir Cadeia de Responsabilidade 1 a 7]
 
     %% ETAPA 1
@@ -1171,7 +1219,7 @@ flowchart TD
     end
 
     %% ETAPA 4
-    subgraph S4 ["Etapa 4: Modelagem de Regressão & Tuning"]
+    subgraph S4 ["Etapa 4: Modelagem de Regressão & Tuning de Hiperparâmetros"]
         RelatorioEDA --> Elo4[Elo 4: EloModelagemRegressao]
         Elo4 --> TransfAlvo[Aplicar log1p na Variável Alvo Valor_da_Venda]
         TransfAlvo --> DivisaoFoldsInterna[Instanciar Divisor de Folds via FabricaFolds]
@@ -1180,19 +1228,24 @@ flowchart TD
         EscolherMotorTreino -- "pycaret" --> TreinoPycaret[TreinadorPycaret: setup e create_model]
         TreinoSklearn --> MLflowTuningPai[Iniciar Run Pai MLflow: Tuning]
         TreinoPycaret --> MLflowTuningPai
-        MLflowTuningPai --> ExecutarTuning[Busca de Hiperparâmetros: Random, Grid ou Optuna]
+        MLflowTuningPai --> LoopModelos[Iterar Modelos de Regressão Configurados]
+        LoopModelos --> ChecarFlagAtivo{Flag ativo: true no modelo?}
+        ChecarFlagAtivo -- "Sim (ativo: true)" --> LogTuning[Log Terminal & Loki: realizando tuning de parâmetros mod]
+        LogTuning --> ExecutarTuning[Busca de Hiperparâmetros: Random, Grid ou Optuna]
         ExecutarTuning --> ChecarManterMelhor{Tuning superou Baseline?}
-        ChecarManterMelhor -- Não --> ManterBaseline[Reverter para Estimador Padrão]
-        ChecarManterMelhor -- Sim --> SalvarOtimizado[Adotar Estimador com Melhores Hiperparâmetros]
+        ChecarManterMelhor -- "Não" --> ManterBaseline[Reverter para Estimador Padrão]
+        ChecarManterMelhor -- "Sim" --> SalvarOtimizado[Adotar Estimador com Melhores Hiperparâmetros]
+        ChecarFlagAtivo -- "Não (ativo: false)" --> PularModelo[Ignorar Modelo: Excluído do Tuning e da Validação Cruzada]
         ManterBaseline --> SalvarArtefatosTreino[Salvar Modelos e Registrar Métricas no MLflow]
         SalvarOtimizado --> SalvarArtefatosTreino
+        SalvarArtefatosTreino --> PublicarGrafanaModelos[PublicadorModelosGrafana: Provisionar dashboard_modelos.json em America/Sao_Paulo UTC-3]
     end
 
     %% ETAPA 5
     subgraph S5 ["Etapa 5: Validação Cruzada Externa & Protocolo Estatístico"]
-        SalvarArtefatosTreino --> Elo5[Elo 5: EloAvaliacaoSelecao]
+        PublicarGrafanaModelos --> Elo5[Elo 5: EloAvaliacaoSelecao]
         Elo5 --> MLflowCVPai[Iniciar Run Pai MLflow: validacao_cruzada]
-        MLflowCVPai --> LoopCV[Loop Pareado de Folds 1 a 10 para todos os Modelos]
+        MLflowCVPai --> LoopCV[Loop Pareado de Folds apenas para os Modelos Ativos]
         LoopCV --> RegistrarFolds[Registrar Run Filho por Fold no MLflow]
         RegistrarFolds --> TesteFriedman[Executar Teste Não-Paramétrico de Friedman]
         TesteFriedman --> HipoteseNula{Diferença Estatística Relevante p < 0.05?}
@@ -1255,6 +1308,7 @@ flowchart TD
 sequenceDiagram
     autonumber
     actor Dev as Usuário / Engenheiro ML
+    participant Bash as disparar_projeto.sh (Orquestrador)
     participant CLI as executar_pipeline.py (CLI)
     participant Chain as ConstrutorCadeiaPipeline (GoF Chain)
     participant Ctx as ContextoPipeline
@@ -1264,13 +1318,16 @@ sequenceDiagram
     participant EDA as Elo 3: AnalisadorEda
     participant Mod as Elo 4: Treinador & Tuning
     participant MLflow as Servidor MLflow (:5000)
+    participant GrafMod as PublicadorModelosGrafana
     participant Eval as Elo 5: ValidadorCruzado & Friedman
     participant API as Elo 6: FastAPI & Regras AST
     participant Graf as Elo 7: DetectorDrift & Grafana
 
-    Dev->>CLI: python -m app.executar_pipeline --etapa todas
+    Dev->>Bash: ./disparar_projeto.sh --executar-pipeline
+    Bash->>Bash: Subir containers Docker (MLflow, Grafana, Loki)
+    Bash->>CLI: python -m app.executar_pipeline --etapa todas
     CLI->>Conf: Carregar 01..07 YAML com validação Pydantic
-    Conf-->>CLI: ConfiguracaoCompleta tipada
+    Conf-->>CLI: ConfiguracaoCompleta tipada (com flag ativo por modelo)
     CLI->>Ctx: Instanciar ContextoPipeline(conf, etapa_alvo)
     CLI->>Chain: ConstrutorCadeiaPipeline.construir_cadeia_completa()
     Chain-->>CLI: Elo 1 (Cabeça da Cadeia de Responsabilidade)
@@ -1284,12 +1341,23 @@ sequenceDiagram
     end
 
     rect rgb(30, 41, 59)
-        note over EDA,Mod: Etapas 3 e 4: EDA e Modelagem de Regressão
+        note over EDA,GrafMod: Etapas 3 e 4: EDA, Modelagem e Telemetria Grafana
         Prep->>EDA: elo3.processar(contexto)
         EDA->>EDA: Gerar estatísticas descritivas e matriz de correlação
         EDA->>Mod: elo4.processar(contexto)
-        Mod->>MLflow: Iniciar Run Pai ("tuning_de_parametros_random")
-        Mod->>MLflow: Registrar Runs Filhos por Estimador
+        Mod->>MLflow: Iniciar Run Pai ("tuning_de_parametros")
+        loop Para cada Modelo Configurado
+            alt Flag ativo == true
+                Mod->>Mod: Log Terminal/Loki: "realizando tuning de parâmetros {modelo}"
+                Mod->>Mod: Busca de hiperparâmetros (Random/Grid/Optuna)
+            else Flag ativo == false
+                Mod->>Mod: Log Terminal/Loki: "treinando modelo {modelo} (tuning desativado)"
+                Mod->>Mod: Treinamento direto com estimador padrão
+            end
+            Mod->>MLflow: Registrar Run Filho com métricas e parâmetros
+        end
+        Mod->>GrafMod: publicar_dashboard_modelos(res, motor)
+        GrafMod->>GrafMod: Provisionar dashboard_modelos.json (America/Sao_Paulo UTC-3)
         MLflow-->>Mod: Hiperparâmetros e Métricas persistidos
     end
 
@@ -1316,7 +1384,8 @@ sequenceDiagram
     end
 
     Graf-->>CLI: ContextoPipeline final com tempos_etapas
-    CLI-->>Dev: Pipeline Concluído com Sucesso em N segundos
+    CLI-->>Bash: Retorno de execução bem-sucedida
+    Bash-->>Dev: Pipeline Concluído com Sucesso e Dashboard Ativo
             </textarea>
           </div>
         </div>
@@ -1474,6 +1543,12 @@ sequenceDiagram
               </thead>
               <tbody>
                 <tr>
+                  <td><code>DispararProjetoSH ..> ExecutarPipelineCLI</code></td>
+                  <td><code>"1" ..> "1"</code></td>
+                  <td>Script orquestrador bash (<code>disparar_projeto.sh</code>) valida containers Docker (MLflow, Grafana, Loki) e dispara o pipeline unificado.</td>
+                  <td><code>python -m app.executar_pipeline --etapa todas</code></td>
+                </tr>
+                <tr>
                   <td><code>ExecutarPipelineCLI ..> ConstrutorCadeiaPipeline</code></td>
                   <td><code>"1" ..> "1"</code></td>
                   <td>O ponto de entrada CLI dispara exatamente uma fábrica responsável pela montagem de toda a cadeia do pipeline.</td>
@@ -1552,10 +1627,28 @@ sequenceDiagram
                   <td><code>self._fabrica_folds: FabricaFolds</code></td>
                 </tr>
                 <tr>
+                  <td><code>ConfiguracaoTuning o-- ParametrosTuningModelo</code></td>
+                  <td><code>"1" o-- "1..*"</code></td>
+                  <td>A configuração de tuning agrega a parametrização de cada estimador, incluindo a flag booleana de ativação granular (<code>ativo: true/false</code>).</td>
+                  <td><code>parametros: dict[str, ParametrosTuningModelo]</code></td>
+                </tr>
+                <tr>
+                  <td><code>Treinadores ..> ParametrosTuningModelo</code></td>
+                  <td><code>"1" ..> "1..*"</code></td>
+                  <td>Os motores de treinamento consultam a flag <code>ativo</code> para decidir entre busca de hiperparâmetros (Random/Grid/Optuna) ou estimador padrão.</td>
+                  <td><code>cfg_mod.ativo</code> checado em loop</td>
+                </tr>
+                <tr>
                   <td><code>OrquestradorModelagem --> MotorTreinador</code></td>
                   <td><code>"1" --> "1"</code></td>
                   <td>O orquestrador coordena o ciclo de treinamento sobre exatamente um motor configurado (PyCaret ou Sklearn).</td>
                   <td><code>self._motor: MotorTreinador</code></td>
+                </tr>
+                <tr>
+                  <td><code>OrquestradorModelagem --> PublicadorModelosGrafana</code></td>
+                  <td><code>"1" --> "1"</code></td>
+                  <td>O orquestrador despacha telemetria de logs por modelo e provisiona o painel <code>dashboard_modelos.json</code> configurado em <code>America/Sao_Paulo</code>.</td>
+                  <td><code>self._publicador_grafana: PublicadorModelosGrafana</code></td>
                 </tr>
                 <tr>
                   <td><code>ValidadorCruzado --> RastreadorMlflow</code></td>
@@ -1932,7 +2025,7 @@ sequenceDiagram
               <td><code>servicos_modelagem/</code></td>
               <td><code>orquestrador_modelagem.py</code><br><code>rastreador_mlflow.py</code></td>
               <td><span class="badge success">Use Case</span></td>
-              <td>Orquestrador da <strong>Etapa 4</strong>. Executa o ciclo de tuning dos modelos ativos conforme o motor selecionado (PyCaret ou Sklearn) e gerencia o rastreamento hierárquico no MLflow com runs pai e filhos. Retorna <code>ResultadoModelagem</code>.</td>
+              <td>Orquestrador da <strong>Etapa 4</strong>. Executa o ciclo de modelagem e tuning dos modelos ativos conforme o motor selecionado (PyCaret ou Sklearn). Avalia a flag <code>ativo: true/false</code> por estimador (<code>ParametrosTuningModelo</code>), emite logs informativos no terminal/Loki e coordena o rastreamento hierárquico no MLflow. Retorna <code>ResultadoModelagem</code>.</td>
               <td><span class="badge accent">Etapa 4: Modelagem</span></td>
             </tr>
             <tr>
@@ -1951,10 +2044,10 @@ sequenceDiagram
             </tr>
             <tr>
               <td><code>servicos_observabilidade/</code></td>
-              <td><code>orquestrador_drift.py</code><br><code>publicador_grafana.py</code></td>
+              <td><code>orquestrador_drift.py</code><br><code>publicador_grafana.py</code><br><code>publicador_modelos_grafana.py</code></td>
               <td><span class="badge success">Use Case</span></td>
-              <td>Orquestrador da <strong>Etapa 7</strong>. Compara a base de referência (treino) com a base de produção/inferência, identifica a taxonomia do desvio (Covariate, Concept, Prediction Drift) e emite telemetria com limiares para alertas. Retorna <code>ResultadoRelatorioDrift</code>.</td>
-              <td><span class="badge accent">Etapa 7: Drift</span></td>
+              <td>Serviços da <strong>Etapa 7</strong> e telemetria de modelagem. <code>orquestrador_drift.py</code> detecta desvio populacional (KS e PSI); <code>publicador_grafana.py</code> publica métricas de drift; <code>publicador_modelos_grafana.py</code> gera e provisiona o painel <code>dashboard_modelos.json</code> com cards KPI HTML, tabela comparativa de modelos, logs de execução modelo a modelo e fuso horário <code>America/Sao_Paulo</code> (UTC-3). Retorna <code>ResultadoRelatorioDrift</code>.</td>
+              <td><span class="badge accent">Etapa 7: Drift & Tuning</span></td>
             </tr>
           </tbody>
         </table>
@@ -3880,15 +3973,25 @@ modelagem:
 
   tuning:
     ativo: true
-    metodo: "random"           # random | grid | bayesian
-    n_iteracoes: 30
-    metrica_otimizacao: "RMSE"
+    metodo: "random"           # random | grid | bayesian | optuna
+    iteracoes: 10
+    otimizar_metrica: "RMSE"
+    manter_melhor: true
     parametros:
+      regressao_linear:
+        ativo: true            # Quando true, modelo é treinado/tunado e validado em CV
+        fit_intercept: [true, false]
+      lasso:
+        ativo: false           # Quando false, modelo é IGNORADO (sem tuning nem CV)
+        alpha: [0.01, 0.1, 1.0, 10.0]
       lightgbm:
-        num_leaves: [15, 31, 63, 127]
-        learning_rate: [0.01, 0.05, 0.1, 0.2]
-        n_estimators: [50, 100, 200, 300]
-        max_depth: [-1, 5, 10, 15]</pre>
+        ativo: false           # Ignorado se false
+        n_estimators: [50, 100]
+        max_depth: [3, 6]
+        learning_rate: [0.05, 0.1]</pre>
+          <div style="margin-top: 12px; padding: 10px 14px; background: rgba(56, 189, 248, 0.1); border-left: 3px solid var(--primary); border-radius: 4px; font-size: 0.88rem;">
+            <strong>Filtro Estrito de Execução:</strong> A flag <code>ativo: true/false</code> presente em cada modelo de <code>tuning.parametros</code> atua como chave de seleção seletiva. Quando um modelo está com <code>ativo: false</code>, o pipeline o desativa integralmente: ele <strong>não é treinado/tunado na Etapa 4</strong> e <strong>não entra na validação cruzada externa pareada da Etapa 5</strong>. Apenas os modelos configurados com <code>ativo: true</code> são processados e disputam o ranking estatístico.
+          </div>
         </div>
       </div>
 

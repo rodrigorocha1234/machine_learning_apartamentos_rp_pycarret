@@ -11,7 +11,7 @@ class ResultadoFriedman(BaseModel):
 
     estatistica_chi2: float = Field(ge=0.0, description="Estatística qui-quadrado de Friedman")
     p_valor: float = Field(ge=0.0, le=1.0, description="Valor-p assintótico do teste")
-    graus_liberdade: int = Field(ge=1, description="Graus de liberdade (k - 1)")
+    graus_liberdade: int = Field(ge=0, description="Graus de liberdade (k - 1)")
     diferenca_significativa: bool = Field(
         description="Indica se há diferença estatisticamente significativa ao nível alpha"
     )

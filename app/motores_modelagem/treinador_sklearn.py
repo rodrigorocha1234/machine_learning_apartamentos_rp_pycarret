@@ -83,9 +83,7 @@ class TreinadorSklearn(MotorTreinador):
 
         modelos_treinados: list[ResultadoTreinoModelo] = []
 
-        for item_modelo in config.modelos:
-            if not item_modelo.ativo:
-                continue
+        for item_modelo in config.obter_modelos_ativos():
 
             inicio_modelo = time.perf_counter()
             estimador_base = self._instanciar_estimador(item_modelo.nome)

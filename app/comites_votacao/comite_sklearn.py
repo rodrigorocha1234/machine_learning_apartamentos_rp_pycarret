@@ -53,6 +53,15 @@ class ComiteSklearn(ConstrutorComite):
         nomes_selecionados = list(modelos_treinados.keys())[:n_modelos]
         modelos_comite = {nome: modelos_treinados[nome] for nome in nomes_selecionados}
 
+        if len(modelos_comite) < 2:
+            return ResultadoComite(
+                tecnica_utilizada="desativada",
+                ativo=False,
+                modelos_membros=list(modelos_comite.keys()),
+                pesos={nome: 1.0 for nome in modelos_comite},
+                metricas_holdout={},
+            )
+
         X_holdout = dados_holdout.drop(columns=[coluna_alvo for coluna_alvo in [coluna_alvo]])
         y_holdout = np.asarray(dados_holdout[coluna_alvo].to_numpy(), dtype=np.float64)
 

@@ -59,9 +59,9 @@ class OrquestradorDrift:
 
         df_embaralhado = df_completo.sample(frac=1.0, random_state=42).reset_index(drop=True)
         df_ref_full = cast(pd.DataFrame, df_embaralhado.iloc[n_holdout:]).copy().reset_index(drop=True)
-        df_prod_simulada = cast(pd.DataFrame, df_embaralhado.iloc[:n_holdout]).copy().reset_index(drop=True)
+        df_holdout_real = cast(pd.DataFrame, df_embaralhado.iloc[:n_holdout]).copy().reset_index(drop=True)
 
-        df_producao_final = dados_producao if dados_producao is not None else df_prod_simulada
+        df_producao_final = dados_producao if dados_producao is not None else df_holdout_real
 
         X_cols = [str(c) for c in cast(list[object], list(df_ref_full.columns)) if str(c) != coluna_alvo]
         X_ref = cast(pd.DataFrame, df_ref_full[X_cols])
