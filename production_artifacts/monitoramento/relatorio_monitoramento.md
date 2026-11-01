@@ -1,6 +1,6 @@
 # Relatório de Entrega — Etapa 7: Monitoramento de Drift e Observabilidade
 
-**Data de Execução:** 2026-11-01T20:14:57.903492+00:00  
+**Data de Execução:** 2026-11-01T21:52:00.316253+00:00  
 **Responsáveis:** @observability, @statistician, @devops  
 **Status:** CONCLUÍDO COM SUCESSO  
 **Evidências Persistidas:** [storage-data/relatorio_drift.json](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/storage-data/relatorio_drift.json)  

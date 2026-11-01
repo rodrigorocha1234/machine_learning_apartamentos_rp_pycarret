@@ -1,10 +1,10 @@
 # Relatório de Entrega — Etapa 6: Implantação e Regras de Negócio Dinâmicas
 
-**Data de Execução:** 2026-11-01T20:14:51.752460+00:00
+**Data de Execução:** 2026-11-01T21:51:48.385557+00:00
 **Responsáveis:** @ml_engineer, @ml_architect, @pm
 **Status:** CONCLUÍDO COM SUCESSO
 **Evidências Persistidas:** [storage-data/relatorio_implantacao.json](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/storage-data/relatorio_implantacao.json)
-**Run de Promoção no MLflow:** `a8f6c76d3d574b94826235d4b78b2c00`
+**Run de Promoção no MLflow:** `9ad21d0e76714411a55ee7233a1e6af2`
 
 ---
 
@@ -16,7 +16,7 @@ O modelo campeão **RANDOM_FOREST**, validado nas etapas anteriores como superio
 - **Versão:** `1.0.0-champion`
 - **Artefato Persistido:** [`production_artifacts/campeao/modelo_campeao.joblib`](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/production_artifacts/campeao/modelo_campeao.joblib)
 - **Metadados Oficiais:** [`production_artifacts/campeao/metadados_campeao.json`](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/production_artifacts/campeao/metadados_campeao.json)
-- **Rastreabilidade no MLflow:** Run `a8f6c76d3d574b94826235d4b78b2c00` com tags `modelo.status=Production` e `modelo.alias=champion`.
+- **Rastreabilidade no MLflow:** Run `9ad21d0e76714411a55ee7233a1e6af2` com tags `modelo.status=Production` e `modelo.alias=champion`.
 
 ### Métricas de Generalização no Holdout (20% Retido)
 - **RMSE:** **R$ 148,272.59**

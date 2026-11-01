@@ -733,6 +733,7 @@
     <nav class="nav-menu">
       <div class="nav-label">Visão Geral</div>
       <a href="#visao-geral" class="nav-item active">Visão & Indicadores</a>
+      <a href="#requisitos-sistema" class="nav-item">Requisitos (RF & RNF)</a>
       <a href="#padroes-arquitetura" class="nav-item">Padrões de Arquitetura</a>
       <div class="nav-label">Diagramas do Sistema</div>
       <a href="#diagrama-uml" class="nav-item">Diagrama UML de Classes</a>
@@ -1690,6 +1691,204 @@ sequenceDiagram
                   <td><code>"1" --> "1"</code></td>
                   <td>O orquestrador envia os resultados de drift e qualidade para publicação nos painéis do Grafana.</td>
                   <td><code>self._publicador: PublicadorGrafana</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+        <!-- Seção de Requisitos do Sistema -->
+    <section id="requisitos-sistema" class="doc-section">
+      <div class="section-header">
+        <h2 class="section-title">📋 Requisitos do Sistema (Funcionais e Não Funcionais)</h2>
+        <p class="section-desc">
+          Matriz formal de conformidade de engenharia de software e MLOps para o sistema de previsão de preços imobiliários de Ribeirão Preto/SP.
+        </p>
+      </div>
+
+      <!-- Requisitos Funcionais (RF) -->
+      <div class="info-card" style="margin-bottom: 28px; border-left: 4px solid var(--accent-cyan);">
+        <div class="card-title" style="display: flex; align-items: center; justify-content: space-between;">
+          <span>⚙️ Requisitos Funcionais (RF) — Capacidades do Pipeline e Ciclo de Vida MLOps</span>
+          <span class="badge primary">100% Implementados & Testados</span>
+        </div>
+        <div class="card-body">
+          <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: 16px;">
+            Os requisitos funcionais definem os comportamentos operacionais, transformações de dados, motores de modelagem e serviços expostos pelo sistema.
+          </p>
+
+          <div class="table-container">
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 110px;">Identificador</th>
+                  <th style="width: 220px;">Módulo / Etapa</th>
+                  <th style="min-width: 280px;">Descrição do Requisito Funcional</th>
+                  <th style="width: 230px;">Implementação & Contrato</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>RF-01</code></td>
+                  <td><strong>Etapa 1: Ingestão de Dados</strong></td>
+                  <td>O sistema deve ingerir dados históricos de apartamentos a partir de planilhas Excel (<code>.xlsx</code>) contendo 5.712 registros oficiais da cidade de Ribeirão Preto com validação de colunas obrigatórias.</td>
+                  <td><code>FonteExcel</code> / <code>FabricaFontes</code> / <code>01_coleta_dados.yaml</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-02</code></td>
+                  <td><strong>Etapa 1: Staging Desacoplado</strong></td>
+                  <td>O sistema deve persistir os dados brutos e intermediários em banco de dados relacional isolado (SQLite) com suporte a substituição transparente por PostgreSQL.</td>
+                  <td><code>RepositorioSqlite</code> / <code>FabricaRepositorios</code> / <code>RepositorioDados</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-03</code></td>
+                  <td><strong>Etapa 2: Motores Tabulares</strong></td>
+                  <td>O pipeline deve suportar alternância dinâmica de motores de processamento de dados (<strong>Pandas</strong> ou <strong>Polars</strong>) via configuração declarativa YAML.</td>
+                  <td><code>MotorPandas</code> / <code>MotorPolars</code> / <code>02_preparacao_dados.yaml</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-04</code></td>
+                  <td><strong>Etapa 2: Transformações e Filtros Seguros</strong></td>
+                  <td>O sistema deve permitir filtrar linhas e criar novos atributos através de expressões Python configuradas no YAML, validadas rigorosamente por parser AST com lista positiva de nós (sem <code>eval</code> arbitrário).</td>
+                  <td><code>ValidadorAst</code> / <code>PreparadorDados</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-05</code></td>
+                  <td><strong>Etapa 3: EDA & Visualização Modular</strong></td>
+                  <td>O sistema deve realizar análise exploratória de dados completa (estatísticas descritivas, correlações, assimetria e curtose) gerando dashboards e relatórios para Grafana e formatos HTML.</td>
+                  <td><code>AnalisadorEda</code> / <code>AdaptadorGrafana</code> / <code>03_eda_visualizacao.yaml</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-06</code></td>
+                  <td><strong>Etapa 4: Catálogo de 10 Modelos</strong></td>
+                  <td>O sistema deve treinar e ajustar 10 algoritmos de regressão: Linear, Lasso, Ridge, ElasticNet, Árvore de Decisão, Random Forest, SVR, MLP (Rede Neural), XGBoost e LightGBM.</td>
+                  <td><code>TreinadorSklearn</code> / <code>TreinadorPycaret</code> / <code>04_modelagem_regressao.yaml</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-07</code></td>
+                  <td><strong>Etapa 4: Tuning de Hiperparâmetros & MLflow</strong></td>
+                  <td>O sistema deve executar otimização por busca em grade (GridSearch) ou aleatória (RandomSearch) e registrar cada modelo e fold em runs hierárquicos no MLflow Tracking com métricas e hiperparâmetros completos.</td>
+                  <td><code>RastreadorMlflow</code> / <code>ConfiguracaoTuning</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-08</code></td>
+                  <td><strong>Etapa 5: Validação Cruzada & Testes Estatísticos</strong></td>
+                  <td>O sistema deve avaliar modelos via K-Fold pareado e aplicar os testes não-paramétricos de <strong>Friedman</strong> e pós-teste de <strong>Nemenyi</strong> com controle de valor-p (α=0.05) para certificar a superioridade do modelo.</td>
+                  <td><code>ValidadorCruzado</code> / <code>TestadorFriedman</code> / <code>05_avaliacao_selecao.yaml</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-09</code></td>
+                  <td><strong>Etapa 5: Comitê de Votação (Ensemble)</strong></td>
+                  <td>O sistema deve compor comitês de votação (<code>VotingRegressor</code>, média simples, média ponderada por RMSE ou stacking com Ridge) utilizando os melhores modelos estatisticamente validados.</td>
+                  <td><code>ComiteSklearn</code> / <code>ConfiguracaoVotacao</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-10</code></td>
+                  <td><strong>Etapa 6: Promoção do Campeão & Regras de Negócio</strong></td>
+                  <td>O sistema deve promover o modelo campeão com avaliação em Holdout isolado (20%) e calcular regras dinâmicas pós-predição: margem mínima (-5%), margem máxima (+5%), preço/m² e comissão imobiliária (6%).</td>
+                  <td><code>OrquestradorImplantacao</code> / <code>ModeloComRegrasNegocio</code> / <code>06_implantacao_regras.yaml</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-11</code></td>
+                  <td><strong>Etapa 6: API REST de Inferência</strong></td>
+                  <td>O sistema deve expor endpoints de inferência (FastAPI e MLflow Serving na porta 8080) recebendo as características do imóvel via JSON e respondendo o preço previsto acompanhado das regras contratuais.</td>
+                  <td><code>app/servicos_implantacao/aplicacao_fastapi.py</code> / <code>MLflow Serving</code></td>
+                </tr>
+                <tr>
+                  <td><code>RF-12</code></td>
+                  <td><strong>Etapa 7: Detecção de Drift & Observabilidade</strong></td>
+                  <td>O sistema deve comparar a base de produção recente com a base de referência (baseline) calculando drift tabular via teste de Kolmogorov-Smirnov e distância de Wasserstein, publicando métricas no Prometheus e Grafana.</td>
+                  <td><code>CalculadorDrift</code> / <code>PublicadorGrafana</code> / <code>07_monitoramento_drift.yaml</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Requisitos Não Funcionais (RNF) -->
+      <div class="info-card" style="margin-bottom: 28px; border-left: 4px solid var(--accent-emerald);">
+        <div class="card-title" style="display: flex; align-items: center; justify-content: space-between;">
+          <span>🛡️ Requisitos Não Funcionais (RNF) — Qualidade, Desempenho, Segurança e Arquitetura</span>
+          <span class="badge success">Padrões Corporativos & Confiabilidade</span>
+        </div>
+        <div class="card-body">
+          <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: 16px;">
+            Os requisitos não funcionais governam os atributos de qualidade, integridade arquitetural, padrões de tipagem, latência e segurança do sistema.
+          </p>
+
+          <div class="table-container">
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th style="width: 110px;">Identificador</th>
+                  <th style="width: 220px;">Categoria</th>
+                  <th style="min-width: 280px;">Descrição do Requisito Não Funcional</th>
+                  <th style="width: 230px;">Mecanismo de Garantia</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>RNF-01</code></td>
+                  <td><strong>Tipagem Estrita (Type Safety)</strong></td>
+                  <td>O código deve ser desenvolvido exclusivamente em Python 3.12+ com tipagem estrita total. É estritamente proibido o uso de <code>typing.Any</code> no código-fonte próprio. Deve atingir 0 erros nos verificadores estáticos.</td>
+                  <td><code>mypy app/ tests/</code> (108 arquivos com 0 erros) e validação estrita com Pydantic v2</td>
+                </tr>
+                <tr>
+                  <td><code>RNF-02</code></td>
+                  <td><strong>Padrões de Projeto (GoF)</strong></td>
+                  <td>A arquitetura deve adotar padrões consagrados (Factory Method, Strategy, Chain of Responsibility, Adapter, Template Method e Builder), garantindo inversão de dependência (DIP) e desacoplamento de infraestrutura.</td>
+                  <td>Fábricas GoF em todas as etapas; interfaces e protocolos desacoplados (<code>Protocol</code>, <code>ABC</code>)</td>
+                </tr>
+                <tr>
+                  <td><code>RNF-03</code></td>
+                  <td><strong>Configuração Centralizada & Imutável</strong></td>
+                  <td>Nenhum hiperparâmetro, limiar estatístico ou regra de negócio deve ser hardcoded no código Python. Todas as diretrizes devem ser carregadas de arquivos YAML centralizados na classe singleton <code>ConfYAML</code>.</td>
+                  <td><code>configuracoes/01*.yaml</code> a <code>07*.yaml</code> / <code>ConfYAML</code> com injeção de variáveis de ambiente</td>
+                </tr>
+                <tr>
+                  <td><code>RNF-04</code></td>
+                  <td><strong>Segurança & Proteção contra Injeção de Código</strong></td>
+                  <td>Expressões matemáticas e filtros dinâmicos informados no YAML não podem executar chamadas de sistema, abertura de arquivos, conexões de rede ou código Python arbitrário.</td>
+                  <td><code>ValidadorAst</code> com whitelist estrita de operadores matemáticos e nós AST seguros</td>
+                </tr>
+                <tr>
+                  <td><code>RNF-05</code></td>
+                  <td><strong>Desempenho & Latência de Inferência</strong></td>
+                  <td>A API REST de inferência deve processar uma requisição de precificação e o cálculo de todas as 4 regras de negócio com tempo de resposta {95} < 50$ milissegundos.</td>
+                  <td>Pipeline compilado Scikit-Learn / vetorização NumPy / modelo encapsulado sem reprocessamento de treino</td>
+                </tr>
+                <tr>
+                  <td><code>RNF-06</code></td>
+                  <td><strong>Isolamento de Ambientes & Infraestrutura</strong></td>
+                  <td>Os serviços de suporte (MLflow Tracking, PostgreSQL, Prometheus e Grafana) devem ser orquestrados de forma conteinerizada via Docker Compose com redes e volumes persistentes isolados.</td>
+                  <td><code>docker-compose.yaml</code> / redes <code>mlflow-network</code> / portas padronizadas 3000, 5000, 8080, 9090</td>
+                </tr>
+                <tr>
+                  <td><code>RNF-07</code></td>
+                  <td><strong>Testabilidade & Qualidade de Software</strong></td>
+                  <td>O projeto deve possuir suíte de testes automatizados unitários e de integração abrangendo 100% dos serviços, motores e adaptadores, garantindo integridade contra regressões.</td>
+                  <td>162 testes automatizados aprovados no <code>pytest</code> cobrindo coleta, preparação, tuning, Friedman e API</td>
+                </tr>
+                <tr>
+                  <td><code>RNF-08</code></td>
+                  <td><strong>Observabilidade Contínua & Atualização Automática</strong></td>
+                  <td>Métricas de drift de distribuição e logs de tuning devem ser sincronizados automaticamente com o Grafana em intervalos regulares ($\le 10$ segundos) sem intervenção manual.</td>
+                  <td>Provisioning declarativo em <code>config_ob/</code> e exportador Prometheus / Pushgateway</td>
+                </tr>
+                <tr>
+                  <td><code>RNF-09</code></td>
+                  <td><strong>Padronização de Idioma & Nomenclatura</strong></td>
+                  <td>Todas as classes, métodos, variáveis, exceções e documentação interna do projeto devem ser escritos em Português do Brasil com vocabulário técnico alinhado ao setor imobiliário.</td>
+                  <td>Governança corporativa de nomenclatura aplicada em 100% do repositório</td>
+                </tr>
+                <tr>
+                  <td><code>RNF-10</code></td>
+                  <td><strong>Resiliência & Idempotência do Pipeline</strong></td>
+                  <td>A execução repetida do pipeline (seja via <code>disparar_projeto.sh</code> ou etapas individuais da CLI) deve ser idempotente, substituindo ou atualizando artefatos sem corrupção de estado.</td>
+                  <td>Transações atômicas no SQLite / sobrescrita controlada de tabelas limpas / registro de runs aninhados no MLflow</td>
                 </tr>
               </tbody>
             </table>
