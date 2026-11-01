@@ -1,6 +1,6 @@
 # Relatório de Entrega — Etapa 7: Monitoramento de Drift e Observabilidade
 
-**Data de Execução:** 2026-11-01T16:45:08.193231+00:00  
+**Data de Execução:** 2026-11-01T17:30:04.181528+00:00  
 **Responsáveis:** @observability, @statistician, @devops  
 **Status:** CONCLUÍDO COM SUCESSO  
 **Evidências Persistidas:** [storage-data/relatorio_drift.json](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/storage-data/relatorio_drift.json)  
@@ -13,22 +13,22 @@
 
 O sistema de observabilidade contínua executou os testes de hipóteses bicaudais e estabilidade populacional entre a base de referência (treino de 280 imóveis) e o fluxo de produção:
 
-- **Classificação Taxonômica:** `VIRTUAL_DRIFT`
-- **Covariate Drift (X):** `DETECTADO`
+- **Classificação Taxonômica:** `SEM_DRIFT`
+- **Covariate Drift (X):** `NÃO DETECTADO`
 - **Prediction Drift (ŷ):** `NÃO DETECTADO`
 - **Target Drift (y):** `NÃO DETECTADO`
 - **Concept Drift Real (P(Y|X)):** `NÃO DETECTADO`
 - **Degradação de Performance (RMSE):** N/A (Rótulos de produção não disponíveis)
-- **Orientação Operacional:** AVISO: Virtual Drift detectado em features (Bairro) ou predições, porém sem degradação de performance comprovada. Monitorar de perto a evolução temporal sem necessidade imediata de retreino.
+- **Orientação Operacional:** STATUS VERDE: Nenhuma anomalia de distribuição ou degradação detectada. Modelo operando em regime nominal.
 
 ---
 
 ## 2. Indicadores de Qualidade e Integridade dos Dados
 
-- **Total de Amostras Avaliadas:** 70
+- **Total de Amostras Avaliadas:** 1142
 - **Taxa Geral de Nulos:** **0.00%**
-- **Novas Categorias Não Mapeadas:** 0
-- **Valores Fora dos Limites Históricos:** 1
+- **Novas Categorias Não Mapeadas:** 1
+- **Valores Fora dos Limites Históricos:** 0
 
 ---
 
@@ -36,14 +36,14 @@ O sistema de observabilidade contínua executou os testes de hipóteses bicaudai
 
 | Variável | Papel | Teste Estatístico | Estatística | P-Valor | Limiar | Drift Detectado? |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| `Metragem` | numerica | kolmogorov_smirnov | 0.0893 | 0.7442 | 0.05 | NÃO |
-| `Quartos` | numerica | kolmogorov_smirnov | 0.1750 | 0.0601 | 0.05 | NÃO |
-| `Banheiros` | numerica | kolmogorov_smirnov | 0.0357 | 1.0000 | 0.05 | NÃO |
-| `Vagas` | numerica | kolmogorov_smirnov | 0.0679 | 0.9503 | 0.05 | NÃO |
-| `Bairro` | categorica | psi | 0.2499 | - | 0.2 | **SIM (ALERTA)** |
-| `Zona` | categorica | psi | 0.0115 | - | 0.2 | NÃO |
-| `preco_predito` | predicao | kolmogorov_smirnov | 0.1321 | 0.2683 | 0.1 | NÃO |
-| `Valor_da_Venda` | alvo | kolmogorov_smirnov | 0.1036 | 0.5651 | 0.05 | NÃO |
+| `Metragem` | numerica | kolmogorov_smirnov | 0.0153 | 0.9807 | 0.05 | NÃO |
+| `Quartos` | numerica | kolmogorov_smirnov | 0.0191 | 0.8851 | 0.05 | NÃO |
+| `Banheiros` | numerica | kolmogorov_smirnov | 0.0121 | 0.9991 | 0.05 | NÃO |
+| `Vagas` | numerica | kolmogorov_smirnov | 0.0170 | 0.9503 | 0.05 | NÃO |
+| `Bairro` | categorica | psi | 0.1961 | - | 0.2 | NÃO |
+| `Zona` | categorica | psi | 0.0014 | - | 0.2 | NÃO |
+| `preco_predito` | predicao | kolmogorov_smirnov | 0.0168 | 0.9529 | 0.1 | NÃO |
+| `Valor_da_Venda` | alvo | kolmogorov_smirnov | 0.0226 | 0.7283 | 0.05 | NÃO |
 
 ---
 

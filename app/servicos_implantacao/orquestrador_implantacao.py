@@ -218,20 +218,14 @@ class OrquestradorImplantacao:
         )
 
         # 10. Registro de promoção e governança no MLflow
+        df_exemplo = cast(pd.DataFrame, X_holdout.iloc[0:1]).copy().reset_index(drop=True)
         run_id_mlflow = self._registrar_promocao_mlflow(
             metadados=metadados,
             dir_artefatos=dir_artefatos,
+            exemplo_entrada=df_exemplo,
         )
 
         # 11. Teste de inferência e cálculo de regras com o modelo e regras configuradas
-        df_exemplo = pd.DataFrame([{
-            "Metragem": 85.5,
-            "Quartos": 3,
-            "Banheiros": 2,
-            "Vagas": 2,
-            "Bairro": "Jardim Botânico",
-            "Zona": "Sul",
-        }])
         regras_dict = [r.model_dump() for r in config_implantacao.regras if r.ativo]
         modelo_com_regras = ModeloComRegrasNegocio(
             modelo_estimador=estimador_campeao,
@@ -375,55 +369,137 @@ class OrquestradorImplantacao:
             return fallback
 
         if nome_modelo in {"regressao_linear", "regressao_multipla"}:
-            fit_int=bool(_primeiro("fit_intercept", True))
-            return LinearRegression(fit_intercept=fit_int), f"LinearRegression(fit_intercept={fit_int})"
+            fit_int = bool(_primeiro("fit_intercept", True))
+            positive = bool(_primeiro("positive", False))
+            return LinearRegression(fit_intercept=fit_int, positive=positive), f"LinearRegression(fit_intercept={fit_int})"
 
         if nome_modelo == "lasso":
-            alpha=float(str(_primeiro("alpha", 1.0)))
-            return Lasso(alpha=alpha, random_state=42), f"Lasso(alpha={alpha})"
+            alpha = float(str(_primeiro("alpha", 1.0)))
+            fit_int = bool(_primeiro("fit_intercept", True))
+            max_iter = int(str(_primeiro("max_iter", 1000)))
+            tol = float(str(_primeiro("tol", 0.0001)))
+            selection = str(_primeiro("selection", "cyclic"))
+            return Lasso(alpha=alpha, fit_intercept=fit_int, max_iter=max_iter, tol=tol, selection=selection, random_state=42), f"Lasso(alpha={alpha})"
 
         if nome_modelo == "ridge":
-            alpha=float(str(_primeiro("alpha", 1.0)))
-            return Ridge(alpha=alpha, random_state=42), f"Ridge(alpha={alpha})"
+            alpha = float(str(_primeiro("alpha", 1.0)))
+            fit_int = bool(_primeiro("fit_intercept", True))
+            solver = str(_primeiro("solver", "auto"))
+            tol = float(str(_primeiro("tol", 0.0001)))
+            return Ridge(alpha=alpha, fit_intercept=fit_int, solver=solver, tol=tol, random_state=42), f"Ridge(alpha={alpha})"
 
         if nome_modelo == "elasticnet":
-            alpha=float(str(_primeiro("alpha", 1.0)))
-            l1=float(str(_primeiro("l1_ratio", 0.5)))
-            return ElasticNet(alpha=alpha, l1_ratio=l1, random_state=42), f"ElasticNet(alpha={alpha}, l1={l1})"
+            alpha = float(str(_primeiro("alpha", 1.0)))
+            l1 = float(str(_primeiro("l1_ratio", 0.5)))
+            fit_int = bool(_primeiro("fit_intercept", True))
+            max_iter = int(str(_primeiro("max_iter", 1000)))
+            tol = float(str(_primeiro("tol", 0.0001)))
+            return ElasticNet(alpha=alpha, l1_ratio=l1, fit_intercept=fit_int, max_iter=max_iter, tol=tol, random_state=42), f"ElasticNet(alpha={alpha}, l1={l1})"
 
         if nome_modelo == "arvore_decisao":
-            depth=int(str(_primeiro("max_depth", 5)))
-            split=int(str(_primeiro("min_samples_split", 2)))
-            return DecisionTreeRegressor(max_depth=depth, min_samples_split=split, random_state=42), f"DecisionTreeRegressor(depth={depth})"
+            criterion = str(_primeiro("criterion", "squared_error"))
+            depth = int(str(_primeiro("max_depth", 5)))
+            split = int(str(_primeiro("min_samples_split", 2)))
+            leaf = int(str(_primeiro("min_samples_leaf", 1)))
+            max_feat = _primeiro("max_features", None)
+            max_feat_val = str(max_feat) if max_feat is not None else None
+            return DecisionTreeRegressor(criterion=criterion, max_depth=depth, min_samples_split=split, min_samples_leaf=leaf, max_features=max_feat_val, random_state=42), f"DecisionTreeRegressor(depth={depth})"
 
         if nome_modelo == "random_forest":
-            n_est=int(str(_primeiro("n_estimators", 100)))
-            depth_val=_primeiro("max_depth", 10)
-            depth_int=int(str(depth_val)) if depth_val is not None else None
-            return RandomForestRegressor(n_estimators=n_est, max_depth=depth_int, random_state=42), f"RandomForestRegressor(n={n_est}, depth={depth_int})"
+            n_est = int(str(_primeiro("n_estimators", 100)))
+            criterion = str(_primeiro("criterion", "squared_error"))
+            depth_val = _primeiro("max_depth", 10)
+            depth_int = int(str(depth_val)) if depth_val is not None else None
+            split = int(str(_primeiro("min_samples_split", 2)))
+            leaf = int(str(_primeiro("min_samples_leaf", 1)))
+            max_feat_rf = _primeiro("max_features", 1.0)
+            max_feat_rf_val: float | str | None = (
+                float(str(max_feat_rf))
+                if isinstance(max_feat_rf, (int, float))
+                else (str(max_feat_rf) if max_feat_rf is not None else None)
+            )
+            bootstrap = bool(_primeiro("bootstrap", True))
+            return RandomForestRegressor(
+                n_estimators=n_est,
+                criterion=criterion,
+                max_depth=depth_int,
+                min_samples_split=split,
+                min_samples_leaf=leaf,
+                max_features=max_feat_rf_val,
+                bootstrap=bootstrap,
+                random_state=42,
+            ), f"RandomForestRegressor(n={n_est}, depth={depth_int})"
 
         if nome_modelo == "svr":
-            c_val=float(str(_primeiro("C", 1.0)))
-            k_val=str(_primeiro("kernel", "rbf"))
-            return SVR(C=c_val, kernel=k_val), f"SVR(C={c_val}, kernel={k_val})"
+            c_val = float(str(_primeiro("C", 1.0)))
+            k_val = str(_primeiro("kernel", "rbf"))
+            eps = float(str(_primeiro("epsilon", 0.1)))
+            gamma = str(_primeiro("gamma", "scale"))
+            return SVR(C=c_val, kernel=k_val, epsilon=eps, gamma=gamma), f"SVR(C={c_val}, kernel={k_val})"
 
         if nome_modelo == "rede_neural":
-            iter_val=int(str(_primeiro("max_iter", 200)))
-            return MLPRegressor(max_iter=iter_val, random_state=42), f"MLPRegressor(iter={iter_val})"
+            hidden_raw = _primeiro("hidden_layer_sizes", [100])
+            hidden = tuple(cast(list[int], hidden_raw)) if isinstance(hidden_raw, list) else (100,)
+            act = str(_primeiro("activation", "relu"))
+            solv = str(_primeiro("solver", "adam"))
+            alpha = float(str(_primeiro("alpha", 0.0001)))
+            lr_init = float(str(_primeiro("learning_rate_init", 0.001)))
+            iter_val = int(str(_primeiro("max_iter", 200)))
+            return MLPRegressor(
+                hidden_layer_sizes=hidden,
+                activation=act,
+                solver=solv,
+                alpha=alpha,
+                learning_rate_init=lr_init,
+                max_iter=iter_val,
+                random_state=42,
+            ), f"MLPRegressor(iter={iter_val})"
 
         if nome_modelo == "xgboost":
             import xgboost as xgb
-            n_est=int(str(_primeiro("n_estimators", 100)))
-            depth=int(str(_primeiro("max_depth", 6)))
-            lr=float(str(_primeiro("learning_rate", 0.1)))
-            return xgb.XGBRegressor(n_estimators=n_est, max_depth=depth, learning_rate=lr, random_state=42, verbosity=0), f"XGBRegressor(n={n_est}, lr={lr})"
+            n_est = int(str(_primeiro("n_estimators", 100)))
+            lr = float(str(_primeiro("learning_rate", 0.1)))
+            depth = int(str(_primeiro("max_depth", 6)))
+            sub = float(str(_primeiro("subsample", 1.0)))
+            col = float(str(_primeiro("colsample_bytree", 1.0)))
+            min_child = float(str(_primeiro("min_child_weight", 1)))
+            reg_a = float(str(_primeiro("reg_alpha", 0.0)))
+            reg_l = float(str(_primeiro("reg_lambda", 1.0)))
+            return xgb.XGBRegressor(
+                n_estimators=n_est,
+                max_depth=depth,
+                learning_rate=lr,
+                subsample=sub,
+                colsample_bytree=col,
+                min_child_weight=min_child,
+                reg_alpha=reg_a,
+                reg_lambda=reg_l,
+                random_state=42,
+                verbosity=0,
+            ), f"XGBRegressor(n={n_est}, lr={lr})"
 
         if nome_modelo == "lightgbm":
             import lightgbm as lgb
-            n_est=int(str(_primeiro("n_estimators", 100)))
-            depth=int(str(_primeiro("max_depth", 6)))
-            lr=float(str(_primeiro("learning_rate", 0.05)))
-            return lgb.LGBMRegressor(n_estimators=n_est, max_depth=depth, learning_rate=lr, random_state=42, verbosity=-1), f"LGBMRegressor(n={n_est}, lr={lr})"
+            n_est = int(str(_primeiro("n_estimators", 100)))
+            lr = float(str(_primeiro("learning_rate", 0.05)))
+            depth = int(str(_primeiro("max_depth", 6)))
+            leaves = int(str(_primeiro("num_leaves", 31)))
+            col = float(str(_primeiro("colsample_bytree", 1.0)))
+            min_child_s = int(str(_primeiro("min_child_samples", 20)))
+            reg_a = float(str(_primeiro("reg_alpha", 0.0)))
+            reg_l = float(str(_primeiro("reg_lambda", 1.0)))
+            return lgb.LGBMRegressor(
+                n_estimators=n_est,
+                max_depth=depth,
+                learning_rate=lr,
+                num_leaves=leaves,
+                colsample_bytree=col,
+                min_child_samples=min_child_s,
+                reg_alpha=reg_a,
+                reg_lambda=reg_l,
+                random_state=42,
+                verbosity=-1,
+            ), f"LGBMRegressor(n={n_est}, lr={lr})"  # type: ignore[arg-type]
 
         return LinearRegression(), "LinearRegression(fallback)"
 
@@ -431,6 +507,7 @@ class OrquestradorImplantacao:
         self,
         metadados: MetadadosModelo,
         dir_artefatos: Path,
+        exemplo_entrada: pd.DataFrame | None = None,
     ) -> str:
         """Registra o run de promoção oficial no MLflow e publica a versão no Model Registry."""
         config_mlflow = self._conf.obter_modelagem().mlflow
@@ -484,14 +561,15 @@ class OrquestradorImplantacao:
                 esquema_outputs = Schema(colunas_outputs)
                 assinatura_modelo = ModelSignature(inputs=esquema_inputs, outputs=esquema_outputs)
 
-                exemplo_entrada = pd.DataFrame([{
-                    "Metragem": 85.5,
-                    "Quartos": 3,
-                    "Banheiros": 2,
-                    "Vagas": 2,
-                    "Bairro": "Jardim Botânico",
-                    "Zona": "Sul",
-                }])
+                if exemplo_entrada is None:
+                    exemplo_entrada = pd.DataFrame([{
+                        "Metragem": 85.5,
+                        "Quartos": 3,
+                        "Banheiros": 2,
+                        "Vagas": 2,
+                        "Bairro": "Jardim Botânico",
+                        "Zona": "Sul",
+                    }])
 
                 if caminho_joblib.exists():
                     modelo_obj = joblib.load(caminho_joblib)

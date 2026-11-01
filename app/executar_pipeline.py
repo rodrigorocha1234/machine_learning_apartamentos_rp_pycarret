@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import override
 
 from app.conf_yaml import ConfYAML
+from app.contratos_modelagem.motor_treinador import ResultadoTuning
 from app.enums_dominio import EtapaPipeline
 from app.repositorios_dados.fabrica_repositorios import FabricaRepositorios
 from app.repositorios_dados.repositorio_sqlite import RepositorioSqlite
@@ -32,6 +33,7 @@ class ContextoPipeline:
     resultado_coleta: ResultadoColeta | None = None
     resultado_preparacao: ResultadoPreparacao | None = None
     resultado_eda: ResultadoEda | None = None
+    resultado_tuning: ResultadoTuning | None = None
     resultado_modelagem: ResultadoModelagem | None = None
     resultado_avaliacao: ResultadoEtapaAvaliacao | None = None
     resultado_implantacao: ResultadoImplantacao | None = None
@@ -192,6 +194,7 @@ class EloModelagemRegressao(EloCadeiaPipeline):
     def _executar_etapa(self, contexto: ContextoPipeline) -> None:
         orquestrador = OrquestradorModelagem.da_configuracao(contexto.conf)
         res_tuning, res_modelagem = orquestrador.executar_modelagem()
+        contexto.resultado_tuning = res_tuning
         contexto.resultado_modelagem = res_modelagem
         print(f"✓ Motor: {res_modelagem.motor_utilizado}")
         print(f"✓ Total modelos treinados: {res_modelagem.total_modelos}")
@@ -217,7 +220,9 @@ class EloAvaliacaoSelecao(EloCadeiaPipeline):
     @override
     def _executar_etapa(self, contexto: ContextoPipeline) -> None:
         orquestrador = OrquestradorAvaliacao.da_configuracao(contexto.conf)
-        resultado = orquestrador.executar_avaliacao_e_selecao()
+        resultado = orquestrador.executar_avaliacao_e_selecao(
+            resultado_tuning=contexto.resultado_tuning
+        )
         contexto.resultado_avaliacao = resultado
         print(f"✓ Amostras Treino / Holdout: {resultado.total_amostras_treino} / {resultado.total_amostras_holdout}")
         print(f"✓ Teste de Friedman p-valor: {resultado.comparacao_estatistica.friedman.p_valor:.6f}")

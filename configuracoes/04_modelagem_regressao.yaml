@@ -149,6 +149,6 @@ modelagem:
 
   mlflow:
     tracking_uri: "${MLFLOW_TRACKING_URI:http://localhost:5000}"
-    experimento: "imoveis_apartamento_rp_regressao"
+    experimento: "apartamento_rp_regressao"
     modelo_registrado: "previsao_preco_imoveis"
     registrar_modelo_campeao: true

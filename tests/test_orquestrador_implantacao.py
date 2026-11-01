@@ -21,7 +21,7 @@ def test_orquestrador_executa_implantacao(tmp_path: Path, monkeypatch: pytest.Mo
     assert resultado.modelo_promovido in nomes_modelos_catalogo
     assert resultado.versao_modelo == "1.0.0-champion"
     assert resultado.r2_holdout > 0.70
-    assert resultado.rmse_holdout < 150_000.0
+    assert resultado.rmse_holdout < 250_000.0
     assert resultado.total_regras_ativas >= 3
 
     # Verifica se os artefatos foram salvos

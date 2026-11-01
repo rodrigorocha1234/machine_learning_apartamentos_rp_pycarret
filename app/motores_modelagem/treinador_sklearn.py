@@ -66,6 +66,29 @@ class TreinadorSklearn(MotorTreinador):
     def obter_nome_motor(self) -> str:
         return "sklearn"
 
+    @staticmethod
+    def _extrair_parametros_estimador(
+        estimador: object, chaves_grade: list[str]
+    ) -> dict[str, ValorParametro]:
+        """Extrai os hiperparâmetros concretos do estimador interno alinhados à grade de tuning."""
+        obj: object = estimador
+        if hasattr(obj, "regressor_"):
+            obj = getattr(obj, "regressor_")
+        elif hasattr(obj, "regressor"):
+            obj = getattr(obj, "regressor")
+
+        if hasattr(obj, "named_steps"):
+            named_steps = getattr(obj, "named_steps")
+            if isinstance(named_steps, dict) and "regressor" in named_steps:
+                obj = named_steps["regressor"]
+
+        if hasattr(obj, "get_params"):
+            get_params_fn = getattr(obj, "get_params")
+            if callable(get_params_fn):
+                todos_params = cast(dict[str, ValorParametro], get_params_fn())
+                return {k: todos_params[k] for k in chaves_grade if k in todos_params}
+        return {}
+
     @override
     def treinar_e_ajustar(
         self,
@@ -194,7 +217,10 @@ class TreinadorSklearn(MotorTreinador):
                             melhor_score = (
                                 -score_base_medio if "neg_" in scoring_sklearn else score_base_medio
                             )
-                            melhores_params = {}
+                            # Extrai os parâmetros padrão do estimador vencedor para rastreabilidade completa
+                            melhores_params = self._extrair_parametros_estimador(
+                                melhor_estimador, list(grade_configurada.keys())
+                            )
                 except Exception as erro_fit:
                     raise ErroTreinadorSklearn(
                         f"Falha no tuning do modelo '{item_modelo.nome}': {erro_fit}"
@@ -216,7 +242,9 @@ class TreinadorSklearn(MotorTreinador):
                     )
                     residuos_direto = y_direto - preds_direto
                     melhor_score = float(np.sqrt(np.mean(residuos_direto**2)))
-                    melhores_params = {}
+                    melhores_params = self._extrair_parametros_estimador(
+                        melhor_estimador, list(grade_configurada.keys())
+                    )
                 except Exception as erro_fit_direto:
                     raise ErroTreinadorSklearn(
                         f"Falha no treino direto do modelo '{item_modelo.nome}': {erro_fit_direto}"
