@@ -3188,17 +3188,17 @@ atributos_novos:
             Para diretores de crédito, gestores de fundos imobiliários, corretores e analistas de risco, termos matemáticos como <em>regularização L1</em> ou <em>learning rate</em> podem parecer abstratos. No entanto, cada parâmetro configurado em <code>configuracoes/04_modelagem_regressao.yaml</code> atua diretamente como uma <strong>alavanca de prudência, agressividade comercial ou estabilidade de preços</strong>. Abaixo, traduzimos a função de cada modelo e seus hiperparâmetros para a dinâmica prática de mercado de apartamentos em Ribeirão Preto.
           </p>
 
-          <div class="cards-grid" style="margin-bottom: 24px;">
+                    <div class="cards-grid" style="margin-bottom: 24px;">
             <!-- 1. Regressão Linear -->
             <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
               <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
                 1. Regressão Linear — <code>fit_intercept</code> e <code>positive</code>
               </div>
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
-                <p><strong>Conceito de Negócio:</strong> "O Preço Mínimo de Entrada e Infraestrutura Urbana".</p>
+                <p><strong>Conceito de Negócio:</strong> "O Preço Mínimo de Entrada e Coerência Econômica".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li><strong>fit_intercept = true:</strong> Estima o custo base irredutível de um imóvel no município (fração do terreno, portaria, infraestrutura de água e energia), garantindo que apartamentos compactos (ex: studios de 35m²) não sejam subavaliados de forma irreal.</li>
-                  <li><strong>positive = true:</strong> Restringe as estimativas para que atributos de valorização (ex: vagas extras, suítes) nunca resultem em coeficientes negativos devido a correlações espúrias.</li>
+                  <li><strong>fit_intercept [true, false]:</strong> <code>true</code> estima o piso de infraestrutura predial e fração ideal de terreno no município de Ribeirão Preto (água, energia, guarita, áreas sociais), impedindo que apartamentos compactos (ex: studios de 32m²) sejam subavaliados a valores irrealizáveis. <code>false</code> força a regressão pela origem para análises estritas de custo marginal puro por metro quadrado.</li>
+                  <li><strong>positive [false, true]:</strong> <code>true</code> impõe coerência aos fundamentos de mercado: garante que amenidades e benfeitorias essenciais (metragem privativa, banheiros, vagas na garagem) nunca recebam peso negativo decorrente de ruídos cadastrais pontuais.</li>
                 </ul>
               </div>
             </div>
@@ -3206,13 +3206,15 @@ atributos_novos:
             <!-- 2. Lasso -->
             <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
               <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
-                2. Lasso (L1) — <code>alpha</code>, <code>max_iter</code>, <code>tol</code> e <code>selection</code>
+                2. Lasso (L1) — <code>alpha</code>, <code>fit_intercept</code>, <code>max_iter</code>, <code>tol</code> e <code>selection</code>
               </div>
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
                 <p><strong>Conceito de Negócio:</strong> "O Auditor Antirruído de Características Secundárias".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li><strong>alpha alto (1.0 - 10.0):</strong> Atua como um auditor implacável. Zera sumariamente o peso de qualquer atributo que não seja crucial para a precificação, focando apenas nos pilares sólidos: metragem e localização (bairros valorizados como Jardim Botânico, Bonfim Paulista ou Fiusa). Evita distorções causadas por descrições subjetivas dos anúncios.</li>
-                  <li><strong>tol e max_iter:</strong> Governam a precisão matemática da convergência do gradiente, garantindo que o algoritmo não pare prematuramente antes de encontrar o corte ótimo.</li>
+                  <li><strong>alpha [0.001 a 10.0]:</strong> Intensidade do corte auditor. Valores moderados/altos (1.0 a 10.0) zeram sumariamente variáveis redundantes ou subjetivas de anúncios, retendo apenas os alicerces irrefutáveis da precificação: área privativa e localização em bairros valorizados (Jardim Botânico, Bonfim Paulista, Fiúsa).</li>
+                  <li><strong>fit_intercept [true, false]:</strong> Mantém a baseline orçamentária do empreendimento imobiliário antes da aplicação da penalidade de esparsidade.</li>
+                  <li><strong>max_iter [1000, 2000] & tol [0.0001, 0.001]:</strong> Tolerância e profundidade da convergência do gradiente, assegurando que o corte das variáveis não pare de forma prematura em mercados com ampla dispersão de preços.</li>
+                  <li><strong>selection ["cyclic", "random"]:</strong> Critério de varredura das variáveis. A seleção randômica (<code>"random"</code>) acelera sensivelmente a convergência em bases tabulares com forte colinearidade entre dormitórios e vagas.</li>
                 </ul>
               </div>
             </div>
@@ -3220,14 +3222,15 @@ atributos_novos:
             <!-- 3. Ridge -->
             <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
               <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
-                3. Ridge (L2) — <code>alpha</code>, <code>solver</code> e <code>tol</code>
+                3. Ridge (L2) — <code>alpha</code>, <code>fit_intercept</code>, <code>solver</code> e <code>tol</code>
               </div>
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
                 <p><strong>Conceito de Negócio:</strong> "O Apaziguador de Fatores Redundantes e Multicolineares".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li>No mercado imobiliário, boas características andam juntas: apartamentos com maior metragem privativa costumam ter mais dormitórios, mais banheiros e mais vagas de garagem. Sem controle, o modelo somaria esses bônus repetidamente e geraria um preço astronômico.</li>
-                  <li><strong>alpha alto (1.0 - 10.0):</strong> Encolhe os coeficientes conjuntamente, distribuindo a contribuição de cada fator de forma conservadora e prevenindo estimativas excessivamente infladas em unidades de padrão elevado.</li>
-                  <li><strong>solver:</strong> Seleciona o algoritmo numérico ótimo (SVD, Cholesky ou LSQR) conforme a densidade da matriz de correlação imobiliária.</li>
+                  <li><strong>alpha [0.01 a 100.0]:</strong> No mercado imobiliário, boas características andam juntas (apartamentos maiores costumam ter mais suítes e mais vagas). O encolhimento L2 distribui harmonicamente o prêmio de valor entre esses atributos, evitando que o modelo superestime o preço ao somar bônus redundantes.</li>
+                  <li><strong>fit_intercept [true, false]:</strong> Preserva a taxa mínima territorial do município antes de amortecer a sensibilidade das variáveis.</li>
+                  <li><strong>solver ["auto", "svd", "cholesky", "lsqr"]:</strong> Motor de álgebra linear ótimo para decomposição de matrizes densas. <code>"cholesky"</code> oferece máxima exatidão em matrizes simétricas bem condicionadas, enquanto <code>"lsqr"</code> provê estabilidade superior em problemas com grande volume de dados.</li>
+                  <li><strong>tol [0.0001, 0.001]:</strong> Critério estrito de parada analítica, garantindo estabilidade no cálculo das taxas de desconto marginais.</li>
                 </ul>
               </div>
             </div>
@@ -3235,13 +3238,15 @@ atributos_novos:
             <!-- 4. ElasticNet -->
             <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
               <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
-                4. ElasticNet — <code>alpha</code>, <code>l1_ratio</code>, <code>max_iter</code> e <code>tol</code>
+                4. ElasticNet — <code>alpha</code>, <code>l1_ratio</code>, <code>fit_intercept</code>, <code>max_iter</code> e <code>tol</code>
               </div>
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
                 <p><strong>Conceito de Negócio:</strong> "O Gestor Balanceado de Risco e Limpeza Cadastral".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li><strong>l1_ratio próximo a 1.0 (ex: 0.8):</strong> Postura próxima ao Lasso, descartando campos secundários irrelevantes da base de dados imobiliários.</li>
-                  <li><strong>l1_ratio balanceado (0.5):</strong> Equilíbrio ótimo para carteiras imobiliárias heterogêneas: retém o grupo de variáveis correlacionadas essenciais (metragem + vagas), mas impede que ruídos pontuais desviem o preço alvo.</li>
+                  <li><strong>alpha [0.01 a 10.0]:</strong> Nível global de regularização mista para carteiras imobiliárias heterogêneas (apartamentos populares até unidades de alto padrão).</li>
+                  <li><strong>l1_ratio [0.1 a 0.9]:</strong> O percentual de mistura entre Lasso e Ridge. Valores próximos a <code>0.1</code> agem como Ridge (preservando todas as variáveis com pesos encolhidos); valores em <code>0.5</code> equilibram seleção com estabilidade coletiva; valores em <code>0.9</code> descartam atributos marginais com alta esparsidade.</li>
+                  <li><strong>fit_intercept [true, false]:</strong> Balizador de piso fixo independente da composição de amenidades do edifício.</li>
+                  <li><strong>max_iter [1000, 2000] & tol [0.0001, 0.001]:</strong> Garantem a estabilidade da otimização por descida coordenada mesmo em cenários de alta correlação entre metragem e vagas.</li>
                 </ul>
               </div>
             </div>
@@ -3254,8 +3259,11 @@ atributos_novos:
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
                 <p><strong>Conceito de Negócio:</strong> "O Manual de Regras de Avaliação e Segmentação Rápida".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li><strong>max_depth (3 a 5):</strong> Limite de perguntas sequenciais do corretor (ex: <em>"Bairro é Zona Sul? Metragem > 80m²? Possui 2 vagas?"</em>). Gera regras transparentes e auditáveis perante clientes, comitês de crédito e tabelas de vendas.</li>
-                  <li><strong>min_samples_leaf (1 a 4):</strong> Garante que cada folha de preço tenha uma quantidade mínima de apartamentos reais como suporte, evitando criar regras para um único caso atípico.</li>
+                  <li><strong>criterion ["squared_error", "friedman_mse", "absolute_error"]:</strong> Critério de perda. <code>"squared_error"</code> busca precisão média quadrática; <code>"friedman_mse"</code> prevê quebras com menor variância residual; <code>"absolute_error"</code> (MAE) minimiza a sensibilidade contra unidades de valores excepcionalmente atípicos (coberturas tríplex).</li>
+                  <li><strong>max_depth [3, 5, 8, 12]:</strong> Profundidade de raciocínio encadeado (ex: <em>"Zona Sul? Metragem > 100m²? Vagas >= 2?"</em>). Profundidades menores (3 a 5) geram tabelas de avaliação 100% auditáveis e fáceis de explicar a corretores e clientes.</li>
+                  <li><strong>min_samples_split [2, 5, 10]:</strong> Exigência mínima de apartamentos em um grupo para autorizar nova bifurcação de preço.</li>
+                  <li><strong>min_samples_leaf [1, 2, 4]:</strong> Suporte amostral mínimo da folha final, impedindo a criação de um preço exclusivo para um único imóvel atípico cadastrado.</li>
+                  <li><strong>max_features [null, "sqrt", "log2"]:</strong> Fração de atributos avaliados em cada corte. Usar subconjuntos (<code>"sqrt"</code>) reduz a dependência monolítica exclusiva da metragem quadrada.</li>
                 </ul>
               </div>
             </div>
@@ -3263,14 +3271,17 @@ atributos_novos:
             <!-- 6. Random Forest -->
             <div class="info-card" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08);">
               <div class="card-title" style="font-size: 0.95rem; color: var(--accent-cyan);">
-                6. Random Forest — <code>n_estimators</code>, <code>criterion</code>, <code>max_depth</code>, <code>min_samples_leaf</code>, <code>max_features</code> e <code>bootstrap</code>
+                6. Random Forest — <code>n_estimators</code>, <code>criterion</code>, <code>max_depth</code>, <code>min_samples_split</code>, <code>min_samples_leaf</code>, <code>max_features</code> e <code>bootstrap</code>
               </div>
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
-                <p><strong>Conceito de Negócio:</strong> "A Junta Consultiva de Corretores Independentes".</p>
+                <p><strong>Conceito de Negócio:</strong> "A Junta Consultiva de Avaliadores Independentes".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li>Em vez de confiar na opinião de uma única árvore de decisão, cria de 50 a 150 corretores virtuais independentes, cada um treinado com amostras ligeiramente diferentes do mercado de Ribeirão Preto.</li>
-                  <li><strong>n_estimators = 100+:</strong> Proporciona um consenso altamente estável e robusto contra outliers, tornando a estimativa de preço imune a variações voláteis de um bairro em um determinado mês.</li>
-                  <li><strong>max_features:</strong> Amostragem randômica de variáveis por nó que impede que apenas a metragem domine todas as decisões.</li>
+                  <li><strong>n_estimators [50, 100, 150]:</strong> Quantidade de árvores independentes no comitê. Acima de 100 estimadores, a média das opiniões estabiliza o valor predito, blindando a carteira imobiliária contra flutuações amostrais bruscas.</li>
+                  <li><strong>criterion ["squared_error", "absolute_error"]:</strong> Define se a junta busca otimizar a proximidade pontual pelo erro quadrático ou a robustez mediana pelo erro absoluto.</li>
+                  <li><strong>max_depth [5, 8, 12]:</strong> Teto da sofisticação de cada avaliador para evitar memorização excessiva do histórico passado de vendas.</li>
+                  <li><strong>min_samples_split [2, 5, 10] & min_samples_leaf [1, 2, 4]:</strong> Impedem a fragmentação da floresta em nichos estatísticos sem liquidez ou representatividade urbana.</li>
+                  <li><strong>max_features [1.0, "sqrt", "log2"]:</strong> Garante diversidade metodológica entre as árvores, forçando avaliadores virtuais a examinar também a influência de bairros e vagas, não apenas a área total.</li>
+                  <li><strong>bootstrap [true]:</strong> Cada árvore avalia um sorteio com reposição de apartamentos de Ribeirão Preto, assegurando independência estatística.</li>
                 </ul>
               </div>
             </div>
@@ -3281,11 +3292,12 @@ atributos_novos:
                 7. SVR (Support Vector Regression) — <code>kernel</code>, <code>C</code>, <code>epsilon</code> e <code>gamma</code>
               </div>
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
-                <p><strong>Conceito de Negócio:</strong> "O Balizador de Margem de Negociação e Zonas Não-Lineares".</p>
+                <p><strong>Conceito de Negócio:</strong> "O Balizador de Margem de Negociação e Bolhas Geográficas".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li><strong>C (0.1 a 10.0):</strong> Controla o rigor com desvios fora da margem aceitável de negociação. Um <code>C</code> moderado (1.0) ignora pequenos descontos ou sobrepreços comuns em transações imobiliárias de balcão, focando na curva de valor sólida.</li>
-                  <li><strong>epsilon:</strong> Define a tolerância do "tubo de indiferença", desconsiderando variações marginais que fazem parte do processo normal de barganha entre comprador e vendedor.</li>
-                  <li><strong>kernel = "rbf" com gamma:</strong> Captura a valorização em <em>bolhas concêntricas</em>. Em Ribeirão Preto, a valorização explode perto de avenidas icônicas (como Prof. João Fiúsa) ou polos comerciais (Ribeirão Shopping) e arrefece em raios de poucos quarteirões.</li>
+                  <li><strong>kernel ["rbf", "linear"]:</strong> <code>"linear"</code> assume que cada metro quadrado adiciona valor constante. <code>"rbf"</code> mapeia raios e polos de atração urbana (ex: proximidade imediata ao Parque Raya ou Shopping Iguatemi), captando valorizações não-lineares.</li>
+                  <li><strong>C [0.1, 1.0, 10.0, 100.0]:</strong> Rigor punitivo contra desvios fora da margem tolerada. Valores baixos (0.1 a 1.0) produzem curvas de preços suaves imunes a transações de liquidação urgente; valores altos (10.0 a 100.0) cobram fidelidade rigorosa aos dados históricos de venda.</li>
+                  <li><strong>epsilon [0.01, 0.1, 0.2]:</strong> A largura do "tubo de tolerância". Desconsidera discrepâncias de 1% a 20% no preço, tratando-as como margem natural de barganha entre proprietário e comprador.</li>
+                  <li><strong>gamma ["scale", "auto"]:</strong> Raio de alcance de cada apartamento âncora de referência. <code>"scale"</code> normaliza a influência conforme a dispersão dos atributos na cidade.</li>
                 </ul>
               </div>
             </div>
@@ -3298,8 +3310,12 @@ atributos_novos:
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
                 <p><strong>Conceito de Negócio:</strong> "O Analista de Sinergias Complexas e Efeitos de Luxo".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li>Identifica quando a combinação de múltiplos fatores vale muito mais do que a soma individual de cada um: por exemplo, ter 3 vagas de garagem em um prédio padrão agrega valor linear, mas 3 vagas combinadas a um apartamento no Jardim Canadá com varanda gourmet e condomínio de resort gera uma valorização sinérgica exponencial.</li>
-                  <li><strong>activation e solver:</strong> Alterna entre ativações não-lineares (<code>relu</code> vs <code>tanh</code>) e otimizadores de pesos (<code>adam</code> vs <code>lbfgs</code>) para atingir convergência perfeita na curva de preços.</li>
+                  <li><strong>hidden_layer_sizes [[50], [100], [50, 25], [100, 50]]:</strong> Arquitetura dos neurônios artificiais. Camadas duplas ([100, 50]) conseguem aprender correlações sinérgicas não-lineares, como o efeito multiplicador de ter 3 vagas de garagem em um condomínio resort na Zona Sul.</li>
+                  <li><strong>activation ["relu", "tanh"]:</strong> A função de disparo de valor. <code>"relu"</code> modela valorização ascendente com alta velocidade; <code>"tanh"</code> captura platôs onde o acréscimo de quartos acima de 4 já não gera acréscimo proporcional de preço.</li>
+                  <li><strong>solver ["adam", "lbfgs"]:</strong> <code>"adam"</code> é robusto para bases extensas; <code>"lbfgs"</code> converge com altíssima precisão e velocidade em amostras tabulares compactas de dados limpos.</li>
+                  <li><strong>alpha [0.0001, 0.001, 0.01]:</strong> Regularização L2 dos pesos das conexões, impedindo que a rede memorize ruídos e desvie do valuation padrão de mercado.</li>
+                  <li><strong>learning_rate_init [0.001, 0.01]:</strong> Tamanho do passo de aprendizado do modelo em cada época de ajuste de preços.</li>
+                  <li><strong>max_iter [200, 400]:</strong> Volume máximo de ciclos de retropropagação para assegurar estabilização do gradiente sem consumo indevido de CPU.</li>
                 </ul>
               </div>
             </div>
@@ -3312,9 +3328,11 @@ atributos_novos:
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
                 <p><strong>Conceito de Negócio:</strong> "O Perito em Correção Sucessiva de Erros Residuais".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li>Diferente do Random Forest (onde todos votam juntos), o XGBoost treina árvores sequencialmente, onde cada nova árvore foca em acertar o valor daqueles apartamentos que as árvores anteriores erraram.</li>
-                  <li><strong>reg_alpha e reg_lambda:</strong> Penalizações explícitas L1 e L2 nos pesos das folhas das árvores, impedindo que bairros com poucas amostras recebam saltos absurdos de preço.</li>
-                  <li><strong>subsample e colsample_bytree:</strong> Subamostragens aleatórias de apartamentos e atributos que conferem imunidade contra ruídos de coleta.</li>
+                  <li><strong>n_estimators [50, 100, 150] & learning_rate [0.01 a 0.2]:</strong> O ritmo de aprendizado sequencial. Taxas moderadas (0.05 a 0.1) com 100 a 150 árvores constroem correções cautelosas sobre as falhas das árvores anteriores, evitando superreações a negócios fora da curva.</li>
+                  <li><strong>max_depth [3, 5, 7]:</strong> Profundidade das árvores de boosting. <code>3 a 5</code> capta combinações essenciais de atributos de forma controlada; <code>7</code> permite modelar micro-regiões altamente segmentadas.</li>
+                  <li><strong>subsample [0.7 a 1.0] & colsample_bytree [0.7 a 1.0]:</strong> Subamostragem de imóveis e de colunas a cada rodada. Protege o algoritmo de ficar excessivamente enviesado por bairros predominantes no dataset.</li>
+                  <li><strong>min_child_weight [1, 3, 5]:</strong> Inércia mínima requerida em cada partição de dados, prevenindo a criação de ramos dedicados a bairros com pouquíssimas transações.</li>
+                  <li><strong>reg_alpha [0.0 a 1.0] & reg_lambda [0.01 a 10.0]:</strong> Penalidades L1 e L2 nos pesos das folhas das árvores, atuando diretamente para conter saltos de preços em nichos de imóveis de luxo.</li>
                 </ul>
               </div>
             </div>
@@ -3327,8 +3345,11 @@ atributos_novos:
               <div class="card-body" style="font-size: 0.88rem; line-height: 1.6;">
                 <p><strong>Conceito de Negócio:</strong> "O Motor de Ultra Performance para dezenas de Micro-regiões".</p>
                 <ul class="feature-list" style="margin-top: 8px;">
-                  <li>Construído para máxima velocidade e acurácia ao lidar com muitas categorias de bairros. Em bases com dezenas de bairros distintos de Ribeirão Preto (Centro, Ipiranga, Nova Aliança, Vila Tibério), o LightGBM particiona as árvores por folha (<em>leaf-wise</em>), garantindo precificação hiper-localizada com tempos de resposta de milissegundos na API de produção.</li>
-                  <li><strong>num_leaves e min_child_samples:</strong> Controlam a densidade de cada nicho de bairro, assegurando que divisões altamente específicas só ocorram quando houver embasamento amostral suficiente.</li>
+                  <li><strong>n_estimators [50, 100, 150] & learning_rate [0.01 a 0.2]:</strong> Cadência de avanço iterativo para máxima convergência em bancos de dados imobiliários urbanos completos.</li>
+                  <li><strong>max_depth [3, 5, 7] & num_leaves [15, 31, 63]:</strong> O particionamento por folha (<em>leaf-wise</em>) permite que o LightGBM foque nos bairros de maior incerteza de preços. <code>num_leaves: 31</code> assegura alta flexibilidade sem criar ramificações vazias.</li>
+                  <li><strong>colsample_bytree [0.7 a 1.0]:</strong> Proporção de atributos sorteados por árvore, mantendo diversificação nas regras de precificação.</li>
+                  <li><strong>min_child_samples [5, 10, 20]:</strong> Quantidade mínima obrigatória de apartamentos por folha final. Um valor de <code>10 ou 20</code> blinda a API contra precificar com base em outliers cadastrais.</li>
+                  <li><strong>reg_alpha [0.0 a 1.0] & reg_lambda [0.01 a 10.0]:</strong> Regularização L1/L2 estrutural que controla a magnitude das predições de ponta e garante estabilidade temporal na precificação.</li>
                 </ul>
               </div>
             </div>
