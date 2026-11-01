@@ -7,8 +7,11 @@ import json
 import os
 from pathlib import Path
 from typing import cast, final
+import joblib
 import lightgbm as lgb
 import mlflow
+import mlflow.sklearn
+from mlflow.tracking import MlflowClient
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -391,15 +394,15 @@ class OrquestradorImplantacao:
         metadados: MetadadosModelo,
         dir_artefatos: Path,
     ) -> str:
-        """Registra o run de promoção oficial no MLflow."""
-        config_mlflow=self._conf.obter_modelagem().mlflow
-        os.environ["MLFLOW_DISABLE_AGENT_HINT"]="1"
+        """Registra o run de promoção oficial no MLflow e publica a versão no Model Registry."""
+        config_mlflow = self._conf.obter_modelagem().mlflow
+        os.environ["MLFLOW_DISABLE_AGENT_HINT"] = "1"
         try:
             mlflow.set_tracking_uri(config_mlflow.tracking_uri)
             mlflow.set_experiment(config_mlflow.experimento)
 
             with mlflow.start_run(run_name=f"promocao_modelo_campeao_{metadados.nome_modelo}") as run:
-                run_id=str(run.info.run_id)
+                run_id = str(run.info.run_id)
                 mlflow.set_tag("pipeline.etapa", "implantacao_regras")
                 mlflow.set_tag("modelo.status", "Production")
                 mlflow.set_tag("modelo.alias", "champion")
@@ -410,15 +413,42 @@ class OrquestradorImplantacao:
                 mlflow.log_metric("rmse_holdout", metadados.rmse_holdout)
                 mlflow.log_metric("r2_holdout", metadados.r2_holdout)
 
-                # Log dos arquivos de artefato
-                caminho_joblib=dir_artefatos / "modelo_campeao.joblib"
-                caminho_meta=dir_artefatos / "metadados_campeao.json"
-                if caminho_joblib.exists():
-                    mlflow.log_artifact(str(caminho_joblib),
-                                        artifact_path="model")
+                caminho_joblib = dir_artefatos / "modelo_campeao.joblib"
+                caminho_meta = dir_artefatos / "metadados_campeao.json"
+
                 if caminho_meta.exists():
-                    mlflow.log_artifact(str(caminho_meta),
-                                        artifact_path="model")
+                    mlflow.log_artifact(str(caminho_meta), artifact_path="model")
+
+                nome_modelo_reg = config_mlflow.modelo_registrado or "previsao_preco_imoveis"
+
+                pode_registrar = bool(
+                    config_mlflow.registrar_modelo_campeao
+                    and not config_mlflow.tracking_uri.startswith("file:")
+                )
+
+                if caminho_joblib.exists():
+                    modelo_obj = joblib.load(caminho_joblib)
+                    mlflow.sklearn.log_model(
+                        sk_model=modelo_obj,
+                        artifact_path="model",
+                        serialization_format="cloudpickle",
+                        registered_model_name=nome_modelo_reg if pode_registrar else None,
+                    )
+                elif caminho_meta.exists():
+                    mlflow.log_artifact(str(caminho_meta), artifact_path="model")
+
+                if pode_registrar:
+                    try:
+                        client = MlflowClient(tracking_uri=config_mlflow.tracking_uri)
+                        versoes = client.search_model_versions(f"name='{nome_modelo_reg}'")
+                        if versoes:
+                            versao_atual = str(max(versoes, key=lambda v: int(v.version)).version)
+                            client.set_registered_model_alias(nome_modelo_reg, "champion", versao_atual)
+                            client.set_model_version_tag(nome_modelo_reg, versao_atual, "status", "Production")
+                            client.set_model_version_tag(nome_modelo_reg, versao_atual, "modelo", metadados.nome_modelo)
+                            client.set_model_version_tag(nome_modelo_reg, versao_atual, "algoritmo", metadados.algoritmo)
+                    except Exception:
+                        pass
 
                 return run_id
         except Exception:

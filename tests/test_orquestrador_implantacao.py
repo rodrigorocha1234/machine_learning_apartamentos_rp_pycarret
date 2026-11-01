@@ -17,7 +17,7 @@ def test_orquestrador_executa_implantacao(tmp_path: Path, monkeypatch: pytest.Mo
     # Execução real apontando para diretório temporário para isolamento do teste
     resultado = orquestrador.executar_implantacao(diretorio_artefatos=tmp_path / "campeao")
 
-    assert resultado.modelo_promovido in ("ridge", "lightgbm", "regressao_linear", "random_forest")
+    assert resultado.modelo_promovido in ("ridge", "lightgbm", "regressao_linear", "random_forest", "lasso")
     assert resultado.versao_modelo == "1.0.0-champion"
     assert resultado.r2_holdout > 0.70
     assert resultado.rmse_holdout < 150_000.0

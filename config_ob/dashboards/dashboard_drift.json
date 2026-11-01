@@ -28,7 +28,7 @@
         "defaults": {
           "color": {
             "mode": "fixed",
-            "fixedColor": "red"
+            "fixedColor": "yellow"
           },
           "thresholds": {
             "mode": "absolute",
@@ -46,7 +46,7 @@
           "expr": "model_drift_status"
         }
       ],
-      "description": "ALERTA CRÍTICO: Concept Drift Real detectado com degradação de erro RMSE de 144.3%. Recomenda-se acionar pipeline de retreinamento do modelo com dados recentes e reavaliação de hipóteses."
+      "description": "AVISO: Virtual Drift detectado em features (Bairro) ou predições, porém sem degradação de performance comprovada. Monitorar de perto a evolução temporal sem necessidade imediata de retreino."
     },
     {
       "id": 2,
@@ -118,7 +118,7 @@
         }
       },
       "targets": [],
-      "description": "Variação percentual: 144.31%"
+      "description": "Variação percentual: 0.00%"
     },
     {
       "id": 4,
