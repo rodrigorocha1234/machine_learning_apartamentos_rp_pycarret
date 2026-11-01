@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from types import CodeType
-from typing import cast, final, override
+from typing import cast, final
+import sys
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 import pandas as pd
 
 from app.contratos_implantacao.avaliador_regras import AvaliadorRegras

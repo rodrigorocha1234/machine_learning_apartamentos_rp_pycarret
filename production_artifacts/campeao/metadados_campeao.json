@@ -3,8 +3,8 @@
   "versao": "1.0.0-champion",
   "algoritmo": "Lasso(alpha=0.01)",
   "transformacao_alvo": "log1p_embutida",
-  "rmse_cv": 0.0,
+  "rmse_cv": 102347.51,
   "rmse_holdout": 146424.68,
   "r2_holdout": 0.8779,
-  "data_promocao": "2026-11-01T01:37:07.224779+00:00"
+  "data_promocao": "2026-11-01T03:06:33.789164+00:00"
 }

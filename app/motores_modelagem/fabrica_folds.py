@@ -4,7 +4,7 @@ Instancia divisores de cross-validation configurados via YAML, suportando
 múltiplas técnicas com validação estrita de parâmetros.
 """
 
-from typing import cast
+from typing import TypeAlias, cast
 from sklearn.model_selection import (
     KFold,
     RepeatedKFold,
@@ -23,7 +23,7 @@ class ErroFabricaFolds(Exception):
     """Exceção levantada quando ocorre erro na fábrica de folds."""
 
 
-type GeradorFolds = KFold | RepeatedKFold | ShuffleSplit | TimeSeriesSplit
+GeradorFolds: TypeAlias = KFold | RepeatedKFold | ShuffleSplit | TimeSeriesSplit
 
 
 class FabricaFolds:

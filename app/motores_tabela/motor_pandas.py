@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import ast
-from typing import cast, final, override
+from typing import TypeAlias, cast, final, override
 import pandas as pd
 
 from app.contratos_dados.motor_tabela import MotorTabela
@@ -13,7 +13,7 @@ class ErroMotorPandas(Exception):
     """Exceção levantada em falhas de processamento ou avaliação do motor Pandas."""
 
 
-type OperandoPandas = pd.Series | float | int | bool | str
+OperandoPandas: TypeAlias = pd.Series | float | int | bool | str
 
 
 @final

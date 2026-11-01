@@ -1,6 +1,6 @@
 # Relatório de Entrega — Etapa 7: Monitoramento de Drift e Observabilidade
 
-**Data de Execução:** 2026-11-01T01:37:13.591006+00:00  
+**Data de Execução:** 2026-11-01T03:16:35.066938+00:00  
 **Responsáveis:** @observability, @statistician, @devops  
 **Status:** CONCLUÍDO COM SUCESSO  
 **Evidências Persistidas:** [storage-data/relatorio_drift.json](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/storage-data/relatorio_drift.json)  
@@ -13,13 +13,13 @@
 
 O sistema de observabilidade contínua executou os testes de hipóteses bicaudais e estabilidade populacional entre a base de referência (treino de 280 imóveis) e o fluxo de produção:
 
-- **Classificação Taxonômica:** `VIRTUAL_DRIFT`
+- **Classificação Taxonômica:** `REAL_CONCEPT_DRIFT`
 - **Covariate Drift (X):** `DETECTADO`
 - **Prediction Drift (ŷ):** `NÃO DETECTADO`
 - **Target Drift (y):** `NÃO DETECTADO`
-- **Concept Drift Real (P(Y|X)):** `NÃO DETECTADO`
-- **Degradação de Performance (RMSE):** N/A (Rótulos de produção não disponíveis)
-- **Orientação Operacional:** AVISO: Virtual Drift detectado em features (Bairro) ou predições, porém sem degradação de performance comprovada. Monitorar de perto a evolução temporal sem necessidade imediata de retreino.
+- **Concept Drift Real (P(Y|X)):** `DETECTADO`
+- **Degradação de Performance (RMSE):** **+43.07%**
+- **Orientação Operacional:** ALERTA CRÍTICO: Concept Drift Real detectado com degradação de erro RMSE de 43.1%. Recomenda-se acionar pipeline de retreinamento do modelo com dados recentes e reavaliação de hipóteses.
 
 ---
 

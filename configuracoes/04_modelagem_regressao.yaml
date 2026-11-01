@@ -76,7 +76,7 @@ modelagem:
         ativo: true
         fit_intercept: [true, false]
       lasso:
-        ativo: true
+        ativo: false
         alpha: [0.01, 0.1, 1.0, 10.0]
       ridge:
         ativo: false

@@ -8,10 +8,11 @@ import os
 from pathlib import Path
 from typing import cast, final
 import joblib
-import lightgbm as lgb
 import mlflow
 import mlflow.sklearn
+from mlflow.models.signature import ModelSignature
 from mlflow.tracking import MlflowClient
+from mlflow.types.schema import ColSpec, Schema, TensorSpec
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -24,16 +25,15 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
-import xgboost as xgb
 
 from app.conf_yaml import ConfYAML
-from app.contratos_implantacao.avaliador_regras import AvaliadorRegras, RequisicaoImovel, RespostaPredicao
+from app.contratos_implantacao.avaliador_regras import AvaliadorRegras, RequisicaoImovel, RespostaPredicao, RespostaRegra
 from app.contratos_implantacao.provedor_campeao import MetadadosModelo
 from app.motores_regras.avaliador_pandas import AvaliadorPandas
 from app.motores_regras.avaliador_polars import AvaliadorPolars
 from app.repositorios_dados.repositorio_sqlite import RepositorioSqlite
 from app.servicos_implantacao.carregador_campeao import CarregadorCampeao
-from app.servicos_implantacao.servico_inferencia import ServicoInferencia
+from app.servicos_implantacao.modelo_mlflow import ModeloComRegrasNegocio
 
 
 class ResultadoImplantacao(BaseModel):
@@ -209,30 +209,52 @@ class OrquestradorImplantacao:
             dir_artefatos=dir_artefatos,
         )
 
-        # 11. Inicialização do motor de regras conforme o motor tabular configurado
-        avaliador_regras: AvaliadorRegras
-        if config_completa.tabular.motor == "polars":
-            avaliador_regras = AvaliadorPolars(config_implantacao)
-        else:
-            avaliador_regras = AvaliadorPandas(config_implantacao)
-
-        # 12. Instanciação do serviço de inferência e teste de validação
-        servico = ServicoInferencia(
-            provedor_campeao=carregador,
-            avaliador_regras=avaliador_regras,
-            config_implantacao=config_implantacao,
+        # 11. Teste de inferência e cálculo de regras com o modelo e regras configuradas
+        df_exemplo = pd.DataFrame([{
+            "Metragem": 85.5,
+            "Quartos": 3,
+            "Banheiros": 2,
+            "Vagas": 2,
+            "Bairro": "Jardim Botânico",
+            "Zona": "Sul",
+        }])
+        regras_dict = [r.model_dump() for r in config_implantacao.regras if r.ativo]
+        modelo_com_regras = ModeloComRegrasNegocio(
+            modelo_estimador=estimador_campeao,
+            regras_configuradas=regras_dict,
+            coluna_alvo_predito=config_implantacao.coluna_alvo_predito,
         )
+        df_pred = modelo_com_regras.predict(None, df_exemplo)
+        preco_predito = float(df_pred["preco_predito"].iloc[0])
+        regras_calculadas = {
+            str(col): float(df_pred[col].iloc[0])
+            for col in df_pred.columns
+            if str(col) != config_implantacao.coluna_alvo_predito
+        }
 
-        # Teste com uma requisição canônica de apartamento em Ribeirão Preto
-        req_exemplo = RequisicaoImovel(
-            Metragem=85.5,
-            Quartos=3,
-            Banheiros=2,
-            Vagas=2,
-            Bairro="Jardim Botânico",
-            Zona="Sul",
+        detalhes: list[RespostaRegra] = []
+        for regra_item in config_implantacao.regras:
+            if not regra_item.ativo:
+                continue
+            valor = regras_calculadas.get(regra_item.destino, 0.0)
+            detalhes.append(
+                RespostaRegra(
+                    nome=regra_item.nome,
+                    destino=regra_item.destino,
+                    descricao=regra_item.descricao,
+                    valor=valor,
+                )
+            )
+
+        data_hora_atual = datetime.now(timezone.utc).isoformat()
+        resposta_exemplo = RespostaPredicao(
+            preco_predito=preco_predito,
+            regras_calculadas=regras_calculadas,
+            detalhes_regras=detalhes,
+            modelo_campeao=nome_campeao,
+            versao_modelo=versao_modelo,
+            data_hora_iso=data_hora_atual,
         )
-        resposta_exemplo = servico.predizer_imovel(req_exemplo)
 
         total_regras_ativas = len(
             [r for r in config_implantacao.regras if r.ativo]
@@ -376,12 +398,14 @@ class OrquestradorImplantacao:
             return MLPRegressor(max_iter=iter_val, random_state=42), f"MLPRegressor(iter={iter_val})"
 
         if nome_modelo == "xgboost":
+            import xgboost as xgb
             n_est=int(str(_primeiro("n_estimators", 100)))
             depth=int(str(_primeiro("max_depth", 6)))
             lr=float(str(_primeiro("learning_rate", 0.1)))
             return xgb.XGBRegressor(n_estimators=n_est, max_depth=depth, learning_rate=lr, random_state=42, verbosity=0), f"XGBRegressor(n={n_est}, lr={lr})"
 
         if nome_modelo == "lightgbm":
+            import lightgbm as lgb
             n_est=int(str(_primeiro("n_estimators", 100)))
             depth=int(str(_primeiro("max_depth", 6)))
             lr=float(str(_primeiro("learning_rate", 0.05)))
@@ -426,12 +450,50 @@ class OrquestradorImplantacao:
                     and not config_mlflow.tracking_uri.startswith("file:")
                 )
 
+                config_implantacao = self._conf.obter_implantacao()
+                regras_ativas = [r for r in config_implantacao.regras if r.ativo]
+
+                # Definição explícita do Schema de Inputs e Outputs para o MLflow Registry
+                esquema_inputs = Schema([
+                    ColSpec("double", "Metragem"),
+                    ColSpec("long", "Quartos"),
+                    ColSpec("long", "Banheiros"),
+                    ColSpec("long", "Vagas"),
+                    ColSpec("string", "Bairro"),
+                    ColSpec("string", "Zona"),
+                ])
+
+                colunas_outputs: list[ColSpec | TensorSpec] = [ColSpec("double", config_implantacao.coluna_alvo_predito)]
+                for r in regras_ativas:
+                    colunas_outputs.append(ColSpec("double", r.destino))
+
+                esquema_outputs = Schema(colunas_outputs)
+                assinatura_modelo = ModelSignature(inputs=esquema_inputs, outputs=esquema_outputs)
+
+                exemplo_entrada = pd.DataFrame([{
+                    "Metragem": 85.5,
+                    "Quartos": 3,
+                    "Banheiros": 2,
+                    "Vagas": 2,
+                    "Bairro": "Jardim Botânico",
+                    "Zona": "Sul",
+                }])
+
                 if caminho_joblib.exists():
                     modelo_obj = joblib.load(caminho_joblib)
-                    mlflow.sklearn.log_model(
-                        sk_model=modelo_obj,
+                    regras_dict = [r.model_dump() for r in regras_ativas]
+                    modelo_pyfunc = ModeloComRegrasNegocio(
+                        modelo_estimador=modelo_obj,
+                        regras_configuradas=regras_dict,
+                        coluna_alvo_predito=config_implantacao.coluna_alvo_predito,
+                    )
+
+                    mlflow.pyfunc.log_model(
                         artifact_path="model",
-                        serialization_format="cloudpickle",
+                        python_model=modelo_pyfunc,
+                        code_paths=["app/servicos_implantacao/modelo_mlflow.py"],
+                        signature=assinatura_modelo,
+                        input_example=exemplo_entrada,
                         registered_model_name=nome_modelo_reg if pode_registrar else None,
                     )
                 elif caminho_meta.exists():

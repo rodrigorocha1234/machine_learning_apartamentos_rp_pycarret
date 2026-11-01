@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Protocol, cast, final, override
+from typing import Protocol, cast, final
+import sys
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 import joblib
 import numpy as np
 import pandas as pd

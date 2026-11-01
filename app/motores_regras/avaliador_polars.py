@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 from types import CodeType
-from typing import cast, final, override
+from typing import cast, final
+import sys
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 import pandas as pd
-import polars as pl
+try:
+    import polars as pl
+except ImportError:
+    pl = None  # type: ignore[assignment]
 
 from app.contratos_implantacao.avaliador_regras import AvaliadorRegras
 from app.esquema_configuracao import ConfiguracaoImplantacao, RegraNegocioItem

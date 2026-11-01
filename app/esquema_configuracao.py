@@ -6,7 +6,7 @@ sem nenhuma utilização de Any.
 
 from __future__ import annotations
 
-from typing import cast
+from typing import TypeAlias, cast
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.enums_dominio import (
@@ -279,9 +279,9 @@ class ItemModelo(BaseModel):
     sklearn_class: str = Field(min_length=1, description="Nome da classe equivalente no Scikit-Learn")
 
 
-type ValorParametro = int | float | str | bool | list[int]
-type TecnicaFolds = TecnicaValidacaoCruzada
-type ValorParametroFolds = int | float | bool | str | None
+ValorParametro: TypeAlias = int | float | str | bool | list[int]
+TecnicaFolds: TypeAlias = TecnicaValidacaoCruzada
+ValorParametroFolds: TypeAlias = int | float | bool | str | None
 
 
 def _obter_parametros_folds_padrao() -> dict[str, dict[str, ValorParametroFolds]]:

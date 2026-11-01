@@ -90,10 +90,10 @@ treinar_campeao() {
 iniciar_api() {
     verificar_ambiente
     echo -e "\n${C_VERDE}====================================================================${C_RESET}"
-    echo -e "${C_VERDE}  Iniciando API FastAPI com Modelo Campeão Promovido (Porta 8000)   ${C_RESET}"
-    echo -e "${C_VERDE}  Documentação Swagger disponível em: http://localhost:8000/docs   ${C_RESET}"
+    echo -e "${C_VERDE}  Iniciando MLflow Serving com Modelo Campeão Promovido (Porta 8080)   ${C_RESET}"
+    echo -e "${C_VERDE}  Endpoint Invocations disponível em: http://localhost:8080/invocations ${C_RESET}"
     echo -e "${C_VERDE}====================================================================${C_RESET}\n"
-    exec uvicorn app.servicos_implantacao.aplicacao_fastapi:app --host 0.0.0.0 --port 8000 --reload
+    docker compose --profile servico_ml --profile serving up -d mlflow-serving
 }
 
 executar_testes() {
@@ -131,8 +131,8 @@ mostrar_ajuda() {
     echo -e "  ${C_CIANO}pipeline${C_RESET}     (padrão) Executa o pipeline de ML completo (Etapas 1 a 7)"
     echo -e "  ${C_CIANO}campeao${C_RESET}      Treina e promove exclusivamente o modelo campeão (LightGBM)"
     echo -e "  ${C_CIANO}etapa <N>${C_RESET}    Executa uma etapa específica de 1 a 7 (ex: etapa 4)"
-    echo -e "  ${C_CIANO}api${C_RESET}          Inicia o servidor de inferência FastAPI (porta 8000)"
-    echo -e "  ${C_CIANO}testes${C_RESET}       Executa a suíte de 134 testes no Pytest e Pyright estrito"
+    echo -e "  ${C_CIANO}api${C_RESET}          Inicia o servidor de inferência MLflow Serving (porta 8080)"
+    echo -e "  ${C_CIANO}testes${C_RESET}       Executa a suíte de testes no Pytest e Mypy estrito"
     echo -e "  ${C_CIANO}docker${C_RESET}       Sobe ou verifica os containers (MLflow, Postgres, Prometheus, Grafana)"
     echo -e "  ${C_CIANO}docs${C_RESET}         Exibe o link e abre a documentação interativa em HTML"
     echo -e "  ${C_CIANO}ajuda${C_RESET}        Exibe este menu de ajuda"

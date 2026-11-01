@@ -749,7 +749,7 @@
       <a href="#pydantic-validacao" class="nav-item">Pydantic & Contratos</a>
       <a href="#guia-arquivos-yaml" class="nav-item">Instrução dos Arquivos YAML</a>
       <a href="#goverranca-mlflow" class="nav-item">MLflow & Folds Hierárquicos</a>
-      <a href="#api-inferencia" class="nav-item">API FastAPI & Regras</a>
+      <a href="#api-inferencia" class="nav-item">MLflow Serving & Regras</a>
       <a href="#interpretacao-negocio" class="nav-item">Métricas & Decisão de Negócio</a>
       <a href="#monitoramento-drift" class="nav-item">Drift & Observabilidade</a>
     </nav>
@@ -1096,23 +1096,24 @@ classDiagram
         +aplicar_regras(df, preco) DataFrame
     }
 
-    class ServicoInferencia:::implantacao {
-        -CarregadorCampeao _carregador
-        -AvaliadorRegrasAST _avaliador_regras
+    class ModeloComRegrasNegocio:::implantacao {
+        <<mlflow.pyfunc.PythonModel>>
+        -object _modelo
+        -dict _config_regras
         -ValidadorAst _validador_ast
-        +executar_predicao_e_regras(imovel) RespostaInferencia
+        +load_context(context) void
+        +predict(context, model_input) DataFrame
+        -_aplicar_regras_negocio(df_predicoes) DataFrame
     }
-    ServicoInferencia "1" --> "1" CarregadorCampeao : inferencia
-    ServicoInferencia "1" --> "1" AvaliadorRegrasAST : avalia regras
-    ServicoInferencia "1" ..> "1" ValidadorAst : seguranca regras
 
-    class AplicacaoFastAPI:::implantacao {
-        <<FastAPI Framework>>
-        +health() dict
-        +predict(requisicao) RespostaInferencia
-        +invocations(lote) dict
+    class OrquestradorImplantacao:::implantacao {
+        -ConfYAML _conf
+        -ProvedorCampeao _carregador
+        +executar_implantacao(resultado_avaliacao) ResultadoImplantacao
+        -_registrar_no_mlflow(modelo, metadados) str
     }
-    AplicacaoFastAPI "1" --> "1" ServicoInferencia : endpoint REST
+    OrquestradorImplantacao "1" --> "1" ModeloComRegrasNegocio : registra PyFunc
+    OrquestradorImplantacao "1" --> "1" CarregadorCampeao : carrega artefatos
 
     %% =========================================================================
     %% Etapa 7: Detecção de Drift & Observabilidade
@@ -1258,14 +1259,16 @@ flowchart TD
     end
 
     %% ETAPA 6
-    subgraph S6 ["Etapa 6: Implantação, API REST & Regras de Negócio"]
+    subgraph S6 ["Etapa 6: Implantação, MLflow Serving & Regras de Negócio"]
         FinalizarCVPai --> Elo6[Elo 6: EloImplantacaoRegras]
         Elo6 --> ExportarCampeao[Serializar Modelo Campeão e Metadados Pydantic]
-        ExportarCampeao --> SubirFastAPI[Inicializar Aplicação FastAPI com Rotas health e predict]
-        SubirFastAPI --> InferenciaReq[Receber RequisicaoImovel validada via Pydantic]
-        InferenciaReq --> DestransfPreco[Calcular Predição e Inverter expm1 para Reais]
-        DestransfPreco --> AvaliarRegrasAST[Avaliar Regras Dinâmicas de Financiamento e Comissões]
-        AvaliarRegrasAST --> RespostaAPI[Retornar RespostaPredicao Estruturada]
+        ExportarCampeao --> RegistrarPyFunc[Registrar ModeloComRegrasNegocio PyFunc com Assinatura no MLflow]
+        RegistrarPyFunc --> PromoverChampion[Atribuir Alias @champion no MLflow Registry]
+        PromoverChampion --> SubirServing[Subir Container Oficial mlflow-serving na Porta 8080]
+        SubirServing --> InvocationsReq[Receber Requisição POST /invocations com dataframe_records]
+        InvocationsReq --> InferirPreco[Calcular Predição Base com Pipeline do Campeão]
+        InferirPreco --> AvaliarRegrasAST[Avaliar Regras Dinâmicas de Margens, m² e Comissão via AST]
+        AvaliarRegrasAST --> RespostaServing[Retornar Previsões Enriquecidas com Regras no JSON]
     end
 
     %% ETAPA 7
@@ -1320,7 +1323,7 @@ sequenceDiagram
     participant MLflow as Servidor MLflow (:5000)
     participant GrafMod as PublicadorModelosGrafana
     participant Eval as Elo 5: ValidadorCruzado & Friedman
-    participant API as Elo 6: FastAPI & Regras AST
+    participant Serving as Elo 6: MLflow Serving & Regras AST
     participant Graf as Elo 7: DetectorDrift & Grafana
 
     Dev->>Bash: ./disparar_projeto.sh --executar-pipeline
@@ -1375,10 +1378,12 @@ sequenceDiagram
     end
 
     rect rgb(30, 41, 59)
-        note over API,Graf: Etapas 6 e 7: Serving REST e Observabilidade
-        Eval->>API: elo6.processar(contexto)
-        API->>API: Exportar artefatos e subir FastAPI (/health, /predict)
-        API->>Graf: elo7.processar(contexto)
+        note over Serving,Graf: Etapas 6 e 7: MLflow Serving e Observabilidade
+        Eval->>Serving: elo6.processar(contexto)
+        Serving->>MLflow: Registrar ModeloComRegrasNegocio (PyFunc) com ModelSignature
+        Serving->>MLflow: Atribuir Alias @champion
+        Serving->>Serving: Disponibilizar container mlflow-serving (:8080/invocations)
+        Serving->>Graf: elo7.processar(contexto)
         Graf->>Graf: Teste Kolmogorov-Smirnov (KS-Test) e PSI
         Graf->>Graf: Publicar métricas no painel Grafana (:3000)
     end
@@ -1836,7 +1841,7 @@ sequenceDiagram
             <span class="badge success">Use Cases (7 Etapas)</span>
           </div>
           <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
-            Orquestradores específicos de cada uma das 7 etapas do pipeline de ML, coordenando ingestão, preparação, EDA, tuning, testes de Friedman/Nemenyi, serving FastAPI e observabilidade.
+            Orquestradores específicos de cada uma das 7 etapas do pipeline de ML, coordenando ingestão, preparação, EDA, tuning, testes de Friedman/Nemenyi, serving MLflow e observabilidade.
           </p>
           <div style="margin-top: 10px; font-family: monospace; font-size: 0.78rem; color: #6ee7b7;">
             servicos_coleta • servicos_preparacao • servicos_eda • servicos_modelagem • servicos_avaliacao • servicos_implantacao • servicos_observabilidade
@@ -2037,9 +2042,9 @@ sequenceDiagram
             </tr>
             <tr>
               <td><code>servicos_implantacao/</code></td>
-              <td><code>orquestrador_implantacao.py</code><br><code>carregador_campeao.py</code><br><code>servico_inferencia.py</code><br><code>aplicacao_fastapi.py</code></td>
+              <td><code>orquestrador_implantacao.py</code><br><code>carregador_campeao.py</code><br><code>modelo_mlflow.py</code></td>
               <td><span class="badge success">Use Case</span></td>
-              <td>Orquestrador da <strong>Etapa 6</strong>. Realiza o retreinamento final com pipeline encapsulado (One-Hot, Imputer, Scaler e TransformedTargetRegressor log1p), valida no holdout cego, serializa artefatos em <code>production_artifacts/campeao/</code>, registra no MLflow e expõe a API FastAPI. Retorna <code>ResultadoImplantacao</code>.</td>
+              <td>Orquestrador da <strong>Etapa 6</strong>. Realiza o retreinamento final com pipeline encapsulado (One-Hot, Imputer, Scaler e TransformedTargetRegressor log1p), valida no holdout cego, serializa artefatos em <code>production_artifacts/campeao/</code>, encapsula o modelo em <code>ModeloComRegrasNegocio</code> (MLflow PyFunc) com <code>ModelSignature</code> estrita, registra e promove no MLflow Registry com alias <code>@champion</code> para serving nativo via <code>POST /invocations</code> (porta 8080). Retorna <code>ResultadoImplantacao</code>.</td>
               <td><span class="badge accent">Etapa 6: Implantação</span></td>
             </tr>
             <tr>
@@ -2059,7 +2064,7 @@ sequenceDiagram
       <div class="section-header">
         <h2 class="section-title">Guia Operacional & CLI (disparar_projeto.sh)</h2>
         <p class="section-desc">
-          O script <code>disparar_projeto.sh</code> é o orquestrador unificado de linha de comando (CLI) do projeto. Ele automatiza a verificação do ambiente virtual Python, a subida dos containers Docker (PostgreSQL, MLflow, Prometheus e Grafana), a execução do pipeline de ML, o retreinamento e promoção do modelo campeão, a suíte de qualidade de código e o servidor FastAPI.
+          O script <code>disparar_projeto.sh</code> é o orquestrador unificado de linha de comando (CLI) do projeto. Ele automatiza a verificação do ambiente virtual Python, a subida dos containers Docker (PostgreSQL, MLflow, Prometheus, Grafana e MLflow Serving), a execução do pipeline de ML, o retreinamento e promoção do modelo campeão, a suíte de qualidade de código e o servidor de inferência MLflow Serving.
         </p>
       </div>
 
@@ -2150,11 +2155,11 @@ sequenceDiagram
               <td>Saída específica da etapa no terminal e persistência intermediária (SQLite/MLflow).</td>
             </tr>
             <tr>
-              <td><span class="badge success">API FastAPI</span></td>
+              <td><span class="badge success">MLflow Serving</span></td>
               <td><code>./disparar_projeto.sh api</code></td>
-              <td>Inicia o servidor de inferência REST em tempo real com live-reload (Uvicorn). Carrega o pipeline campeão promovido e o motor seguro de regras de negócio.</td>
-              <td>Ativa <code>.venv</code>. Requer artefatos em <code>production_artifacts/campeao/</code>.</td>
-              <td>Servidor em <code>http://localhost:8000</code><br>Swagger UI em <code>http://localhost:8000/docs</code>.</td>
+              <td>Inicia o container oficial de inferência do MLflow Serving (<code>ghcr.io/mlflow/mlflow:latest</code>). Serve nativamente o modelo registrado sob o alias <code>@champion</code>, aplicando as regras de negócio em tempo real.</td>
+              <td>Docker rodando com perfil <code>serving</code>. Requer modelo promovido a <code>@champion</code> no MLflow.</td>
+              <td>Servidor em <code>http://localhost:8080</code><br>Endpoint em <code>http://localhost:8080/invocations</code><br>Healthcheck em <code>http://localhost:8080/health</code>.</td>
             </tr>
             <tr>
               <td><span class="badge warning">Quality Gate / Testes</span></td>
@@ -2215,13 +2220,13 @@ sequenceDiagram
 # 1. Treinar, validar no holdout intocado e promover o campeão LightGBM
 ./disparar_projeto.sh campeao
 
-# 2. Iniciar o servidor HTTP FastAPI com documentação Swagger
+# 2. Iniciar o container oficial do MLflow Serving (porta 8080)
 ./disparar_projeto.sh api
 
-# 3. Testar a inferência via cURL:
-curl -X POST "http://localhost:8000/invocations" \
+# 3. Testar a inferência com regras de negócio no endpoint nativo:
+curl -X POST "http://localhost:8080/invocations" \
      -H "Content-Type: application/json" \
-     -d '{"Metragem": 85.5, "Quartos": 3, "Banheiros": 2, "Vagas": 2, "Bairro": "Jardim Botânico", "Zona": "Sul"}'</pre>
+     -d '{"dataframe_records": [{"Metragem": 85.5, "Quartos": 3, "Banheiros": 2, "Vagas": 2, "Bairro": "Jardim Botânico", "Zona": "Sul"}]}'</pre>
           </div>
         </div>
       </div>
@@ -2274,10 +2279,10 @@ curl -X POST "http://localhost:8000/invocations" \
             <td>Runs no MLflow por Fold + Testes Friedman/Nemenyi</td>
           </tr>
           <tr>
-            <td><strong>6. Implantação & API</strong></td>
+            <td><strong>6. Implantação & Serving</strong></td>
             <td><code>06_implantacao_regras.yaml</code></td>
-            <td><code>FastAPI</code>, <code>AvaliadorRegras</code></td>
-            <td>Endpoints <code>/predict</code> com cálculo dinâmico de regras</td>
+            <td><code>MLflow Serving</code>, <code>ModeloComRegrasNegocio</code></td>
+            <td>Endpoint nativo <code>/invocations</code> com cálculo dinâmico de regras</td>
           </tr>
           <tr>
             <td><strong>7. Drift & Observabilidade</strong></td>
@@ -3470,7 +3475,7 @@ atributos_novos:
       <div class="section-header">
         <h2 class="section-title">Pydantic: Validação Estrita, Tipagem & Integridade</h2>
         <p class="section-desc">
-          O <strong>Pydantic V2</strong> (com núcleo de alta performance construído em Rust) atua como o alicerce fundamental de integridade de dados do projeto. Ele assegura validação em tempo de execução (<em>runtime</em>), conformidade de contratos de DTOs, parseamento seguro dos 7 arquivos YAML e validação de payloads HTTP na API FastAPI, garantindo uma arquitetura estritamente tipada com <strong>zero uso de <code>Any</code></strong>.
+          O <strong>Pydantic V2</strong> (com núcleo de alta performance construído em Rust) atua como o alicerce fundamental de integridade de dados do projeto. Ele assegura validação em tempo de execução (<em>runtime</em>), conformidade de contratos de DTOs, parseamento seguro dos 7 arquivos YAML e validação de payloads de inferência no MLflow Serving, garantindo uma arquitetura estritamente tipada com <strong>zero uso de <code>Any</code></strong>.
         </p>
       </div>
 
@@ -3586,7 +3591,7 @@ atributos_novos:
               <td><code>RequisicaoImovel</code></td>
               <td><code>contratos_implantacao/avaliador_regras.py</code></td>
               <td><code>Metragem > 0</code>, <code>Quartos >= 0</code>, <code>Banheiros >= 0</code>, <code>Vagas >= 0</code>, <code>Bairro != ""</code></td>
-              <td>Payload de entrada validado da rota <code>POST /predict</code> e <code>POST /invocations</code>.</td>
+              <td>Payload de entrada validado da rota <code>POST /invocations</code> do MLflow Serving.</td>
             </tr>
             <tr>
               <td><code>RespostaPredicao</code></td>
@@ -3756,7 +3761,7 @@ imovel = RequisicaoImovel(
             <tr>
               <td><code>06_implantacao_regras.yaml</code></td>
               <td><span class="badge warning">Etapa 6: Serving & Regras</span></td>
-              <td>Fórmulas de precificação imobiliária pós-predição (margens de negociação $\pm 5\%$, preço por $\text{m}^2$, comissões de corretagem de $6\%$) e parâmetros do servidor REST FastAPI.</td>
+              <td>Fórmulas de precificação imobiliária pós-predição (margens de negociação $\pm 5\%$, preço por $\text{m}^2$, comissões de corretagem de $6\%$) e parâmetros do servidor de inferência MLflow Serving (porta 8080).</td>
               <td>—</td>
               <td><code>ConfiguracaoImplantacao</code></td>
             </tr>
@@ -4025,7 +4030,7 @@ avaliacao:
         </div>
         <div class="card-body">
           <p>
-            Define a camada de lógica imobiliária calculada a partir da saída do modelo preditivo (<code>preco_predito</code>), formatando as respostas entregues pela API FastAPI.
+            Define a camada de lógica imobiliária calculada a partir da saída do modelo preditivo (<code>preco_predito</code>), formatando as respostas entregues pelo endpoint <code>/invocations</code> do MLflow Serving.
           </p>
           <pre class="code-block">
 # configuracoes/06_implantacao_regras.yaml
@@ -4120,8 +4125,8 @@ monitoramento:
 ./disparar_projeto.sh              # Executa o pipeline de ML completo (todas as etapas)
 ./disparar_projeto.sh campeao      # Treina e promove EXCLUSIVAMENTE o modelo campeão (LightGBM)
 ./disparar_projeto.sh etapa 6      # Executa a Etapa 6 via Cadeia de Responsabilidade
-./disparar_projeto.sh api          # Inicia o servidor FastAPI na porta 8000
-./disparar_projeto.sh testes       # Roda a suíte completa de 134 testes no Pytest
+./disparar_projeto.sh api          # Inicia o servidor MLflow Serving na porta 8080
+./disparar_projeto.sh testes       # Roda a suíte completa de testes no Pytest e Mypy
 
 # 2. Execução Direta via Módulo Python do Pipeline:
 python -m app.executar_pipeline --etapa todas
@@ -4195,49 +4200,49 @@ params:
       </div>
     </section>
 
-    <!-- Seção: API FastAPI & Regras de Negócio Dinâmicas -->
+    <!-- Seção: MLflow Serving Nativo & Regras de Negócio Dinâmicas -->
     <section id="api-inferencia" class="doc-section">
       <div class="section-header">
-        <h2 class="section-title">API FastAPI & Regras de Negócio Dinâmicas</h2>
+        <h2 class="section-title">MLflow Serving Nativo & Regras de Negócio Dinâmicas</h2>
         <p class="section-desc">
-          A disponibilização do modelo campeão promovido (<strong>LightGBM</strong>) em produção é realizada por meio de uma API REST síncrona construída com <strong>FastAPI</strong> e <strong>Uvicorn</strong>. A camada de inferência não se limita a prever o valor bruto do imóvel: ela executa regras de negócio imobiliárias parametrizadas via YAML e avaliadas com máxima segurança pelo parser AST.
+          A disponibilização do modelo campeão promovido em produção é realizada por meio do <strong>MLflow Serving Nativo</strong> (container oficial <code>ghcr.io/mlflow/mlflow:latest</code> executando na porta <code>8080</code>), sem intermediários. O modelo registrado no MLflow Registry sob o alias <code>@champion</code> é instanciado pela classe customizada <code>ModeloComRegrasNegocio</code> (herdando de <code>mlflow.pyfunc.PythonModel</code>). Além de executar a inferência sobre o pipeline completo treinado, ela avalia dinamicamente as regras de negócio declaradas em <code>06_implantacao_regras.yaml</code> via parser AST seguro, entregando o preço e todas as métricas de negócio consolidadas diretamente no endpoint canônico <code>/invocations</code>.
         </p>
       </div>
 
-      <!-- Card dos Endpoints e Arquitetura REST -->
+      <!-- Card dos Endpoints e Arquitetura MLflow Serving -->
       <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
         <div class="info-card">
           <div class="card-title" style="color: var(--success);">
             <span style="background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-family: monospace;">GET /health</span>
           </div>
           <div class="card-body">
-            <p><strong>Healthcheck & Prontidão do Modelo:</strong></p>
+            <p><strong>Healthcheck & Prontidão do Container:</strong></p>
             <p style="font-size: 0.88rem; color: var(--text-muted);">
-              Retorna o status operacional da API, versão do serviço, identificador do modelo carregado (<code>lightgbm</code>), métricas de validação cruzada registradas e data de promoção.
+              Retorna status HTTP <code>200 OK</code> confirmando prontidão operacional do servidor de scoring do MLflow (Uvicorn), indicando que os pesos do estimador campeão e os esquemas de assinatura estão ativos na porta 8080.
             </p>
           </div>
         </div>
 
         <div class="info-card">
           <div class="card-title" style="color: var(--primary);">
-            <span style="background: rgba(56, 189, 248, 0.15); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-family: monospace;">POST /predict</span>
+            <span style="background: rgba(56, 189, 248, 0.15); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-family: monospace;">POST /invocations</span>
           </div>
           <div class="card-body">
-            <p><strong>Inferência com Regras de Negócio:</strong></p>
+            <p><strong>Inferência com Assinatura MLflow:</strong></p>
             <p style="font-size: 0.88rem; color: var(--text-muted);">
-              Recebe o payload JSON estritamente validado por <code>RequisicaoImovel</code>, executa a transformação de pré-processamento, aplica a regressão e calcula as margens de preço, valor do m² e comissão de corretagem.
+              Endpoint padrão do MLflow Serving que aceita <code>dataframe_records</code> ou <code>dataframe_split</code>. Valida as variáveis preditoras (<code>Metragem</code>, <code>Quartos</code>, <code>Banheiros</code>, <code>Vagas</code>, <code>Bairro</code>, <code>Zona</code>) contra a <code>ModelSignature</code> registrada.
             </p>
           </div>
         </div>
 
         <div class="info-card">
           <div class="card-title" style="color: var(--secondary);">
-            <span style="background: rgba(129, 140, 248, 0.15); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-family: monospace;">POST /invocations</span>
+            <span style="background: rgba(129, 140, 248, 0.15); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-family: monospace;">Regras AST em Runtime</span>
           </div>
           <div class="card-body">
-            <p><strong>Padrão Canônico MLflow Serving:</strong></p>
+            <p><strong>Enriquecimento Pós-Predição:</strong></p>
             <p style="font-size: 0.88rem; color: var(--text-muted);">
-              Compatibilidade nativa com o formato de invocação de instâncias de serving do MLflow, aceitando registros diretos ou matrizes de registros tabulares (<code>dataframe_records</code>, <code>instances</code>) para inferência em lote.
+              Calculadas nativamente no método <code>predict()</code> do PyFunc sem sobrecarga: margem mínima (-5%), margem máxima (+5%), preço por m² e comissão imobiliária (6%), retornadas no mesmo payload de predições.
             </p>
           </div>
         </div>
@@ -4246,28 +4251,49 @@ params:
       <!-- Exemplo Canônico de Entrada & Saída da API -->
       <div class="info-card" style="margin-bottom: 24px;">
         <div class="card-title">
-          <span>🎯 Exemplo Canônico de Entrada & Saída da API (/invocations e /predict)</span>
+          <span>🎯 Exemplo Canônico de Entrada & Saída no Endpoint /invocations</span>
         </div>
         <div class="card-body">
-          <p>Payload JSON de entrada para predição imobiliária em Ribeirão Preto:</p>
+          <p>Payload JSON de entrada (formato canônico <code>dataframe_records</code>) para apartamentos em Ribeirão Preto:</p>
           <pre class="code-block">{
-  "Metragem": 85.5,
-  "Quartos": 3,
-  "Banheiros": 2,
-  "Vagas": 2,
-  "Bairro": "Jardim Botânico",
-  "Zona": "Sul"
+  "dataframe_records": [
+    {
+      "Metragem": 85.5,
+      "Quartos": 3,
+      "Banheiros": 2,
+      "Vagas": 2,
+      "Bairro": "Jardim Botânico",
+      "Zona": "Sul"
+    },
+    {
+      "Metragem": 120.0,
+      "Quartos": 4,
+      "Banheiros": 3,
+      "Vagas": 2,
+      "Bairro": "Nova Aliança",
+      "Zona": "Sul"
+    }
+  ]
 }</pre>
-          <p style="margin-top: 12px;">Resposta estruturada com preço predito e regras de negócio avaliadas:</p>
+          <p style="margin-top: 12px;">Resposta estruturada do MLflow Serving com preço previsto e todas as regras de negócio consolidadas:</p>
           <pre class="code-block">{
-  "preco_predito": 622458.43,
-  "modelo_campeao": "ridge",
-  "versao_modelo": "1.0.0-champion",
-  "regras_calculadas": {
-    "preco_minimo_sugerido": 591335.51,
-    "preco_maximo_sugerido": 653581.35,
-    "preco_m2_predito": 7280.22,
-    "valor_comissao_estimada": 37347.51
+  "predictions": [
+    {
+      "preco_predito": 564799.87,
+      "preco_minimo_sugerido": 536559.88,
+      "preco_maximo_sugerido": 593039.86,
+      "preco_m2_predito": 6605.85,
+      "valor_comissao_estimada": 33887.99
+    },
+    {
+      "preco_predito": 751038.61,
+      "preco_minimo_sugerido": 713486.68,
+      "preco_maximo_sugerido": 788590.54,
+      "preco_m2_predito": 6258.66,
+      "valor_comissao_estimada": 45062.32
+    }
+  ]
+}</pre>
   }
 }</pre>
         </div>
@@ -4858,7 +4884,7 @@ params:
     </section>
     <footer class="doc-footer">
       <div>Previsão de Preços de Apartamentos — Ribeirão Preto / SP</div>
-      <div>Python 3.12+ | PyCaret & Scikit-Learn | MLflow | Grafana | FastAPI</div>
+      <div>Python 3.12+ | PyCaret & Scikit-Learn | MLflow | Grafana | MLflow Serving</div>
     </footer>
   </main>
 
