@@ -9,7 +9,7 @@ modelagem:
   motor_treino: "sklearn" # pycaret | sklearn
 
   imputacao:
-    ativo: true
+    ativo: false
     estrategia_numerica: "mediana" # mediana | media | mais_frequente | constante
     estrategia_categorica: "mais_frequente" # mais_frequente | constante
     valor_constante_numerico: 0.0
@@ -17,10 +17,10 @@ modelagem:
     adicionar_indicador: false
     por_atributo:
       Metragem:
-        ativo: true
+        ativo: false
         estrategia: "mediana"
       Bairro:
-        ativo: true
+        ativo: false
         estrategia: "mais_frequente"
 
   preprocessamento:
@@ -33,16 +33,16 @@ modelagem:
         - "Metragem"
 
   modelos:
-    - {nome: "regressao_linear", ativo: true, pycaret_id: "lr", sklearn_class: "LinearRegression"}
-    - {nome: "lasso", ativo: true, pycaret_id: "lasso", sklearn_class: "Lasso"}
-    - {nome: "ridge", ativo: true, pycaret_id: "ridge", sklearn_class: "Ridge"}
-    - {nome: "elasticnet", ativo: true, pycaret_id: "en", sklearn_class: "ElasticNet"}
-    - {nome: "arvore_decisao", ativo: true, pycaret_id: "dt", sklearn_class: "DecisionTreeRegressor"}
-    - {nome: "random_forest", ativo: true, pycaret_id: "rf", sklearn_class: "RandomForestRegressor"}
-    - {nome: "svr", ativo: true, pycaret_id: "svm", sklearn_class: "SVR"}
-    - {nome: "rede_neural", ativo: true, pycaret_id: "mlp", sklearn_class: "MLPRegressor"}
-    - {nome: "xgboost", ativo: true, pycaret_id: "xgboost", sklearn_class: "XGBRegressor"}
-    - {nome: "lightgbm", ativo: true, pycaret_id: "lightgbm", sklearn_class: "LGBMRegressor"}
+    - {nome: "regressao_linear", ativo: true, pycaret_id: "lr", sklearn_class: "LinearRegression", preprocessador: "standard"}
+    - {nome: "lasso", ativo: true, pycaret_id: "lasso", sklearn_class: "Lasso", preprocessador: "standard"}
+    - {nome: "ridge", ativo: true, pycaret_id: "ridge", sklearn_class: "Ridge", preprocessador: "standard"}
+    - {nome: "elasticnet", ativo: true, pycaret_id: "en", sklearn_class: "ElasticNet", preprocessador: "standard"}
+    - {nome: "arvore_decisao", ativo: true, pycaret_id: "dt", sklearn_class: "DecisionTreeRegressor", preprocessador: "nenhum"}
+    - {nome: "random_forest", ativo: true, pycaret_id: "rf", sklearn_class: "RandomForestRegressor", preprocessador: "nenhum"}
+    - {nome: "svr", ativo: true, pycaret_id: "svm", sklearn_class: "SVR", preprocessador: "robust"}
+    - {nome: "rede_neural", ativo: true, pycaret_id: "mlp", sklearn_class: "MLPRegressor", preprocessador: "standard"}
+    - {nome: "xgboost", ativo: true, pycaret_id: "xgboost", sklearn_class: "XGBRegressor", preprocessador: "nenhum"}
+    - {nome: "lightgbm", ativo: true, pycaret_id: "lightgbm", sklearn_class: "LGBMRegressor", preprocessador: "nenhum"}
 
   validacao_cruzada:
     ativo: true

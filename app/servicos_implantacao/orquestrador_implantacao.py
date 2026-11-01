@@ -22,7 +22,13 @@ from sklearn.impute import SimpleImputer
 from sklearn.linear_model import ElasticNet, Lasso, LinearRegression, Ridge
 from sklearn.neural_network import MLPRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import (
+    MaxAbsScaler,
+    MinMaxScaler,
+    OneHotEncoder,
+    RobustScaler,
+    StandardScaler,
+)
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 
@@ -126,12 +132,20 @@ class OrquestradorImplantacao:
             else:
                 cols_cat.append(c)
 
-        pipe_num = Pipeline(
-            [
-                ("imputer", SimpleImputer(strategy="median")),
-                ("scaler", StandardScaler()),
-            ]
-        )
+        item_campeao = config_modelagem.obter_item_modelo(nome_campeao)
+        tipo_prep = item_campeao.obter_preprocessador() if item_campeao is not None else "standard"
+
+        passos_num: list[tuple[str, object]] = [("imputer", SimpleImputer(strategy="median"))]
+        if tipo_prep in {"standard", "standard_scaler", "padrao"}:
+            passos_num.append(("scaler", StandardScaler()))
+        elif tipo_prep in {"minmax", "min_max", "minmax_scaler"}:
+            passos_num.append(("scaler", MinMaxScaler()))
+        elif tipo_prep in {"robust", "robust_scaler"}:
+            passos_num.append(("scaler", RobustScaler()))
+        elif tipo_prep in {"maxabs", "max_abs", "maxabs_scaler"}:
+            passos_num.append(("scaler", MaxAbsScaler()))
+
+        pipe_num = Pipeline(passos_num)
         pipe_cat = Pipeline(
             [
                 ("imputer", SimpleImputer(strategy="most_frequent")),

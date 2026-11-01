@@ -101,3 +101,11 @@ def test_geracao_dashboard_grafana_modelos(tmp_path: Path) -> None:
     assert "realizando tuning de parâmetros lasso" in markdown_content
     assert "UTC" not in markdown_content
 
+    # Painel 4: Diagnóstico de Overfitting e Underfitting
+    painel_fit = next(p for p in conteudo_json["panels"] if p["id"] == 4)
+    assert "Overfitting" in painel_fit["title"]
+    assert "Underfitting" in painel_fit["title"]
+    assert "Gap de Generalização" in painel_fit["options"]["content"]
+    assert "Ajuste Ótimo" in painel_fit["options"]["content"]
+
+

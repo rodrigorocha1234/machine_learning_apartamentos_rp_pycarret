@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Protocol, cast, final
+from typing import Mapping, Protocol, cast, final
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
@@ -11,7 +11,9 @@ from pydantic import BaseModel, Field
 class PreditorTreinado(Protocol):
     """Protocolo para estimador com método predict."""
 
-    def predict(self, X: pd.DataFrame) -> object: ...
+    def predict(
+        self, X: pd.DataFrame
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | pd.Series | list[float]: ...
 
 
 class MetricasHoldout(BaseModel):
@@ -38,7 +40,7 @@ class AvaliadorHoldout:
 
     def avaliar_modelos_holdout(
         self,
-        modelos_treinados: dict[str, object],
+        modelos_treinados: Mapping[str, PreditorTreinado],
         dados_holdout: pd.DataFrame,
     ) -> dict[str, MetricasHoldout]:
         """Calcula as métricas reais de generalização em dados intocados."""
@@ -56,8 +58,7 @@ class AvaliadorHoldout:
         resultados: dict[str, MetricasHoldout] = {}
 
         for nome, mod in modelos_treinados.items():
-            preditor = cast(PreditorTreinado, mod)
-            preds = np.asarray(preditor.predict(X_holdout), dtype=np.float64)
+            preds = np.asarray(mod.predict(X_holdout), dtype=np.float64)
 
             residuos = y_real - preds
             residuos_abs = np.abs(residuos)

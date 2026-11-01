@@ -8,7 +8,7 @@ import mlflow
 from mlflow.entities import Run
 
 from app.contratos_modelagem.motor_treinador import ResultadoTreinoModelo, ResultadoTuning
-from app.esquema_configuracao import ConfiguracaoMlflow
+from app.esquema_configuracao import ConfiguracaoMlflow, ValorParametro
 
 
 class ErroRastreadorMlflow(Exception):
@@ -115,7 +115,7 @@ class RastreadorMlflow:
         tecnica_preprocessamento: str,
         fold: int,
         metricas: dict[str, float],
-        parametros: dict[str, object] | None = None,
+        parametros: dict[str, ValorParametro] | None = None,
         id_run_pai: str | None = None,
     ) -> str:
         """Registra um run filho por fold aninhado com o padrão:

@@ -6,14 +6,15 @@ import time
 from typing import cast, final, override
 import pandas as pd
 from pycaret.regression import create_model, pull, setup, tune_model  # pyright: ignore[reportUnknownVariableType]
+from sklearn.base import BaseEstimator
 
 from app.contratos_modelagem.motor_treinador import (
     MotorTreinador,
     ResultadoTreinoModelo,
     ResultadoTuning,
 )
-from app.esquema_configuracao import ConfiguracaoModelagem
-from app.motores_modelagem.fabrica_folds import FabricaFolds
+from app.esquema_configuracao import ConfiguracaoModelagem, ValorParametro
+from app.motores_modelagem.fabrica_folds import FabricaFolds, GeradorFolds
 from app.servicos_observabilidade.publicador_modelos_grafana import (
     PublicadorModelosGrafana,
     formatar_nome_modelo,
@@ -35,6 +36,57 @@ class TreinadorPycaret(MotorTreinador):
     def obter_nome_motor(self) -> str:
         return "pycaret"
 
+    @staticmethod
+    def _mapear_preprocessador_pycaret(tipo_preprocessador: str) -> tuple[bool, str]:
+        """Mapeia o tipo de pré-processador do YAML para (normalize, normalize_method) do PyCaret."""
+        tipo = tipo_preprocessador.lower().strip()
+        if tipo in {"standard", "standard_scaler", "padrao"}:
+            return True, "zscore"
+        if tipo in {"robust", "robust_scaler"}:
+            return True, "robust"
+        if tipo in {"minmax", "min_max", "minmax_scaler"}:
+            return True, "minmax"
+        if tipo in {"maxabs", "max_abs", "maxabs_scaler"}:
+            return True, "maxabs"
+        if tipo in {"nenhum", "none", "passthrough", "sem_escala", "sem_scaler"}:
+            return False, "zscore"
+        return True, "zscore"
+
+    def _configurar_ambiente_pycaret(
+        self,
+        dados_treino: pd.DataFrame,
+        coluna_alvo: str,
+        config: ConfiguracaoModelagem,
+        divisor_folds: GeradorFolds,
+        tipo_preprocessador: str,
+    ) -> None:
+        """Inicializa ou reconfigura o pycaret.regression.setup com o pré-processador configurado."""
+        est_num = config.imputacao.estrategia_numerica
+        est_cat = config.imputacao.estrategia_categorica
+        pycaret_num_imp = "median" if est_num == "mediana" else ("mean" if est_num == "media" else "zero")
+        pycaret_cat_imp = "mode" if est_cat == "mais_frequente" else "missing"
+
+        normalize, normalize_method = self._mapear_preprocessador_pycaret(tipo_preprocessador)
+
+        try:
+            setup(
+                data=dados_treino,
+                target=coluna_alvo,
+                numeric_imputation=pycaret_num_imp,
+                categorical_imputation=pycaret_cat_imp,
+                transform_target=config.preprocessamento.transformar_alvo,
+                normalize=normalize,
+                normalize_method=normalize_method,
+                fold_strategy=divisor_folds,
+                session_id=42,
+                verbose=False,
+                html=False,
+            )
+        except Exception as erro_setup:
+            raise ErroTreinadorPycaret(
+                f"Falha ao inicializar pycaret.regression.setup com preprocessador '{tipo_preprocessador}': {erro_setup}"
+            ) from erro_setup
+
     @override
     def treinar_e_ajustar(
         self,
@@ -48,48 +100,43 @@ class TreinadorPycaret(MotorTreinador):
         if coluna_alvo not in dados_treino.columns:
             raise ErroTreinadorPycaret(f"Coluna alvo '{coluna_alvo}' ausente no DataFrame.")
 
-        # 1. Configuração do ambiente PyCaret Setup nativo
-        est_num = config.imputacao.estrategia_numerica
-        est_cat = config.imputacao.estrategia_categorica
-        pycaret_num_imp = "median" if est_num == "mediana" else ("mean" if est_num == "media" else "zero")
-        pycaret_cat_imp = "mode" if est_cat == "mais_frequente" else "missing"
-
         divisor_folds = self._fabrica_folds.criar_divisor(
             config.validacao_cruzada, folds_fallback=folds
         )
 
-        try:
-            setup(
-                data=dados_treino,
-                target=coluna_alvo,
-                numeric_imputation=pycaret_num_imp,
-                categorical_imputation=pycaret_cat_imp,
-                transform_target=config.preprocessamento.transformar_alvo,
-                fold_strategy=divisor_folds,
-                session_id=42,
-                verbose=False,
-                html=False,
-            )
-        except Exception as erro_setup:
-            raise ErroTreinadorPycaret(f"Falha ao inicializar pycaret.regression.setup: {erro_setup}") from erro_setup
-
         modelos_treinados: list[ResultadoTreinoModelo] = []
+        ultimo_prep: str | None = None
 
         for item_modelo in config.obter_modelos_ativos():
-
-            inicio_modelo = time.perf_counter()
             pycaret_id = item_modelo.pycaret_id
             if not pycaret_id:
                 continue
 
+            tipo_prep = item_modelo.obter_preprocessador()
+            if tipo_prep != ultimo_prep:
+                self._configurar_ambiente_pycaret(
+                    dados_treino=dados_treino,
+                    coluna_alvo=coluna_alvo,
+                    config=config,
+                    divisor_folds=divisor_folds,
+                    tipo_preprocessador=tipo_prep,
+                )
+                ultimo_prep = tipo_prep
+
+            inicio_modelo = time.perf_counter()
+            params_iniciais = dict(item_modelo.parametros) if item_modelo.parametros else {}
+
             try:
                 # 2. Criação do modelo nativo no PyCaret
-                modelo_base: object = create_model(pycaret_id, verbose=False)
+                if params_iniciais:
+                    modelo_base: BaseEstimator = create_model(pycaret_id, **params_iniciais, verbose=False)
+                else:
+                    modelo_base = create_model(pycaret_id, verbose=False)
 
                 # 3. Tuning nativo com busca configurada no YAML
                 grade = config.tuning.obter_grade_modelo(item_modelo.nome)
-                grade_pycaret: dict[str, list[object]] = {
-                    k: cast(list[object], v) for k, v in grade.items()
+                grade_pycaret: dict[str, list[ValorParametro]] = {
+                    k: v for k, v in grade.items()
                 }
 
                 nome_formatado = formatar_nome_modelo(item_modelo.nome)
@@ -119,7 +166,7 @@ class TreinadorPycaret(MotorTreinador):
                             search_lib = "scikit-learn"
                             search_algo = "random"
 
-                    modelo_ajustado: object = tune_model(
+                    modelo_ajustado: BaseEstimator = tune_model(
                         modelo_base,
                         n_iter=config.tuning.iteracoes,
                         optimize=config.tuning.otimizar_metrica,
@@ -147,7 +194,7 @@ class TreinadorPycaret(MotorTreinador):
 
                 if "Mean" in df_metricas.index:
                     linha_media = cast(pd.Series, df_metricas.loc["Mean"])
-                    linha_dict = cast(dict[str, object], linha_media.to_dict())
+                    linha_dict = dict(linha_media.to_dict())
                     if "RMSE" in linha_dict:
                         try:
                             rmse_val = float(str(linha_dict["RMSE"]))
@@ -165,11 +212,11 @@ class TreinadorPycaret(MotorTreinador):
                             pass
 
                 # Extrai parâmetros se disponíveis no estimador
-                params_dict: dict[str, object] = {}
+                params_dict: dict[str, ValorParametro] = {}
                 if hasattr(modelo_ajustado, "get_params"):
                     get_params_fn = getattr(modelo_ajustado, "get_params")
                     if callable(get_params_fn):
-                        todos_params = cast(dict[str, object], get_params_fn())
+                        todos_params = cast(dict[str, ValorParametro], get_params_fn())
                         # Mantém apenas os parâmetros que estavam na grade
                         for k in grade_pycaret:
                             if k in todos_params:

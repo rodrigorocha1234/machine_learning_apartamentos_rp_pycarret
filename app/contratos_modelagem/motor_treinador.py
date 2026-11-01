@@ -6,7 +6,7 @@ from typing import Protocol, runtime_checkable
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from app.esquema_configuracao import ConfiguracaoModelagem
+from app.esquema_configuracao import ConfiguracaoModelagem, ValorParametro
 
 
 class ResultadoTreinoModelo(BaseModel):
@@ -14,8 +14,8 @@ class ResultadoTreinoModelo(BaseModel):
 
     nome_modelo: str = Field(min_length=1, description="Identificador do modelo")
     framework: str = Field(description="Framework utilizado (pycaret ou sklearn)")
-    melhores_parametros: dict[str, object] = Field(
-        default={}, description="Hiperparâmetros otimizados durante o tuning"
+    melhores_parametros: dict[str, ValorParametro] = Field(
+        default_factory=dict, description="Hiperparâmetros otimizados durante o tuning"
     )
     metricas: dict[str, float] = Field(
         default={}, description="Métricas de avaliação na validação cruzada (RMSE, MAE, R2)"

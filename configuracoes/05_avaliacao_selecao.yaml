@@ -25,7 +25,7 @@ avaliacao:
     desempate: "menor_rmse"
 
   votacao:
-    ativo: false
-    tecnica: "media_simples" # media_simples | voting_regressor | media_ponderada_rmse | stacking
+    ativo: true
+    tecnica: "voting_regressor" # media_simples | voting_regressor | media_ponderada_rmse | stacking
     melhores_n: 3
     meta_modelo: "ridge"

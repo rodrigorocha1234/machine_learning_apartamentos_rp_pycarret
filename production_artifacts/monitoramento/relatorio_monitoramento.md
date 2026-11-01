@@ -1,6 +1,6 @@
 # Relatório de Entrega — Etapa 7: Monitoramento de Drift e Observabilidade
 
-**Data de Execução:** 2026-11-01T15:32:25.447991+00:00  
+**Data de Execução:** 2026-11-01T16:26:43.074956+00:00  
 **Responsáveis:** @observability, @statistician, @devops  
 **Status:** CONCLUÍDO COM SUCESSO  
 **Evidências Persistidas:** [storage-data/relatorio_drift.json](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/storage-data/relatorio_drift.json)  
@@ -42,7 +42,7 @@ O sistema de observabilidade contínua executou os testes de hipóteses bicaudai
 | `Vagas` | numerica | kolmogorov_smirnov | 0.0679 | 0.9503 | 0.05 | NÃO |
 | `Bairro` | categorica | psi | 0.2499 | - | 0.2 | **SIM (ALERTA)** |
 | `Zona` | categorica | psi | 0.0115 | - | 0.2 | NÃO |
-| `preco_predito` | predicao | kolmogorov_smirnov | 0.1286 | 0.2980 | 0.1 | NÃO |
+| `preco_predito` | predicao | kolmogorov_smirnov | 0.1321 | 0.2683 | 0.1 | NÃO |
 | `Valor_da_Venda` | alvo | kolmogorov_smirnov | 0.1036 | 0.5651 | 0.05 | NÃO |
 
 ---

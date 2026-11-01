@@ -270,6 +270,11 @@ class ConfiguracaoPreprocessamento(BaseModel):
     )
 
 
+ValorParametro: TypeAlias = int | float | str | bool | list[int] | list[float] | tuple[int, ...] | None
+TecnicaFolds: TypeAlias = TecnicaValidacaoCruzada
+ValorParametroFolds: TypeAlias = int | float | bool | str | None
+
+
 class ItemModelo(BaseModel):
     """Especificação de um modelo de regressão competidor."""
 
@@ -277,11 +282,28 @@ class ItemModelo(BaseModel):
     ativo: bool = Field(default=True, description="Flag de ativação do modelo na bateria de testes")
     pycaret_id: str = Field(min_length=1, description="Identificador nativo do modelo no PyCaret")
     sklearn_class: str = Field(min_length=1, description="Nome da classe equivalente no Scikit-Learn")
+    preprocessador: str | None = Field(
+        default=None,
+        description="Tipo de pré-processador/escalador numérico: standard, minmax, robust, maxabs, nenhum",
+    )
+    scaler: str | None = Field(default=None, description="Alias para preprocessador")
+    parametros: dict[str, ValorParametro] = Field(
+        default_factory=dict,
+        description="Hiperparâmetros opcionais para o estimador definidos diretamente no item do modelo no YAML",
+    )
 
+    def obter_preprocessador(self, padrao_fallback: str = "standard") -> str:
+        """Retorna o tipo de pré-processador configurado ou padrão quando aplicável.
 
-ValorParametro: TypeAlias = int | float | str | bool | list[int]
-TecnicaFolds: TypeAlias = TecnicaValidacaoCruzada
-ValorParametroFolds: TypeAlias = int | float | bool | str | None
+        Modelos baseados em árvore (árvores de decisão, random forest, xgboost, lightgbm)
+        são invariantes a escalonamento monotônico e adotam 'nenhum' por padrão quando aplicável.
+        """
+        prep = self.preprocessador or self.scaler
+        if prep is not None:
+            return prep.lower().strip()
+        if self.nome in {"arvore_decisao", "random_forest", "xgboost", "lightgbm"}:
+            return "nenhum"
+        return padrao_fallback.lower().strip()
 
 
 def _obter_parametros_folds_padrao() -> dict[str, dict[str, ValorParametroFolds]]:
@@ -458,6 +480,13 @@ class ConfiguracaoModelagem(BaseModel):
     def obter_modelos_ativos(self) -> list[ItemModelo]:
         """Retorna apenas os modelos elegíveis para treinamento e avaliação."""
         return [m for m in self.modelos if self.modelo_esta_ativo(m)]
+
+    def obter_item_modelo(self, nome: str) -> ItemModelo | None:
+        """Busca o item de configuração de um modelo específico pelo nome canônico."""
+        for m in self.modelos:
+            if m.nome == nome:
+                return m
+        return None
 
 
 class CvExterna(BaseModel):

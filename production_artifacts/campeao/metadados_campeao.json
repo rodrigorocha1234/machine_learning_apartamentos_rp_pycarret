@@ -1,10 +1,10 @@
 {
-  "nome_modelo": "regressao_linear",
+  "nome_modelo": "elasticnet",
   "versao": "1.0.0-champion",
-  "algoritmo": "LinearRegression(fit_intercept=True)",
+  "algoritmo": "ElasticNet(alpha=0.01, l1=0.2)",
   "transformacao_alvo": "log1p_embutida",
   "rmse_cv": 0.0,
-  "rmse_holdout": 130979.0,
-  "r2_holdout": 0.9023,
-  "data_promocao": "2026-11-01T03:28:44.263057+00:00"
+  "rmse_holdout": 132328.72,
+  "r2_holdout": 0.9003,
+  "data_promocao": "2026-11-01T15:41:53.415644+00:00"
 }

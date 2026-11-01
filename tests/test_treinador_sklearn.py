@@ -125,3 +125,122 @@ def test_sklearn_treinamento_com_grid_e_metrica_customizada(
     assert resultado.modelo_campeao == "ridge"
     assert "MAE" in resultado.modelos_treinados[0].metricas
 
+
+def test_sklearn_escolha_tipo_preprocessador_por_modelo(dados_sinteticos: pd.DataFrame) -> None:
+    """Verifica que o pré-processador e escalador são instanciados conforme a escolha no modelo."""
+    from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler, RobustScaler, StandardScaler
+    treinador = TreinadorSklearn()
+    conf = ConfYAML()
+    config = conf.obter_modelagem()
+
+    # 1. Teste de mapeamento do método _obter_escalador
+    assert isinstance(treinador._obter_escalador("standard"), StandardScaler)
+    assert isinstance(treinador._obter_escalador("robust"), RobustScaler)
+    assert isinstance(treinador._obter_escalador("minmax"), MinMaxScaler)
+    assert isinstance(treinador._obter_escalador("maxabs"), MaxAbsScaler)
+    assert treinador._obter_escalador("nenhum") == "passthrough"
+    assert treinador._obter_escalador("passthrough") == "passthrough"
+
+    # 2. Teste de construção de ColumnTransformer com scaler robusto
+    ct_robust = treinador._construir_preprocessador(
+        cols_numericas=["Area_Privativa", "Quartos"],
+        cols_categoricas=["Bairro"],
+        config=config,
+        tipo_preprocessador="robust",
+    )
+    pipe_num_robust = ct_robust.transformers[0][1]
+    nomes_passos_robust = [nome for nome, _ in pipe_num_robust.steps]
+    assert "scaler" in nomes_passos_robust
+    assert isinstance(pipe_num_robust.named_steps["scaler"], RobustScaler)
+
+    # 3. Teste de construção com 'nenhum' (sem scaler, ideal para árvores)
+    ct_nenhum = treinador._construir_preprocessador(
+        cols_numericas=["Area_Privativa", "Quartos"],
+        cols_categoricas=["Bairro"],
+        config=config,
+        tipo_preprocessador="nenhum",
+    )
+    pipe_num_nenhum = ct_nenhum.transformers[0][1]
+    nomes_passos_nenhum = [nome for nome, _ in pipe_num_nenhum.steps]
+    assert "scaler" not in nomes_passos_nenhum
+    assert "imputer" in nomes_passos_nenhum
+
+    # 4. Modelos de árvore adotam 'nenhum' por padrão quando aplicável
+    item_rf = config.obter_item_modelo("random_forest")
+    assert item_rf is not None
+    assert item_rf.obter_preprocessador() == "nenhum"
+
+    # 5. Modelos lineares adotam 'standard' por padrão
+    item_lr = config.obter_item_modelo("regressao_linear")
+    assert item_lr is not None
+    assert item_lr.obter_preprocessador() == "standard"
+
+
+def test_sklearn_instanciar_estimador_sem_parametros_fixos() -> None:
+    """Verifica que o instanciador cria os estimadores puros, sem parâmetros hardcoded."""
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.linear_model import ElasticNet, Lasso, LinearRegression, Ridge
+    from sklearn.neural_network import MLPRegressor
+    from sklearn.svm import SVR
+    from sklearn.tree import DecisionTreeRegressor
+    import lightgbm as lgb
+    import xgboost as xgb
+
+    treinador = TreinadorSklearn()
+
+    # Modelos lineares e clássicos
+    lr = treinador._instanciar_estimador("regressao_linear")
+    assert isinstance(lr, LinearRegression)
+
+    lasso = treinador._instanciar_estimador("lasso")
+    assert isinstance(lasso, Lasso)
+
+    ridge = treinador._instanciar_estimador("ridge")
+    assert isinstance(ridge, Ridge)
+
+    en = treinador._instanciar_estimador("elasticnet")
+    assert isinstance(en, ElasticNet)
+
+    # arvore_decisao deve instanciar DecisionTreeRegressor, não RandomForest
+    dt = treinador._instanciar_estimador("arvore_decisao")
+    assert isinstance(dt, DecisionTreeRegressor)
+
+    # random_forest sem n_estimators hardcoded
+    rf = treinador._instanciar_estimador("random_forest")
+    assert isinstance(rf, RandomForestRegressor)
+
+    svr = treinador._instanciar_estimador("svr")
+    assert isinstance(svr, SVR)
+
+    mlp = treinador._instanciar_estimador("rede_neural")
+    assert isinstance(mlp, MLPRegressor)
+
+    xg = treinador._instanciar_estimador("xgboost")
+    assert isinstance(xg, xgb.XGBRegressor)
+
+    lg = treinador._instanciar_estimador("lightgbm")
+    assert isinstance(lg, lgb.LGBMRegressor)
+
+
+def test_sklearn_instanciar_estimador_com_parametros_dinamicos() -> None:
+    """Verifica que parâmetros vindos do YAML/dicionário são injetados no estimador."""
+    from sklearn.tree import DecisionTreeRegressor
+    from sklearn.ensemble import RandomForestRegressor
+
+    treinador = TreinadorSklearn()
+
+    dt = treinador._instanciar_estimador("arvore_decisao", {"max_depth": 7, "min_samples_split": 4})
+    assert isinstance(dt, DecisionTreeRegressor)
+    assert dt.max_depth == 7
+    assert dt.min_samples_split == 4
+
+    rf = treinador._instanciar_estimador("random_forest", {"n_estimators": 25, "max_depth": 4})
+    assert isinstance(rf, RandomForestRegressor)
+    assert rf.n_estimators == 25
+    assert rf.max_depth == 4
+
+    with pytest.raises(ErroTreinadorSklearn, match="Modelo não suportado"):
+        treinador._instanciar_estimador("modelo_inexistente")
+
+
+

@@ -31,3 +31,16 @@ def test_pycaret_validacao_coluna_alvo_ausente() -> None:
 
     with pytest.raises(ErroTreinadorPycaret, match="Coluna alvo 'Alvo_Invalido' ausente"):
         treinador.treinar_e_ajustar(df, "Alvo_Invalido", config_modelagem)
+
+
+def test_pycaret_mapeamento_preprocessador() -> None:
+    """Verifica que as escolhas de pré-processador do YAML são mapeadas corretamente para PyCaret."""
+    assert TreinadorPycaret._mapear_preprocessador_pycaret("standard") == (True, "zscore")
+    assert TreinadorPycaret._mapear_preprocessador_pycaret("padrao") == (True, "zscore")
+    assert TreinadorPycaret._mapear_preprocessador_pycaret("robust") == (True, "robust")
+    assert TreinadorPycaret._mapear_preprocessador_pycaret("minmax") == (True, "minmax")
+    assert TreinadorPycaret._mapear_preprocessador_pycaret("maxabs") == (True, "maxabs")
+    assert TreinadorPycaret._mapear_preprocessador_pycaret("nenhum") == (False, "zscore")
+    assert TreinadorPycaret._mapear_preprocessador_pycaret("passthrough") == (False, "zscore")
+    assert TreinadorPycaret._mapear_preprocessador_pycaret("sem_escala") == (False, "zscore")
+

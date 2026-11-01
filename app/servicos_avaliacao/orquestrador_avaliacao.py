@@ -25,6 +25,7 @@ from app.servicos_avaliacao.avaliador_holdout import AvaliadorHoldout, MetricasH
 from app.servicos_avaliacao.testador_friedman import TestadorFriedman
 from app.servicos_avaliacao.validador_cruzado import ValidadorCruzado
 from app.servicos_modelagem.rastreador_mlflow import RastreadorMlflow
+from app.servicos_observabilidade.publicador_modelos_grafana import PublicadorModelosGrafana
 
 
 class ResultadoEtapaAvaliacao(BaseModel):
@@ -204,6 +205,26 @@ class OrquestradorAvaliacao:
 
         # Persistência de evidências
         self._persistir_evidencias(resultado_etapa)
+
+        # Atualização do Dashboard Grafana com diagnóstico de Overfitting e Underfitting
+        try:
+            res_tuning_obj = resultado_tuning
+            if res_tuning_obj is None:
+                caminho_mod = Path("storage-data/relatorio_modelagem.json")
+                if caminho_mod.exists():
+                    with open(caminho_mod, "r", encoding="utf-8") as f_mod:
+                        dados_mod = json.load(f_mod)
+                    res_tuning_obj = ResultadoTuning.model_validate(dados_mod.get("res_tuning", {}))
+
+            if res_tuning_obj is not None:
+                publicador = PublicadorModelosGrafana()
+                publicador.publicar_dashboard_modelos(
+                    resultado_tuning=res_tuning_obj,
+                    motor=self._config_mod.motor_treino,
+                    metricas_holdout=metricas_holdout,
+                )
+        except Exception:
+            pass
 
         return resultado_etapa
 

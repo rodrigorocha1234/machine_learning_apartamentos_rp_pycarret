@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Protocol, cast, final
+from typing import Protocol, Self, cast, final
 import numpy as np
 import pandas as pd
 from sklearn.base import clone  # pyright: ignore[reportUnknownVariableType]
+from sklearn.compose import TransformedTargetRegressor
 from sklearn.model_selection import KFold, RepeatedKFold
+from sklearn.pipeline import Pipeline
 
 from app.contratos_modelagem.motor_treinador import ResultadoTreinoModelo
-from app.esquema_configuracao import ConfiguracaoAvaliacao, ConfiguracaoModelagem
+from app.esquema_configuracao import (
+    ConfiguracaoAvaliacao,
+    ConfiguracaoModelagem,
+    ValorParametro,
+)
 from app.motores_modelagem.treinador_sklearn import TreinadorSklearn
 from app.servicos_modelagem.rastreador_mlflow import RastreadorMlflow
 
@@ -17,8 +23,10 @@ from app.servicos_modelagem.rastreador_mlflow import RastreadorMlflow
 class EstimadorComPredict(Protocol):
     """Protocolo estrutural para estimador com métodos fit e predict."""
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> object: ...
-    def predict(self, X: pd.DataFrame) -> object: ...
+    def fit(self, X: pd.DataFrame, y: pd.Series) -> Self: ...
+    def predict(
+        self, X: pd.DataFrame
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | pd.Series | list[float]: ...
 
 
 class ErroValidadorCruzado(Exception):
@@ -46,7 +54,7 @@ class ValidadorCruzado:
         self,
         dados_treino: pd.DataFrame,
         modelos_tuning: list[ResultadoTreinoModelo],
-    ) -> tuple[dict[str, list[float]], dict[str, object]]:
+    ) -> tuple[dict[str, list[float]], dict[str, EstimadorComPredict]]:
         """Executa validação cruzada pareada com RepeatedKFold em todos os modelos selecionados."""
         if dados_treino.empty:
             raise ErroValidadorCruzado("DataFrame de treino para validação cruzada está vazio.")
@@ -73,7 +81,7 @@ class ValidadorCruzado:
                 random_state=42,
             )
 
-        splits_brutos = cast(list[tuple[object, object]], list(cv.split(X, y)))  # pyright: ignore[reportUnknownArgumentType]
+        splits_brutos = list(cv.split(X, y))
         splits_indices: list[
             tuple[
                 np.ndarray[tuple[int, ...], np.dtype[np.int64]],
@@ -88,7 +96,7 @@ class ValidadorCruzado:
         ]
 
         # 2. Construção dos estimadores parametrizados
-        estimadores_base: dict[str, object] = {}
+        estimadores_base: dict[str, Pipeline | TransformedTargetRegressor] = {}
         for mod_res in modelos_tuning:
             pipeline_mod = self._construir_pipeline_modelo(mod_res.nome_modelo, mod_res.melhores_parametros, X)
             estimadores_base[mod_res.nome_modelo] = pipeline_mod
@@ -106,12 +114,12 @@ class ValidadorCruzado:
             if self._config_mod.preprocessamento.transformar_alvo
             else "padrao"
         )
-        params_por_modelo: dict[str, dict[str, object]] = {
+        params_por_modelo: dict[str, dict[str, ValorParametro]] = {
             m.nome_modelo: m.melhores_parametros for m in modelos_tuning
         }
 
         matriz_resultados: dict[str, list[float]] = {m: [] for m in estimadores_base}
-        estimadores_finais_treinados: dict[str, object] = {}
+        estimadores_finais_treinados: dict[str, EstimadorComPredict] = {}
 
         for nome_modelo, estimador in estimadores_base.items():
             scores_modelo: list[float] = []
@@ -163,22 +171,27 @@ class ValidadorCruzado:
         return matriz_resultados, estimadores_finais_treinados
 
     def _construir_pipeline_modelo(
-        self, nome_modelo: str, melhores_params: dict[str, object], X_exemplo: pd.DataFrame
-    ) -> object:
+        self, nome_modelo: str, melhores_params: dict[str, ValorParametro], X_exemplo: pd.DataFrame
+    ) -> Pipeline | TransformedTargetRegressor:
         """Constrói pipeline completo com pré-processamento e hiperparâmetros configurados."""
         cols_numericas: list[str] = []
         cols_categoricas: list[str] = []
-        for col in cast(list[object], list(X_exemplo.columns)):
+        for col in X_exemplo.columns:
             c = str(col)
             if pd.api.types.is_numeric_dtype(X_exemplo[c]):
                 cols_numericas.append(c)
             else:
                 cols_categoricas.append(c)
 
+        item_modelo = self._config_mod.obter_item_modelo(nome_modelo)
+        tipo_prep = item_modelo.obter_preprocessador() if item_modelo is not None else "standard"
         preprocessor = self._treinador_aux._construir_preprocessador(  # pyright: ignore[reportPrivateUsage]
-            cols_numericas, cols_categoricas, self._config_mod
+            cols_numericas, cols_categoricas, self._config_mod, tipo_preprocessador=tipo_prep
         )
-        estimador_base = self._treinador_aux._instanciar_estimador(nome_modelo)  # pyright: ignore[reportPrivateUsage]
+        params_iniciais = item_modelo.parametros if item_modelo is not None else None
+        estimador_base = self._treinador_aux._instanciar_estimador(  # pyright: ignore[reportPrivateUsage]
+            nome_modelo, parametros=params_iniciais
+        )
 
         # Aplica os melhores parâmetros no estimador base
         if melhores_params:
@@ -188,9 +201,6 @@ class ValidadorCruzado:
                     fn_set(**melhores_params)
                 except Exception:
                     pass
-
-        from sklearn.pipeline import Pipeline
-        from sklearn.compose import TransformedTargetRegressor
 
         pipeline_estimador = Pipeline(
             [
