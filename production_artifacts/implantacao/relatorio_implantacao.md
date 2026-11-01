@@ -1,10 +1,10 @@
 # Relatório de Entrega — Etapa 6: Implantação e Regras de Negócio Dinâmicas
 
-**Data de Execução:** 2026-11-01T16:34:47.180714+00:00
+**Data de Execução:** 2026-11-01T16:45:15.845922+00:00
 **Responsáveis:** @ml_engineer, @ml_architect, @pm
 **Status:** CONCLUÍDO COM SUCESSO
 **Evidências Persistidas:** [storage-data/relatorio_implantacao.json](file:////home/rodrigo/PycharmProjects/machine_learning_apartamentos_rp_pycarret/storage-data/relatorio_implantacao.json)
-**Run de Promoção no MLflow:** `8d10c8c103ed474fb00a2e3d83ac50a1`
+**Run de Promoção no MLflow:** `49f2bd99377b47e0a884478e46e30d30`
 
 ---
 
@@ -14,9 +14,9 @@ O modelo campeão **RIDGE**, validado nas etapas anteriores como superior e sele
 
 - **Identificador:** `ridge`
 - **Versão:** `1.0.0-champion`
-- **Artefato Persistido:** [`/tmp/pytest-of-rodrigo/pytest-14/test_orquestrador_implantacao_0/campeao_ridge/modelo_campeao.joblib`](file:////tmp/pytest-of-rodrigo/pytest-14/test_orquestrador_implantacao_0/campeao_ridge/modelo_campeao.joblib)
-- **Metadados Oficiais:** [`/tmp/pytest-of-rodrigo/pytest-14/test_orquestrador_implantacao_0/campeao_ridge/metadados_campeao.json`](file:////tmp/pytest-of-rodrigo/pytest-14/test_orquestrador_implantacao_0/campeao_ridge/metadados_campeao.json)
-- **Rastreabilidade no MLflow:** Run `8d10c8c103ed474fb00a2e3d83ac50a1` com tags `modelo.status=Production` e `modelo.alias=champion`.
+- **Artefato Persistido:** [`/tmp/pytest-of-rodrigo/pytest-15/test_orquestrador_implantacao_0/campeao_ridge/modelo_campeao.joblib`](file:////tmp/pytest-of-rodrigo/pytest-15/test_orquestrador_implantacao_0/campeao_ridge/modelo_campeao.joblib)
+- **Metadados Oficiais:** [`/tmp/pytest-of-rodrigo/pytest-15/test_orquestrador_implantacao_0/campeao_ridge/metadados_campeao.json`](file:////tmp/pytest-of-rodrigo/pytest-15/test_orquestrador_implantacao_0/campeao_ridge/metadados_campeao.json)
+- **Rastreabilidade no MLflow:** Run `49f2bd99377b47e0a884478e46e30d30` com tags `modelo.status=Production` e `modelo.alias=champion`.
 
 ### Métricas de Generalização no Holdout (20% Retido)
 - **RMSE:** **R$ 130,971.22**

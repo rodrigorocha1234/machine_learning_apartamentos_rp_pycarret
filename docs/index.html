@@ -3104,81 +3104,74 @@ atributos_novos:
           </thead>
           <tbody>
             <tr>
-              <td><code>fit_intercept</code></td>
+              <td><code>fit_intercept</code>, <code>positive</code></td>
               <td>Regressão Linear (OLS)</td>
-              <td><code>[true, false]</code></td>
-              <td>Controla a estimação do termo independente $\beta_0$. Se <code>false</code>, força o hiperplano a cruzar a origem $(0,0)$.</td>
-              <td>Imóveis possuem custos fixos de infraestrutura urbana independente da área construída; <code>true</code> captura o preço base de entrada no município.</td>
+              <td><code>[true, false]</code><br><code>[false, true]</code></td>
+              <td>Controla o termo independente $\beta_0$ e restringe coeficientes a valores não-negativos se exigido por hipóteses econômicas.</td>
+              <td>Imóveis possuem custos fixos de entrada urbana no município; <code>positive: true</code> impede desvalorização matemática ilógica por cômodo extra.</td>
             </tr>
             <tr>
-              <td><code>alpha</code> ($\lambda$)</td>
-              <td>Ridge, Lasso, ElasticNet</td>
-              <td><code>[0.01, 0.1, 1.0, 10.0]</code></td>
-              <td>Constante multiplicativa de penalização ($L_1$ ou $L_2$). Quanto maior, mais severo o encolhimento dos coeficientes $\beta$.</td>
-              <td>Controla o trade-off viés-variância. Valores maiores de $\alpha$ evitam que apartamentos com preços discrepantes distorçam a precificação do bairro.</td>
+              <td><code>alpha</code> ($\lambda$), <code>tol</code>, <code>selection</code></td>
+              <td>Lasso (L1)</td>
+              <td><code>[0.001, 0.01, 0.1, 1.0, 10.0]</code><br><code>tol: [1e-4, 1e-3]</code><br><code>["cyclic", "random"]</code></td>
+              <td>Penalização $L_1$ com seleção de atributos esparsos. <code>tol</code> dita a precisão de convergência do gradiente coordenado.</td>
+              <td>Zera atributos cadastrais com ruído ou descrições redundantes, mantendo apenas dimensões determinantes de valor em Ribeirão Preto.</td>
             </tr>
             <tr>
-              <td><code>l1_ratio</code> ($\rho$)</td>
+              <td><code>alpha</code> ($\lambda$), <code>solver</code></td>
+              <td>Ridge (L2)</td>
+              <td><code>[0.01, 0.1, 1.0, 10.0, 100.0]</code><br><code>["auto", "svd", "cholesky", "lsqr"]</code></td>
+              <td>Penalização quadrática $L_2$. O solver seleciona o resolvedor algébrico de sistemas lineares mal-condicionados.</td>
+              <td>Distribui pesos entre variáveis multicolineares (área, quartos, vagas e condomínio), evitando que pontuações altas simultâneas inflem o preço.</td>
+            </tr>
+            <tr>
+              <td><code>alpha</code>, <code>l1_ratio</code> ($\rho$)</td>
               <td>ElasticNet</td>
-              <td><code>[0.2, 0.5, 0.8]</code></td>
-              <td>Balanço convexo entre penalidade Lasso ($\rho=1.0$) e Ridge ($\rho=0.0$): $\rho \|\beta\|_1 + \frac{1-\rho}{2} \|\beta\|_2^2$.</td>
-              <td>Permite manter grupos correlacionados (como metragem total e área privativa) enquanto zera atributos cadastrais irrelevantes.</td>
+              <td><code>alpha: [0.01, 0.1, 1.0, 10.0]</code><br><code>l1_ratio: [0.1, 0.3, 0.5, 0.7, 0.9]</code></td>
+              <td>Balanço convexo entre $L_1$ ($\rho=1.0$) e $L_2$ ($\rho=0.0$): $\rho \|\beta\|_1 + \frac{1-\rho}{2} \|\beta\|_2^2$.</td>
+              <td>Mantém grupos correlacionados cruciais para corretores (área útil e privativa) enquanto elimina campos secundários inexpressivos.</td>
             </tr>
             <tr>
-              <td><code>max_depth</code></td>
-              <td>Árvore de Decisão, Random Forest, XGBoost, LightGBM</td>
-              <td><code>[3, 5, 6, 10]</code></td>
-              <td>Limite de divisões sucessivas da raiz até as folhas da árvore. Delimita o número máximo de regras condicionais encadeadas.</td>
-              <td>Profundidade 3 a 6 impede memorização excessiva; captura faixas realistas de mercado (ex: "Se Bairro Nobre E Metragem > 100m² E Vagas >= 2").</td>
-            </tr>
-            <tr>
-              <td><code>min_samples_split</code></td>
+              <td><code>criterion</code>, <code>max_depth</code>, <code>min_samples_split</code>, <code>min_samples_leaf</code>, <code>max_features</code></td>
               <td>Árvore de Decisão</td>
-              <td><code>[2, 5]</code></td>
-              <td>Quantidade mínima de apartamentos necessária em um nó para autorizar uma nova bifurcação condicional.</td>
-              <td>Impede a criação de ramificações espúrias baseadas em casos isolados (ex: 1 apartamento duplex com valor atípico).</td>
+              <td><code>criterion: ["squared_error", "friedman_mse"]</code><br><code>max_depth: [3, 5, 8, 12]</code><br><code>min_split: [2, 5, 10]</code><br><code>min_leaf: [1, 2, 4]</code></td>
+              <td>Função de impureza de divisão, limites de profundidade e controle de partição de nós para evitar memorização excessiva.</td>
+              <td>Cria faixas auditáveis de mercado imobiliário sem fragmentar o preço para atender vendas individuais isoladas com descontos pontuais.</td>
             </tr>
             <tr>
-              <td><code>n_estimators</code></td>
-              <td>Random Forest, XGBoost, LightGBM</td>
-              <td><code>[50, 100]</code></td>
-              <td>Número total de árvores geradas no comitê ensemble (via bagging paralelo ou boosting sequencial).</td>
-              <td>No Random Forest, estabiliza a variância sem perigo de overfit. No Boosting, gera convergência precisa em resíduos de preços difíceis.</td>
+              <td><code>n_estimators</code>, <code>max_depth</code>, <code>min_samples_leaf</code>, <code>max_features</code></td>
+              <td>Random Forest</td>
+              <td><code>n_estimators: [50, 100, 150]</code><br><code>max_depth: [5, 8, 12]</code><br><code>max_features: [1.0, "sqrt", "log2"]</code></td>
+              <td>Tamanho do comitê de bagging e subamostragem aleatória de atributos para descorrelacionar as árvores do ensemble.</td>
+              <td>Comitê de corretores virtuais independentes: 100+ árvores eliminam volatilidade e garantem consenso confiável em bairros heterogêneos.</td>
             </tr>
             <tr>
-              <td><code>learning_rate</code> ($\eta$)</td>
-              <td>XGBoost, LightGBM</td>
-              <td><code>[0.05, 0.1]</code></td>
-              <td>Fator de encolhimento aplicado aos pesos das folhas de cada nova árvore: $f_m(x) = f_{m-1}(x) + \eta \cdot h_m(x)$.</td>
-              <td>Taxas moderadas ($\eta \le 0.1$) forçam o aprendizado conservador, evitando saltos bruscos na precificação de bairros heterogêneos.</td>
-            </tr>
-            <tr>
-              <td><code>C</code></td>
+              <td><code>kernel</code>, <code>C</code>, <code>epsilon</code> ($\varepsilon$), <code>gamma</code> ($\gamma$)</td>
               <td>Support Vector Regression (SVR)</td>
-              <td><code>[0.1, 1.0, 10.0]</code></td>
-              <td>Constante de regularização do SVR. Penaliza desvios que ultrapassam a margem do tubo $\varepsilon$-insensível.</td>
-              <td>Valores moderados de <code>C</code> tornam a fronteira de preços suave e resistente a anúncios com valores inflacionados por proprietários.</td>
+              <td><code>kernel: ["rbf", "linear"]</code><br><code>C: [0.1, 1.0, 10.0, 100.0]</code><br><code>epsilon: [0.01, 0.1, 0.2]</code><br><code>gamma: ["scale", "auto"]</code></td>
+              <td>Mapeamento não-linear para espaço de Hilbert, largura do tubo $\varepsilon$-insensível e penalização por violações de margem.</td>
+              <td>O kernel RBF modela a valorização não-linear concêntrica ao redor de polos (Fiúsa e shoppings); o $\varepsilon$ ignora pequenas margens de barganha.</td>
             </tr>
             <tr>
-              <td><code>kernel</code></td>
-              <td>Support Vector Regression (SVR)</td>
-              <td><code>["rbf", "linear"]</code></td>
-              <td>Função de mapeamento não-linear para o espaço de Hilbert: Kernel Gaussiano (RBF) $K(x,x') = \exp(-\gamma \|x-x'\|^2)$.</td>
-              <td>O kernel RBF modela a desvalorização não-linear da distância aos polos econômicos e comerciais de Ribeirão Preto.</td>
-            </tr>
-            <tr>
-              <td><code>hidden_layer_sizes</code></td>
+              <td><code>hidden_layer_sizes</code>, <code>activation</code>, <code>solver</code>, <code>alpha</code>, <code>learning_rate_init</code>, <code>max_iter</code></td>
               <td>Rede Neural (MLP Regressor)</td>
-              <td><code>[[50], [100]]</code></td>
-              <td>Topologia das camadas ocultas densas (número de neurônios intermediários com ativação não-linear ReLU).</td>
-              <td>Determina a capacidade da rede de combinar características complexas (interação entre taxa de condomínio, metragem e localização).</td>
+              <td><code>hidden: [[50], [100], [50,25], [100,50]]</code><br><code>activation: ["relu", "tanh"]</code><br><code>solver: ["adam", "lbfgs"]</code><br><code>alpha: [1e-4, 1e-2]</code></td>
+              <td>Topologia densa multicamadas, funções de ativação e regularização dos pesos via retropropagação do gradiente estocástico.</td>
+              <td>Capta sinergias sofisticadas onde a combinação de atributos de luxo (ex: condomínio-clube + 3 vagas no Jardim Canadá) valoriza exponencialmente.</td>
             </tr>
             <tr>
-              <td><code>max_iter</code></td>
-              <td>Rede Neural (MLP Regressor)</td>
-              <td><code>[200]</code></td>
-              <td>Número máximo de épocas de ajuste de pesos sinápticos via retropropagação do gradiente com o otimizador Adam.</td>
-              <td>Garante convergência estável da função de perda sem consumir tempo excessivo de CPU durante a validação cruzada.</td>
+              <td><code>n_estimators</code>, <code>learning_rate</code> ($\eta$), <code>max_depth</code>, <code>subsample</code>, <code>colsample_bytree</code>, <code>reg_alpha</code>, <code>reg_lambda</code></td>
+              <td>XGBoost</td>
+              <td><code>n_estimators: [50, 100, 150]</code><br><code>learning_rate: [0.01, 0.05, 0.1, 0.2]</code><br><code>max_depth: [3, 5, 7]</code><br><code>reg_alpha: [0.0, 0.1, 1.0]</code></td>
+              <td>Boosting de gradiente de 2ª ordem com regularização nos pesos das folhas, encolhimento $\eta$ e subamostragem de linhas e colunas.</td>
+              <td>Ajusta resíduos difíceis de preço progressivamente com freio de prudência ($\eta \le 0.1$) para não gerar sobrepreço especulativo em imóveis atípicos.</td>
+            </tr>
+            <tr>
+              <td><code>n_estimators</code>, <code>learning_rate</code>, <code>max_depth</code>, <code>num_leaves</code>, <code>colsample_bytree</code>, <code>min_child_samples</code>, <code>reg_alpha</code>, <code>reg_lambda</code></td>
+              <td>LightGBM</td>
+              <td><code>n_estimators: [50, 100, 150]</code><br><code>learning_rate: [0.01, 0.05, 0.1, 0.2]</code><br><code>num_leaves: [15, 31, 63]</code><br><code>min_child: [5, 10, 20]</code></td>
+              <td>Crescimento por folha (<em>leaf-wise</em>) com controle de complexidade via <code>num_leaves</code> e suporte nativo a dados categóricos.</td>
+              <td>Processa micro-segmentações de dezenas de bairros de Ribeirão Preto com altíssima velocidade e precisão para APIs de produção em tempo real.</td>
             </tr>
           </tbody>
         </table>
@@ -4184,42 +4177,77 @@ modelagem:
       regressao_linear:
         ativo: true
         fit_intercept: [true, false]
+        positive: [false, true]
       lasso:
         ativo: true
-        alpha: [0.01, 0.1, 1.0, 10.0]
+        alpha: [0.001, 0.01, 0.1, 1.0, 10.0]
+        fit_intercept: [true, false]
+        max_iter: [1000, 2000]
+        tol: [0.0001, 0.001]
+        selection: ["cyclic", "random"]
       ridge:
         ativo: true
-        alpha: [0.01, 0.1, 1.0, 10.0]
+        alpha: [0.01, 0.1, 1.0, 10.0, 100.0]
+        fit_intercept: [true, false]
+        solver: ["auto", "svd", "cholesky", "lsqr"]
+        tol: [0.0001, 0.001]
       elasticnet:
         ativo: true
-        alpha: [0.01, 0.1, 1.0]
-        l1_ratio: [0.2, 0.5, 0.8]
+        alpha: [0.01, 0.1, 1.0, 10.0]
+        l1_ratio: [0.1, 0.3, 0.5, 0.7, 0.9]
+        fit_intercept: [true, false]
+        max_iter: [1000, 2000]
+        tol: [0.0001, 0.001]
       arvore_decisao:
         ativo: true
-        max_depth: [3, 5, 10]
-        min_samples_split: [2, 5]
+        criterion: ["squared_error", "friedman_mse", "absolute_error"]
+        max_depth: [3, 5, 8, 12]
+        min_samples_split: [2, 5, 10]
+        min_samples_leaf: [1, 2, 4]
+        max_features: [null, "sqrt", "log2"]
       random_forest:
         ativo: true
-        n_estimators: [50, 100]
-        max_depth: [5, 10]
+        n_estimators: [50, 100, 150]
+        criterion: ["squared_error", "absolute_error"]
+        max_depth: [5, 8, 12]
+        min_samples_split: [2, 5, 10]
+        min_samples_leaf: [1, 2, 4]
+        max_features: [1.0, "sqrt", "log2"]
+        bootstrap: [true]
       svr:
         ativo: true
-        C: [0.1, 1.0, 10.0]
         kernel: ["rbf", "linear"]
+        C: [0.1, 1.0, 10.0, 100.0]
+        epsilon: [0.01, 0.1, 0.2]
+        gamma: ["scale", "auto"]
       rede_neural:
         ativo: true
-        hidden_layer_sizes: [[50], [100]]
-        max_iter: [200]
+        hidden_layer_sizes: [[50], [100], [50, 25], [100, 50]]
+        activation: ["relu", "tanh"]
+        solver: ["adam", "lbfgs"]
+        alpha: [0.0001, 0.001, 0.01]
+        learning_rate_init: [0.001, 0.01]
+        max_iter: [200, 400]
       xgboost:
         ativo: true
-        n_estimators: [50, 100]
-        max_depth: [3, 6]
-        learning_rate: [0.05, 0.1]
+        n_estimators: [50, 100, 150]
+        learning_rate: [0.01, 0.05, 0.1, 0.2]
+        max_depth: [3, 5, 7]
+        subsample: [0.7, 0.85, 1.0]
+        colsample_bytree: [0.7, 0.85, 1.0]
+        min_child_weight: [1, 3, 5]
+        reg_alpha: [0.0, 0.1, 1.0]
+        reg_lambda: [0.01, 1.0, 10.0]
       lightgbm:
         ativo: true
-        n_estimators: [50, 100]
-        max_depth: [3, 6]
-        learning_rate: [0.05, 0.1]</pre>
+        n_estimators: [50, 100, 150]
+        learning_rate: [0.01, 0.05, 0.1, 0.2]
+        max_depth: [3, 5, 7]
+        num_leaves: [15, 31, 63]
+        colsample_bytree: [0.7, 0.85, 1.0]
+        min_child_samples: [5, 10, 20]
+        reg_alpha: [0.0, 0.1, 1.0]
+        reg_lambda: [0.01, 1.0, 10.0]</pre>
           <div style="margin-top: 12px; padding: 10px 14px; background: rgba(56, 189, 248, 0.1); border-left: 3px solid var(--primary); border-radius: 4px; font-size: 0.88rem;">
             <strong>Filtro Estrito de Execução:</strong> A flag <code>ativo: true/false</code> presente em cada modelo de <code>tuning.parametros</code> atua como chave de seleção seletiva. Quando um modelo está com <code>ativo: false</code>, o pipeline o desativa integralmente: ele <strong>não é treinado/tunado na Etapa 4</strong> e <strong>não entra na validação cruzada externa pareada da Etapa 5</strong>. Apenas os modelos configurados com <code>ativo: true</code> são processados e disputam o ranking estatístico.
           </div>

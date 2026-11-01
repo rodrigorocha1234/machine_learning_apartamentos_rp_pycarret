@@ -75,42 +75,77 @@ modelagem:
       regressao_linear:
         ativo: true
         fit_intercept: [true, false]
+        positive: [false, true]
       lasso:
         ativo: true
-        alpha: [0.01, 0.1, 1.0, 10.0]
+        alpha: [0.001, 0.01, 0.1, 1.0, 10.0]
+        fit_intercept: [true, false]
+        max_iter: [1000, 2000]
+        tol: [0.0001, 0.001]
+        selection: ["cyclic", "random"]
       ridge:
         ativo: true
-        alpha: [0.01, 0.1, 1.0, 10.0]
+        alpha: [0.01, 0.1, 1.0, 10.0, 100.0]
+        fit_intercept: [true, false]
+        solver: ["auto", "svd", "cholesky", "lsqr"]
+        tol: [0.0001, 0.001]
       elasticnet:
         ativo: true
-        alpha: [0.01, 0.1, 1.0]
-        l1_ratio: [0.2, 0.5, 0.8]
+        alpha: [0.01, 0.1, 1.0, 10.0]
+        l1_ratio: [0.1, 0.3, 0.5, 0.7, 0.9]
+        fit_intercept: [true, false]
+        max_iter: [1000, 2000]
+        tol: [0.0001, 0.001]
       arvore_decisao:
         ativo: true
-        max_depth: [3, 5, 10]
-        min_samples_split: [2, 5]
+        criterion: ["squared_error", "friedman_mse", "absolute_error"]
+        max_depth: [3, 5, 8, 12]
+        min_samples_split: [2, 5, 10]
+        min_samples_leaf: [1, 2, 4]
+        max_features: [null, "sqrt", "log2"]
       random_forest:
         ativo: true
-        n_estimators: [50, 100]
-        max_depth: [5, 10]
+        n_estimators: [50, 100, 150]
+        criterion: ["squared_error", "absolute_error"]
+        max_depth: [5, 8, 12]
+        min_samples_split: [2, 5, 10]
+        min_samples_leaf: [1, 2, 4]
+        max_features: [1.0, "sqrt", "log2"]
+        bootstrap: [true]
       svr:
         ativo: true
-        C: [0.1, 1.0, 10.0]
         kernel: ["rbf", "linear"]
+        C: [0.1, 1.0, 10.0, 100.0]
+        epsilon: [0.01, 0.1, 0.2]
+        gamma: ["scale", "auto"]
       rede_neural:
         ativo: true
-        hidden_layer_sizes: [[50], [100]]
-        max_iter: [200]
+        hidden_layer_sizes: [[50], [100], [50, 25], [100, 50]]
+        activation: ["relu", "tanh"]
+        solver: ["adam", "lbfgs"]
+        alpha: [0.0001, 0.001, 0.01]
+        learning_rate_init: [0.001, 0.01]
+        max_iter: [200, 400]
       xgboost:
         ativo: true
-        n_estimators: [50, 100]
-        max_depth: [3, 6]
-        learning_rate: [0.05, 0.1]
+        n_estimators: [50, 100, 150]
+        learning_rate: [0.01, 0.05, 0.1, 0.2]
+        max_depth: [3, 5, 7]
+        subsample: [0.7, 0.85, 1.0]
+        colsample_bytree: [0.7, 0.85, 1.0]
+        min_child_weight: [1, 3, 5]
+        reg_alpha: [0.0, 0.1, 1.0]
+        reg_lambda: [0.01, 1.0, 10.0]
       lightgbm:
         ativo: true
-        n_estimators: [50, 100]
-        max_depth: [3, 6]
-        learning_rate: [0.05, 0.1]
+        n_estimators: [50, 100, 150]
+        learning_rate: [0.01, 0.05, 0.1, 0.2]
+        max_depth: [3, 5, 7]
+        num_leaves: [15, 31, 63]
+        colsample_bytree: [0.7, 0.85, 1.0]
+        min_child_samples: [5, 10, 20]
+        reg_alpha: [0.0, 0.1, 1.0]
+        reg_lambda: [0.01, 1.0, 10.0]
 
   mlflow:
     tracking_uri: "${MLFLOW_TRACKING_URI:http://localhost:5000}"
